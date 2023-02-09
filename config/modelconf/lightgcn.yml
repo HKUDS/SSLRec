@@ -1,6 +1,6 @@
 optimizer:
   name: adam
-  lr: 1.0e-3
+  lr: 1.0e-3 # not 1e-3
   weight_decay: 0
 
 train:
@@ -8,8 +8,13 @@ train:
   batch_size: 4096
   save_model: false
   loss: pairwise
-  test_batch_size: 256
+  test_step: 3
   #pretrain_path: ./checkpoint/xxxx.pth
+
+test:
+  metrics: [ndcg, recall] # choose in {ndcg, recall, precision, mrr}
+  k: [10, 20, 40]
+  batch_size: 1024
 
 data:
   name: yelp
@@ -18,3 +23,4 @@ model:
   name: lightgcn # case-insensitive
   keep_rate: 0.5
   layer_num: 3
+

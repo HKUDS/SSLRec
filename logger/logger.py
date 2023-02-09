@@ -20,16 +20,30 @@ class Logger(object):
         if log_configs:
             self.logger.info(configs)
 
-    def log(self, message, print_to_consle=True):
-        self.logger.info(message)
-        if print_to_consle:
+    def log(self, message, save_to_log=True, print_to_console=True):
+        if save_to_log:
+            self.logger.info(message)
+        if print_to_console:
             print(message)
 
-    def log_loss(self, epoch_idx, loss_log_dict, print_to_consle=True):
+    def log_loss(self, epoch_idx, loss_log_dict, save_to_log=True, print_to_console=True):
         epoch = configs['train']['epoch']
         message = '[Epoch {:3d} / {:3d}] '.format(epoch_idx, epoch)
         for loss_name in loss_log_dict:
             message += '{}: {}'.format(loss_name, loss_log_dict[loss_name])
-        self.logger.info(message)
-        if print_to_consle:
+        if save_to_log:
+            self.logger.info(message)
+        if print_to_console:
+            print(message)
+
+    def log_eval(self, eval_result, k, save_to_log=True, print_to_console=True):
+        message = ''
+        for metric in eval_result:
+            message += '['
+            for i in range(len(k)):
+                message += '{}@{}: {:.4f}'.format(metric, k[i], eval_result[metric][i])
+            message += '] '
+        if save_to_log:
+            self.logger.info(message)
+        if print_to_console:
             print(message)
