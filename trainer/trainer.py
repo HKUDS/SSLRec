@@ -5,6 +5,7 @@ import torch.optim as optim
 
 from tqdm import tqdm
 from config.configurator import configs
+from metrics.metrics import Metric
 
 print(configs)
 
@@ -12,6 +13,7 @@ class Trainer(object):
     def __init__(self, data_handler, logger):
         self.data_handler = data_handler
         self.logger = logger
+        self.metric = Metric()
 
     def create_optimizer(self, model):
         optim_config = configs['optimizer']
@@ -46,17 +48,18 @@ class Trainer(object):
 
     def train(self, model):
         train_config = configs['train']
-        for epoch_idx in train_config['epoch']:
+        for epoch_idx in tqdm(train_config['epoch'], desc="Training Recommender"):
             # train
             self.train_epoch(epoch_idx)
             # evaluate
             if epoch_idx % train_config['test_step'] == 0:
-                self.evaluate()
-
+                self.evaluate(model)
         self.save_model(model)
 
     def evaluate(self, model):
         model.eval()
+        eval_result = self.metric.eval(model, self.data_handler.test_dataloader)
+        self.logger.log_eval(eval_result, configs['test']['k'])
 
     def save_model(self, model):
         if configs['trian']['save_model']:
