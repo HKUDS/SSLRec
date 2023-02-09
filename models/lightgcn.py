@@ -14,7 +14,14 @@ class LightGCN(nn.Module):
 
 		self.user_embeds = nn.Parameter(init(t.empty(configs['data']['user_num'], configs['data']['item_num'])))
 		self.item_embeds = nn.Parameter(init(t.empty(configs['data']['item_num'])))
-	
+
+		self.user_num = configs['data']['user_num']
+		self.item_num = configs['data']['item_num']
+
+		self.layer_num = configs['model']['layer_num']
+		self.reg_weight = configs['model']['reg_weight']
+		self.keep_rate = configs['model']['keep_rate']
+
 		self.edge_dropper = SpAdjEdgeDrop()
 		self.training = True
 	
@@ -22,31 +29,30 @@ class LightGCN(nn.Module):
 		return t.spmm(adj, embeds)
 	
 	def forward(self, adj, keep_rate):
-		user_num = configs['data']['user_num']
 		if not self.training:
-			return self.final_embeds[:user_num], self.final_embeds[user_num:]
+			return self.final_embeds[:self.user_num], self.final_embeds[self.user_num:]
 		embeds = t.concat([self.user_embeds, self.item_embeds], axis=0)
 		embeds_list = [embeds]
 		adj = self.edge_dropper(adj, keep_rate)
-		for i in range(configs['model']['layer_num']):
+		for i in range(self.layer_num):
 			embeds = self._propagate(adj, embeds_list[-1])
 			embeds_list.append(embeds)
 		embeds = sum(embeds_list) / len(embeds_list)
 		self.final_embeds = embeds
-		return embeds[:user_num], embeds[user_num:]
+		return embeds[:self.user_num], embeds[self.user_num:]
 	
 	def cal_loss(self, batch_data):
 		self.training = True
-		user_embeds, item_embeds = self.forward(self.adj, configs['model']['keep_rate'])
+		user_embeds, item_embeds = self.forward(self.adj, self.keep_rate)
 		ancs, poss, negs = batch_data
 		anc_embeds = user_embeds[ancs]
 		pos_embeds = item_embeds[poss]
 		neg_embeds = item_embeds[negs]
 		score_diff = (anc_embeds * pos_embeds).sum(-1) - (anc_embeds * neg_embeds).sum(-1)
 		bpr_loss = - score_diff.sigmoid().log().sum()
-		weight_decay_loss = anc_embeds.square().sum() + pos_embeds.square().sum() + neg_embeds.square().sum()
-		loss = bpr_loss + configs['optimizer']['weight_decay'] * weight_decay_loss
-		losses = {'bpr': bpr_loss, 'weight_decay': weight_decay_loss}
+		reg_loss = anc_embeds.square().sum() + pos_embeds.square().sum() + neg_embeds.square().sum()
+		loss = bpr_loss + self.reg_weight * reg_loss
+		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss}
 		return loss, losses
 
 	def full_predict(self, batch_data):
