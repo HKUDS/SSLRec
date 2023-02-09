@@ -1,0 +1,13 @@
+optimizer:
+  name: adam
+  lr: 1.0e-3
+  weight_decay: 0
+
+train:
+  epoch: 100
+  batchsize: 4096
+  save_model: false
+  #pretrain_path: ./checkpoint/xxxx.pth
+
+model:
+  name: lightgcn # case-insensitive
