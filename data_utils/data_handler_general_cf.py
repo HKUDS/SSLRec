@@ -4,17 +4,17 @@ from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 import scipy.sparse as sp
 from config.configurator import configs
 from utils.time_logger import log# MARK
-from utils.datasets import PairwiseTrnData, PointwiseTrnData, AllRankTstData
+from data_utils.datasets_general_cf import PairwiseTrnData, PointwiseTrnData, AllRankTstData
 import torch as t
 import torch.utils.data as data
 
 class DataHandler:
 	def __init__(self):
-		if configs.data == 'yelp':
+		if configs['data']['name'] == 'yelp':
 			predir = './Datasets/sparse_yelp/'
-		elif configs.data == 'gowalla':
+		elif configs['data']['name'] == 'gowalla':
 			predir = './Datasets/sparse_gowalla/'
-		elif configs.data == 'amazon':
+		elif configs['data']['name'] == 'amazon':
 			predir = './Datasets/sparse_amazon/'
 		self.trn_file = predir + 'trn_mat.pkl'
 		self.val_file = predir + 'val_mat.pkl'
@@ -51,19 +51,19 @@ class DataHandler:
 		return mat.dot(d_inv_sqrt_mat).transpose().dot(d_inv_sqrt_mat).tocoo()
 	
 	def _make_torch_adj(self, mat):
-		"""Transform uni-directional adjacent matrix in coo_matrix into bi-directional adjacent matrix in torch.sparse.FloatTensor (with self-loop)
+		"""Transform uni-directional adjacent matrix in coo_matrix into bi-directional adjacent matrix in torch.sparse.FloatTensor
 
 		Args:
 			mat (coo_matrix): the uni-directional adjacent matrix
 
 		Returns:
-			torch.sparse.FloatTensor: the bi-directional matrix with self-loop
+			torch.sparse.FloatTensor: the bi-directional matrix
 		"""
-		a = csr_matrix((configs.user_num, configs.user_num))
-		b = csr_matrix((configs.item, configs.item))
+		a = csr_matrix((configs['data']['user_num'], configs['data']['user_num']))
+		b = csr_matrix((configs['data']['item_num'], configs['data']['item_num']))
 		mat = sp.vstack([sp.hstack([a, mat]), sp.hstack([mat.transpose(), b])])
 		mat = (mat != 0) * 1.0
-		mat = (mat + sp.eye(mat.shape[0])) * 1.0# MARK
+		# mat = (mat + sp.eye(mat.shape[0])) * 1.0# MARK
 		mat = self._normalize_adj(mat)
 
 		# make torch tensor
@@ -76,13 +76,13 @@ class DataHandler:
 		trn_mat = self._load_one_mat(self.trn_file)
 		tst_mat = self._load_one_mat(self.tst_file)
 		self.trn_mat = trn_mat
-		configs.user_num, configs.item_num = trn_mat.shape
+		configs['data']['user_num'], configs['data']['item_num'] = trn_mat.shape
 		self.torch_adj = self._make_torch_adj(trn_mat)
 
-		if configs.loss == 'pairwise':
+		if configs['train']['loss'] == 'pairwise':
 			trn_data = PairwiseTrnData(trn_mat)
-		elif configs.loss == 'pointwise':
+		elif configs['train']['loss'] == 'pointwise':
 			trn_data = PointwiseTrnData(trn_mat)
 		tst_data = AllRankTstData(tst_mat, trn_mat)
-		self.tst_loader = data.DataLoader(tst_data, batch_size=configs.tst_batch_size, shuffle=False, num_workers=0)
-		self.trn_loader = data.DataLoader(trn_data, batch_size=configs.batch_size, shuffle=True, num_workers=0)
+		self.tst_loader = data.DataLoader(tst_data, batch_size=configs['train']['test_batch_size'], shuffle=False, num_workers=0)
+		self.trn_loader = data.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)

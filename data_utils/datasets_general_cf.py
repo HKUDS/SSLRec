@@ -1,6 +1,6 @@
 from scipy.sparse import coo_matrix, dok_matrix
 import torch.utils.data as data
-from params import args
+from config.configurator import configs
 import numpy as np
 
 class PairwiseTrnData(data.Dataset):
@@ -10,11 +10,11 @@ class PairwiseTrnData(data.Dataset):
 		self.dokmat = coomat.todok()
 		self.negs = np.zeros(len(self.rows)).astype(np.int32)
 	
-	def negSampling(self):
+	def sample_negs(self):
 		for i in range(len(self.rows)):
 			u = self.rows[i]
 			while True:
-				iNeg = np.random.randint(args.item)
+				iNeg = np.random.randint(configs['data']['item_num'])
 				if (u, iNeg) not in self.dokmat:
 					break
 			self.negs[i] = iNeg

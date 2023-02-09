@@ -7,7 +7,14 @@ train:
   epoch: 100
   batch_size: 4096
   save_model: false
+  loss: pairwise
+  test_batch_size: 256
   #pretrain_path: ./checkpoint/xxxx.pth
+
+data:
+  name: yelp
 
 model:
   name: lightgcn # case-insensitive
+  keep_rate: 0.5
+  layer_num: 3
