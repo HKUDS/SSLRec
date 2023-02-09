@@ -5,7 +5,7 @@ import torch.optim as optim
 
 from tqdm import tqdm
 from config.configurator import configs
-from metrics.metrics import Metric
+from trainer.metrics import Metric
 
 print(configs)
 
@@ -23,16 +23,16 @@ class Trainer(object):
     def train_epoch(self, model, epoch_idx):
         # prepare training data
         train_dataloader = self.data_handler.train_dataloader
-        train_dataloader.neg_sampling()
+        train_dataloader.dataset.sample_negs()
 
         # for recording loss
         loss_log_dict = {}
 
         # start this epoch
         model.train()
-        for _, tem in enumerate(train_dataloader):
+        for _, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
             self.optimizer.zero_grad()
-            batch_data = list(map(lambda x: x.long().cuda()), tem)
+            batch_data = list(map(lambda x: x.long().cuda(), tem))
             loss, loss_dict = model.cal_loss(batch_data)
             loss.backward()
             self.optimizer.step()
@@ -40,17 +40,18 @@ class Trainer(object):
             # record loss
             for loss_name in loss_dict:
                 _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
-                if loss_name not in loss_dict: loss_log_dict[loss_name] = _loss_val
+                if loss_name not in loss_log_dict: loss_log_dict[loss_name] = _loss_val
                 else: loss_log_dict[loss_name] += _loss_val
 
         # log
         self.logger.log_loss(epoch_idx, loss_log_dict)
 
     def train(self, model):
+        self.create_optimizer(model)
         train_config = configs['train']
-        for epoch_idx in tqdm(train_config['epoch'], desc="Training Recommender"):
+        for epoch_idx in range(train_config['epoch']):
             # train
-            self.train_epoch(epoch_idx)
+            self.train_epoch(model, epoch_idx)
             # evaluate
             if epoch_idx % train_config['test_step'] == 0:
                 self.evaluate(model)
@@ -62,8 +63,8 @@ class Trainer(object):
         self.logger.log_eval(eval_result, configs['test']['k'])
 
     def save_model(self, model):
-        if configs['trian']['save_model']:
-            model_state_dict = model.stat_dict()
+        if configs['train']['save_model']:
+            model_state_dict = model.state_dict()
             model_name = configs['model']['name']
             save_dir_path = './checkpoint/{}'.format(model_name)
             if not os.path.exists(save_dir_path):
@@ -77,5 +78,3 @@ class Trainer(object):
             pretrain_path = configs['train']['pretrian_path']
             model.load_state_dict(torch.load(pretrain_path))
             self.logger.log("Load model parameters from {}".format(pretrain_path))
-
-

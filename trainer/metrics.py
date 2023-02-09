@@ -88,20 +88,20 @@ class Metric(object):
         batch_ratings = []
         ground_truths = []
         test_user_count = 0
-        test_user_num = len(test_dataloader.test_users)
+        test_user_num = len(test_dataloader.dataset.test_users)
         for _, tem in enumerate(test_dataloader):
             # predict result
-            batch_data = list(map(lambda x: x.long().cuda()), tem)
+            batch_data = list(map(lambda x: x.long().cuda(), tem))
             batch_pred = model.full_predict(batch_data)
-            test_user_count += batch_rate.shape[0]
+            test_user_count += batch_pred.shape[0]
             _, batch_rate = torch.topk(batch_pred, k=max(self.k))
-            batch_ratings.append(batch_rate)
+            batch_ratings.append(batch_rate.cpu())
 
             # ground truth
             ground_truth = []
             test_user = tem[0].numpy().tolist()
             for user_idx in test_user:
-                ground_truth.append(list(test_dataloader.user_pos_lists[user_idx]))
+                ground_truth.append(list(test_dataloader.dataset.user_pos_lists[user_idx]))
             ground_truths.append(ground_truth)
         assert test_user_count == test_user_num
 
@@ -110,8 +110,9 @@ class Metric(object):
         eval_results = []
         for _data in data_pair:
             eval_results.append(self.eval_batch(_data, self.k))
-        for metric in self.metrics:
-            result[metric] += eval_results[metric] / test_user_num
+        for batch_result in eval_results:
+            for metric in self.metrics:
+                result[metric] += batch_result[metric] / test_user_num
 
         return result
 

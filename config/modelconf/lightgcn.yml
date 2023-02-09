@@ -6,15 +6,15 @@ optimizer:
 train:
   epoch: 100
   batch_size: 4096
-  save_model: false
-  loss: pairwise
-  test_step: 3
+  save_model: true
+  loss: pairwise # bpr
+  test_step: 3 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
 
 test:
-  metrics: [ndcg, recall] # choose in {ndcg, recall, precision, mrr}
-  k: [10, 20, 40]
-  batch_size: 1024
+  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
+  k: [10, 20, 40] # top-k
+  batch_size: 1024 # How many users per batch during validation
 
 data:
   name: yelp
@@ -24,4 +24,5 @@ model:
   keep_rate: 0.5
   layer_num: 2
   reg_weight: 1.0e-2
+  embedding_size: 32
 

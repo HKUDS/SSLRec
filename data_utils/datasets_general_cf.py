@@ -30,12 +30,12 @@ class AllRankTstData(data.Dataset):
 		self.csrmat = (trn_mat.tocsr() != 0) * 1.0
 
 		user_pos_lists = [list() for i in range(coomat.shape[0])]
-		user_pos_lists = set()
+		# user_pos_lists = set()
 		test_users = set()
 		for i in range(len(coomat.data)):
 			row = coomat.row[i]
 			col = coomat.col[i]
-			user_pos_lists[row].apend(col)
+			user_pos_lists[row].append(col)
 			test_users.add(row)
 		self.test_users = np.array(list(test_users))
 		self.user_pos_lists = user_pos_lists

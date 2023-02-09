@@ -4,7 +4,7 @@ import argparse
 
 def parse_configure():
     parser = argparse.ArgumentParser(description='SSLRec')
-    parser.add_argument('--model', type=str, default="lightgcn", help='Model name')
+    parser.add_argument('--model', type=str, help='Model name')
     args = parser.parse_args()
 
     if args.model == None:
