@@ -12,7 +12,7 @@ class Logger(object):
             os.makedirs(log_dir_path)
         self.logger = logging.getLogger('train_logger')
         self.logger.setLevel(logging.INFO)
-        dataset_name = configs['data']['dataset']
+        dataset_name = configs['data']['name']
         log_file = logging.FileHandler('{}/{}.log'.format(log_dir_path, dataset_name), 'a', encoding='utf-8')
         formatter = logging.Formatter('%(asctime)s - %(message)s')
         log_file.setFormatter(formatter)
@@ -30,7 +30,7 @@ class Logger(object):
         epoch = configs['train']['epoch']
         message = '[Epoch {:3d} / {:3d}] '.format(epoch_idx, epoch)
         for loss_name in loss_log_dict:
-            message += '{}: {}'.format(loss_name, loss_log_dict[loss_name])
+            message += '{}: {:.4f} '.format(loss_name, loss_log_dict[loss_name])
         if save_to_log:
             self.logger.info(message)
         if print_to_console:
@@ -41,7 +41,7 @@ class Logger(object):
         for metric in eval_result:
             message += '['
             for i in range(len(k)):
-                message += '{}@{}: {:.4f}'.format(metric, k[i], eval_result[metric][i])
+                message += '{}@{}: {:.4f} '.format(metric, k[i], eval_result[metric][i])
             message += '] '
         if save_to_log:
             self.logger.info(message)

@@ -83,5 +83,5 @@ class DataHandler:
 		# elif configs['train']['loss'] == 'pointwise':
 		# 	trn_data = PointwiseTrnData(trn_mat)
 		tst_data = AllRankTstData(tst_mat, trn_mat)
-		self.tst_loader = data.DataLoader(tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
-		self.trn_loader = data.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
+		self.test_dataloader = data.DataLoader(tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
+		self.train_dataloader = data.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
