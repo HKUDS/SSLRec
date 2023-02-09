@@ -1,3 +1,6 @@
 # SSLRec
 
-A blank readme file
+Example to run LightGCN
+````
+python main.py --model LightGCN
+````
