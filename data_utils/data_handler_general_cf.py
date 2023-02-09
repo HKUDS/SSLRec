@@ -3,7 +3,6 @@ import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 import scipy.sparse as sp
 from config.configurator import configs
-from utils.time_logger import log# MARK
 from data_utils.datasets_general_cf import PairwiseTrnData, PointwiseTrnData, AllRankTstData
 import torch as t
 import torch.utils.data as data
