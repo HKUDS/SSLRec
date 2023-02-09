@@ -1,0 +1,21 @@
+optimizer:
+  name: adam
+  lr: 1.0e-3
+  weight_decay: 0
+
+train:
+  epoch: 100
+  batch_size: 4096
+  save_model: false
+  loss: pairwise
+  test_batch_size: 256
+  #pretrain_path: ./checkpoint/xxxx.pth
+
+data:
+  name: yelp
+
+model:
+  name: sgl # case-insensitive
+  keep_rate: 0.5
+  layer_num: 3
+  augmentation: edge_drop
