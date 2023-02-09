@@ -5,7 +5,7 @@ optimizer:
 
 train:
   epoch: 100
-  batchsize: 4096
+  batch_size: 4096
   save_model: false
   #pretrain_path: ./checkpoint/xxxx.pth
 
