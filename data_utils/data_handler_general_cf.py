@@ -3,18 +3,18 @@ import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 import scipy.sparse as sp
 from config.configurator import configs
-from data_utils.datasets_general_cf import PairwiseTrnData, PointwiseTrnData, AllRankTstData
+from data_utils.datasets_general_cf import PairwiseTrnData, AllRankTstData
 import torch as t
 import torch.utils.data as data
 
 class DataHandler:
 	def __init__(self):
 		if configs['data']['name'] == 'yelp':
-			predir = './Datasets/sparse_yelp/'
+			predir = './datasets/sparse_yelp/'
 		elif configs['data']['name'] == 'gowalla':
-			predir = './Datasets/sparse_gowalla/'
+			predir = './datasets/sparse_gowalla/'
 		elif configs['data']['name'] == 'amazon':
-			predir = './Datasets/sparse_amazon/'
+			predir = './datasets/sparse_amazon/'
 		self.trn_file = predir + 'trn_mat.pkl'
 		self.val_file = predir + 'val_mat.pkl'
 		self.tst_file = predir + 'tst_mat.pkl'
@@ -80,8 +80,8 @@ class DataHandler:
 
 		if configs['train']['loss'] == 'pairwise':
 			trn_data = PairwiseTrnData(trn_mat)
-		elif configs['train']['loss'] == 'pointwise':
-			trn_data = PointwiseTrnData(trn_mat)
+		# elif configs['train']['loss'] == 'pointwise':
+		# 	trn_data = PointwiseTrnData(trn_mat)
 		tst_data = AllRankTstData(tst_mat, trn_mat)
 		self.tst_loader = data.DataLoader(tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
 		self.trn_loader = data.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
