@@ -10,7 +10,7 @@ uniformInit = nn.init.uniform
 
 class SGL(LightGCN):
 	def __init__(self, data_handler):
-		super(SGL, self).__init__()
+		super(SGL, self).__init__(data_handler)
 		self.node_dropper = NodeDrop()
 
 	def forward(self, adj, keep_rate):
