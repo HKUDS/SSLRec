@@ -22,5 +22,6 @@ data:
 model:
   name: lightgcn # case-insensitive
   keep_rate: 0.5
-  layer_num: 3
+  layer_num: 2
+  reg_weight: 1.0e-2
 
