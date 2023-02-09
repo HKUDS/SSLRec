@@ -3,7 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 from config.configurator import configs
 from models.lightgcn import LightGCN
-from models.losses import cal_bpr_loss, reg_pick_embeds, cal_infonce_loss
+from models.loss_utils import cal_bpr_loss, reg_pick_embeds, cal_infonce_loss
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform

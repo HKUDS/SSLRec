@@ -2,24 +2,21 @@ import torch as t
 from torch import nn
 import torch.nn.functional as F
 from config.configurator import configs
-from models.losses import cal_bpr_loss, reg_pick_embeds
+from models.loss_utils import cal_bpr_loss, reg_pick_embeds
+from models.base_model import BaseModel
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
 
-class LightGCN(nn.Module):
+class LightGCN(BaseModel):
 	def __init__(self, data_handler):
 		super(LightGCN, self).__init__()
 
 		self.adj = data_handler.torch_adj
 
-		self.user_num = configs['data']['user_num']
-		self.item_num = configs['data']['item_num']
-
 		self.layer_num = configs['model']['layer_num']
 		self.reg_weight = configs['model']['reg_weight']
 		self.keep_rate = configs['model']['keep_rate']
-		self.embedding_size = configs['model']['embedding_size']
 
 		self.user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
 		self.item_embeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))
@@ -63,7 +60,7 @@ class LightGCN(nn.Module):
 		pck_users = pck_users.long()
 		pck_user_embeds = user_embeds[pck_users]
 		full_preds = pck_user_embeds @ item_embeds.T
-		full_preds = full_preds * (1 - train_mask) - 1e8 * train_mask
+		full_preds = self._mask_predict(full_preds, train_mask)
 		return full_preds
 	
 class SpAdjEdgeDrop(nn.Module):

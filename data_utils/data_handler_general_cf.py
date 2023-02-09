@@ -15,9 +15,9 @@ class DataHandler:
 			predir = './datasets/sparse_gowalla/'
 		elif configs['data']['name'] == 'amazon':
 			predir = './datasets/sparse_amazon/'
-		self.trn_file = predir + 'trn_mat.pkl'
-		self.val_file = predir + 'val_mat.pkl'
-		self.tst_file = predir + 'tst_mat.pkl'
+		self.trn_file = predir + 'train_mat.pkl'
+		self.val_file = predir + 'valid_mat.pkl'
+		self.tst_file = predir + 'test_mat.pkl'
 
 	def _load_one_mat(self, file):
 		"""Load one single adjacent matrix from file
