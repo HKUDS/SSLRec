@@ -2,6 +2,7 @@ import torch as t
 from torch import nn
 import torch.nn.functional as F
 from config.configurator import configs
+from models.losses import cal_bpr_loss, reg_pick_embeds
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -42,9 +43,8 @@ class LightGCN(nn.Module):
 		anc_embeds = user_embeds[ancs]
 		pos_embeds = item_embeds[poss]
 		neg_embeds = item_embeds[negs]
-		score_diff = (anc_embeds * pos_embeds).sum(-1) - (anc_embeds * neg_embeds).sum(-1)
-		bpr_loss = - score_diff.sigmoid().log().sum()
-		weight_decay_loss = anc_embeds.square().sum() + pos_embeds.square().sum() + neg_embeds.square().sum()
+		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
+		weight_decay_loss = reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds])
 		loss = bpr_loss + configs['optimizer']['weight_decay'] * weight_decay_loss
 		losses = {'bpr': bpr_loss, 'weight_decay': weight_decay_loss}
 		return loss, losses
@@ -63,13 +63,13 @@ class SpAdjEdgeDrop(nn.Module):
 	def __init__(self):
 		super(SpAdjEdgeDrop, self).__init__()
 
-	def forward(self, adj, keepRate):
-		if keepRate == 1.0:
+	def forward(self, adj, keep_rate):
+		if keep_rate == 1.0:
 			return adj
 		vals = adj._values()
 		idxs = adj._indices()
 		edgeNum = vals.size()
-		mask = ((t.rand(edgeNum) + keepRate).floor()).type(t.bool)
-		newVals = vals[mask] / keepRate
+		mask = (t.rand(edgeNum) + keep_rate).floor().type(t.bool)
+		newVals = vals[mask]# / keep_rate
 		newIdxs = idxs[:, mask]
 		return t.sparse.FloatTensor(newIdxs, newVals, adj.shape)
