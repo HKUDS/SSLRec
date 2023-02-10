@@ -35,6 +35,13 @@ class SGL(LightGCN):
 		embeds = sum(embeds_list) / len(embeds_list)
 		self.final_embeds = embeds
 		return embeds[:self.user_num], embeds[self.user_num:]
+	
+	def _pick_embeds(self, user_embeds, item_embeds, batch_data):
+		ancs, poss, negs = batch_data
+		anc_embeds = user_embeds[ancs]
+		pos_embeds = item_embeds[poss]
+		neg_embeds = item_embeds[negs]
+		return anc_embeds, pos_embeds, neg_embeds
 
 	def cal_loss(self, batch_data):
 		self.training = True
