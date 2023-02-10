@@ -1,13 +1,25 @@
 import os
 import time
 import torch
+import random
+import numpy as np
 import torch.optim as optim
 
 from tqdm import tqdm
 from config.configurator import configs
 from trainer.metrics import Metric
 
-print(configs)
+def init_seed():
+    if 'reproducible' in configs['train']:
+        if configs['train']['reproducible']:
+            seed = configs['train']['seed']
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
 
 class Trainer(object):
     def __init__(self, data_handler, logger):
@@ -66,12 +78,20 @@ class Trainer(object):
         if configs['train']['save_model']:
             model_state_dict = model.state_dict()
             model_name = configs['model']['name']
-            save_dir_path = './checkpoint/{}'.format(model_name)
-            if not os.path.exists(save_dir_path):
-                os.makedirs(save_dir_path)
-            timestamp = int(time.time())
-            torch.save(model_state_dict, '{}/{}-{}.pth'.format(save_dir_path, model_name, timestamp))
-            self.logger.log("Save model parameters to {}".format('{}/{}-{}.pth'.format(save_dir_path, model_name, timestamp)))
+            if not configs['tune']['enable']:
+                save_dir_path = './checkpoint/{}'.format(model_name)
+                if not os.path.exists(save_dir_path):
+                    os.makedirs(save_dir_path)
+                timestamp = int(time.time())
+                torch.save(model_state_dict, '{}/{}-{}.pth'.format(save_dir_path, model_name, timestamp))
+                self.logger.log("Save model parameters to {}".format('{}/{}-{}.pth'.format(save_dir_path, model_name, timestamp)))
+            else:
+                save_dir_path = './checkpoint/{}/tune'.format(model_name)
+                if not os.path.exists(save_dir_path):
+                    os.makedirs(save_dir_path)
+                now_para_str = configs['tune']['now_para_str']
+                torch.save(model_state_dict, '{}/{}-{}.pth'.format(save_dir_path, model_name, now_para_str))
+                self.logger.log("Save model parameters to {}".format('{}/{}-{}.pth'.format(save_dir_path, model_name, now_para_str)))
 
     def load_model(self, model):
         if 'pretrain_path' in configs['train']:

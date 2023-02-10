@@ -8,8 +8,10 @@ train:
   batch_size: 4096
   save_model: true
   loss: pairwise # bpr
-  test_step: 3 # evaluate per {test_step} epochs
+  test_step: 5 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
+  reproducible: ture
+  seed: 2023
 
 test:
   metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
@@ -26,3 +28,8 @@ model:
   reg_weight: 1.0e-2
   embedding_size: 32
 
+tune:
+  enable: true # Whether to enable grid search to search for optimal hyperparameters
+  hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
+  layer_num: [1, 2, 3] # Use a list to store the search range
+  reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]

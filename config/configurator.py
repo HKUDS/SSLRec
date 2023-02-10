@@ -20,6 +20,8 @@ def parse_configure():
         config_data = f.read()
         configs = yaml.safe_load(config_data)
         configs['model']['name'] = configs['model']['name'].lower()
+        if 'tune' not in configs:
+            configs['tune'] = {'enable': False}
         return configs
 
 configs = parse_configure()

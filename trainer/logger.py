@@ -13,12 +13,15 @@ class Logger(object):
         self.logger = logging.getLogger('train_logger')
         self.logger.setLevel(logging.INFO)
         dataset_name = configs['data']['name']
-        log_file = logging.FileHandler('{}/{}.log'.format(log_dir_path, dataset_name), 'a', encoding='utf-8')
+        if not configs['tune']['enable']:
+            log_file = logging.FileHandler('{}/{}.log'.format(log_dir_path, dataset_name), 'a', encoding='utf-8')
+        else:
+            log_file = logging.FileHandler('{}/{}-tune.log'.format(log_dir_path, dataset_name), 'a', encoding='utf-8')
         formatter = logging.Formatter('%(asctime)s - %(message)s')
         log_file.setFormatter(formatter)
         self.logger.addHandler(log_file)
         if log_configs:
-            self.logger.info(configs)
+            self.log(configs)
 
     def log(self, message, save_to_log=True, print_to_console=True):
         if save_to_log:
