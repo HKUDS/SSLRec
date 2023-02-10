@@ -29,7 +29,7 @@ model:
   embedding_size: 32
 
 tune:
-  enable: true # Whether to enable grid search to search for optimal hyperparameters
+  enable: false # Whether to enable grid search to search for optimal hyperparameters
   hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
   layer_num: [1, 2, 3] # Use a list to store the search range
   reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
