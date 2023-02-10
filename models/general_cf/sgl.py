@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from config.configurator import configs
 from models.general_cf.lightgcn import LightGCN
 from models.loss_utils import cal_bpr_loss, reg_pick_embeds, cal_infonce_loss
+from models.model_utils import NodeDrop
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -60,15 +61,3 @@ class SGL(LightGCN):
 		loss = bpr_loss + self.reg_weight * reg_loss + self.cl_weight * cl_loss
 		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'cl_loss': cl_loss}
 		return loss, losses
-
-class NodeDrop(nn.Module):
-	def __init__(self):
-		super(NodeDrop, self).__init__()
-
-	def forward(self, embeds, keep_rate):
-		if keep_rate == 1.0:
-			return embeds
-		data_config = configs['data']
-		node_num = data_config['user_num'] + data_config['item_num']
-		mask = (t.rand(node_num) + keep_rate).floor().view([-1, 1])
-		return embeds * mask

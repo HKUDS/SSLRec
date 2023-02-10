@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from config.configurator import configs
 from models.loss_utils import cal_bpr_loss, reg_pick_embeds
 from models.base_model import BaseModel
+from models.model_utils import SpAdjEdgeDrop
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -62,18 +63,3 @@ class LightGCN(BaseModel):
 		full_preds = pck_user_embeds @ item_embeds.T
 		full_preds = self._mask_predict(full_preds, train_mask)
 		return full_preds
-	
-class SpAdjEdgeDrop(nn.Module):
-	def __init__(self):
-		super(SpAdjEdgeDrop, self).__init__()
-
-	def forward(self, adj, keep_rate):
-		if keep_rate == 1.0:
-			return adj
-		vals = adj._values()
-		idxs = adj._indices()
-		edgeNum = vals.size()
-		mask = (t.rand(edgeNum) + keep_rate).floor().type(t.bool)
-		newVals = vals[mask]# / keep_rate
-		newIdxs = idxs[:, mask]
-		return t.sparse.FloatTensor(newIdxs, newVals, adj.shape)
