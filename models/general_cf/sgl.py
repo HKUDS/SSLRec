@@ -11,27 +11,29 @@ uniformInit = nn.init.uniform
 class SGL(LightGCN):
 	def __init__(self, data_handler):
 		super(SGL, self).__init__(data_handler)
+
+		self.augmentation = configs['model']['augmentation']
+		self.cl_weight = configs['model']['cl_weight']
+
 		self.node_dropper = NodeDrop()
 
 	def forward(self, adj, keep_rate):
-		user_num = configs['data']['user_num']
-		augmentation = configs['model']['augmentation']
 		if not self.training:
-			return self.final_embeds[:user_num], self.final_embeds[user_num:]
+			return self.final_embeds[:self.user_num], self.final_embeds[self.user_num:]
 		embeds = t.concat([self.user_embeds, self.item_embeds], axis=0)
-		if augmentation == 'node_drop':
+		if self.augmentation == 'node_drop':
 			embeds = self.node_dropper(embeds, keep_rate)
 		embeds_list = [embeds]
-		if augmentation == 'edge_drop':
+		if self.augmentation == 'edge_drop':
 			adj = self.edge_dropper(adj, keep_rate)
 		for i in range(configs['model']['layer_num']):
-			random_walk = augmentation == 'random_walk'
+			random_walk = self.augmentation == 'random_walk'
 			tem_adj =  adj if not random_walk else self.edge_dropper(tem_adj, keep_rate)
 			embeds = self._propagate(adj, embeds_list[-1])
 			embeds_list.append(embeds)
 		embeds = sum(embeds_list) / len(embeds_list)
 		self.final_embeds = embeds
-		return embeds[:user_num], embeds[user_num:]
+		return embeds[:self.user_num], embeds[self.user_num:]
 
 	def cal_loss(self, batch_data):
 		self.training = True
@@ -46,9 +48,9 @@ class SGL(LightGCN):
 
 		bpr_loss = cal_bpr_loss(anc_embeds3, pos_embeds3, neg_embeds3)
 		cl_loss = cal_infonce_loss(anc_embeds1, anc_embeds2, user_embeds2) + cal_infonce_loss(pos_embeds1, pos_embeds2, item_embeds2) + cal_infonce_loss(neg_embeds1, neg_embeds2, item_embeds2)
-		weight_decay_loss = reg_pick_embeds([anc_embeds3, pos_embeds3, neg_embeds3])
-		loss = bpr_loss + configs['model']['reg_weight'] * weight_decay_loss + configs['model']['cl_weight'] * cl_loss
-		losses = {'bpr': bpr_loss, 'weight_decay': weight_decay_loss, 'cl': cl_loss}
+		reg_loss = reg_pick_embeds([anc_embeds3, pos_embeds3, neg_embeds3])
+		loss = bpr_loss + self.reg_weight * reg_loss + self.cl_weight * cl_loss
+		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'cl_loss': cl_loss}
 		return loss, losses
 
 class NodeDrop(nn.Module):

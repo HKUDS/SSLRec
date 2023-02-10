@@ -5,7 +5,7 @@ import argparse
 def parse_configure():
     parser = argparse.ArgumentParser(description='SSLRec')
     parser.add_argument('--model', type=str, help='Model name')
-    parser.add_argument('--cuda', type=str, help='Device number')
+    parser.add_argument('--cuda', type=str, default='0', help='Device number')
     args = parser.parse_args()
 
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda
