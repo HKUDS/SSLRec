@@ -8,8 +8,13 @@ train:
   batch_size: 4096
   save_model: false
   loss: pairwise
-  test_batch_size: 256
+  test_step: 3
   #pretrain_path: ./checkpoint/xxxx.pth
+
+test:
+  metrics: [recall, ndcg]
+  k: [10, 20, 40]
+  batch_size: 256
 
 data:
   name: yelp
@@ -18,4 +23,6 @@ model:
   name: sgl # case-insensitive
   keep_rate: 0.5
   layer_num: 3
+  reg_weight: 1.0e-2
+  embedding_size: 32
   augmentation: edge_drop
