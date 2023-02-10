@@ -27,6 +27,11 @@ class HCCF(BaseModel):
 		self.user_hyper_embeds = nn.Parameter(init(t.empty(self.embedding_size, self.hyper_num)))
 		self.item_hyper_embeds = nn.Parameter(init(t.empty(self.embedding_size, self.hyper_num)))
 
+		self.edge_drop = SpAdjEdgeDrop()
+	
+	def forward(self, adj, keep_rate):
+		pass
+
 class HGNNLayer(nn.Module):
 	def __init__(self):
 		super(HGNNLayer, self).__init__()
