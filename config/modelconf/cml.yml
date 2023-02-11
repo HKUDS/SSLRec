@@ -25,7 +25,6 @@ train:
   SSL_batch: 30
   reg: 1e-3
   beta: 0.005
-  inner_product_mult: 1
   patience: 100  #early stop
 
 test:
@@ -34,10 +33,11 @@ test:
   batch_size: 1024 # How many users per batch during validation
 
 data:
-  name: IJCAI_15
+  type: multi_behavior # choose in {general_cf, multi_behavior, sequential, social}
+  name: ijcai_15
 
 model:
-  name: lightgcn # case-insensitive
+  name: cml # case-insensitive
   keep_rate: 0.5
   layer_num: 2
   reg_weight: 1.0e-2
@@ -48,6 +48,9 @@ model:
   drop_rate1: 0.5
   slope: 0.1
   target: 'buy'
+  head_num: 4
+  inner_product_mult: 1
+
 
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
