@@ -114,8 +114,7 @@ class DataHandlerMultiBehavior:
 
         return torch.sparse.FloatTensor(indices, values, shape).to(torch.float32).cuda()  
 
-    def load_data(self):  #TODO
-        #----raw version--------------------------------------------------------------------------------------------------------------------
+    def load_data(self):  
         configs['data']['user_num'], configs['data']['item_num'] = self.trn_mat.shape
         # self.torch_adj = self._make_torch_adj(self.trn_mat)  # TODO
         train_u, train_v = self.trn_mat.nonzero()
