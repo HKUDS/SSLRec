@@ -8,10 +8,10 @@ import datetime
 import scipy.sparse as sp
 from scipy.sparse import *
 import torch
-import torch.utils.data as data
-# import torch.utils.data as dataloader
-from data_utils.datasets_general_cf import PairwiseTrnData, AllRankTstData
+import torch.utils.data as dataloader
+from data_utils.datasets_multi_behavior import RecDatasetBeh, AllRankTstData
 from config.configurator import configs
+
 
 class DataHandlerMultiBehavior:
     def __init__(self):
@@ -116,42 +116,13 @@ class DataHandlerMultiBehavior:
 
     def load_data(self):  #TODO
         #----raw version--------------------------------------------------------------------------------------------------------------------
-        # self.trn_mat = self._load_one_mat(self.trn_file)
-        # self.tst_mat = self._load_one_mat(self.tst_file)
-        # self.trn_mat = trn_mat
         configs['data']['user_num'], configs['data']['item_num'] = self.trn_mat.shape
-        self.torch_adj = self._make_torch_adj(self.trn_mat)  # TODO
-
-        if configs['train']['loss'] == 'pairwise':
-            trn_data = PairwiseTrnData(self.trn_mat)
-        # elif configs['train']['loss'] == 'pointwise':
-        # 	trn_data = PointwiseTrnData(trn_mat)
-        tst_data = AllRankTstData(self.tst_mat, self.trn_mat)
-        self.test_dataloader = data.DataLoader(tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
-        self.train_dataloader = data.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
-        #----raw version--------------------------------------------------------------------------------------------------------------------
-
-        #----my version--------------------------------------------------------------------------------------------------------------------
-        #train_dataloader
+        # self.torch_adj = self._make_torch_adj(self.trn_mat)  # TODO
         train_u, train_v = self.trn_mat.nonzero()
         train_data = np.hstack((train_u.reshape(-1,1), train_v.reshape(-1,1))).tolist()
-        train_dataset = DataHandler.RecDataset_beh(self.behaviors, train_data, self.item_num, self.behaviors_data, True)
-        self.train_loader = dataloader.DataLoader(train_dataset, batch_size=args.batch, shuffle=True, num_workers=4, pin_memory=True)
-
-        #valid_dataloader
-
-        # test_dataloader
-        with open(self.tst_file, 'rb') as fs:
-            data = pickle.load(fs)
-
-        test_user = np.array([idx for idx, i in enumerate(data) if i is not None])
-        test_item = np.array([i for idx, i in enumerate(data) if i is not None])
-        # tstUsrs = np.reshape(np.argwhere(data!=None), [-1])
-        test_data = np.hstack((test_user.reshape(-1,1), test_item.reshape(-1,1))).tolist()
-        # testbatch = np.maximum(1, args.batch * args.sampNum 
-        test_dataset = DataHandler.RecDataset(test_data, self.item_num, self.trainMat, 0, False)  
-        self.test_loader = dataloader.DataLoader(test_dataset, batch_size=args.batch, shuffle=False, num_workers=4, pin_memory=True)  
-        #----my version--------------------------------------------------------------------------------------------------------------------
+        train_dataset = RecDatasetBeh(self.behaviors, train_data, self.item_num, self.behaviors_data, True)
+        self.train_dataloader = dataloader.DataLoader(train_dataset, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=4, pin_memory=True)
+        self.test_dataloader = dataloader.DataLoader(self.tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
 
 
 
