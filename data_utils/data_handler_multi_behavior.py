@@ -12,7 +12,6 @@ import torch.utils.data as data
 # import torch.utils.data as dataloader
 from data_utils.datasets_general_cf import PairwiseTrnData, AllRankTstData
 from config.configurator import configs
-from data_utils.datasets_general_cf import PairwiseTrnData, AllRankTstData
 
 
 
@@ -117,7 +116,7 @@ class DataHandler:
 
         return torch.sparse.FloatTensor(indices, values, shape).to(torch.float32).cuda()  
 
-    def load_data(self):
+    def load_data(self):  #TODO
         #----raw version--------------------------------------------------------------------------------------------------------------------
         # self.trn_mat = self._load_one_mat(self.trn_file)
         # self.tst_mat = self._load_one_mat(self.tst_file)
@@ -156,84 +155,5 @@ class DataHandler:
         self.test_loader = dataloader.DataLoader(test_dataset, batch_size=args.batch, shuffle=False, num_workers=4, pin_memory=True)  
         #----my version--------------------------------------------------------------------------------------------------------------------
 
-
-
-
-
-
-
-
-class DataHandler(data.Dataset):
-    def __init__(self, beh, data, num_item, behaviors_data=None, num_ng=1, is_training=True):  
-        super(DataHandler, self).__init__()
-
-        self.data = np.array(data)
-        self.num_item = num_item
-        self.is_training = is_training
-        self.behavior = beh
-        self.behaviors_data = behaviors_data
-
-        self.length = self.data.shape[0] 
-        self.neg_data = [None]*self.length  
-        self.pos_data = [None]*self.length  
-
-        self.userNum = behaviors_data[0].shape[0]
-        self.itemNum = behaviors_data[0].shape[1]
-        # self.behavior = None
-        self.behavior_mats = self.data2mat()
-
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        user = self.data[idx][0]
-        item_i = self.pos_data[idx]
-
-        if self.is_training:  
-            item_j = self.neg_data[idx]
-            return user, item_i, item_j
-        else:  
-            return user, item_i
-        
-
-    def ng_sample(self):
-        assert self.is_training, 'no need to sampling when testing'  
-
-        for i in range(self.length):
-            self.neg_data[i] = [None]*len(self.behavior)
-            self.pos_data[i] = [None]*len(self.behavior)
-
-        for index in range(len(self.behavior)):
-            train_u, train_v = self.behaviors_data[index].nonzero()
-            beh_dok = self.behaviors_data[index].todok()
-
-            set_pos = np.array(list(set(train_v)))
-
-            self.pos_data_index = np.random.choice(set_pos, size=self.length, replace=True, p=None)
-            self.neg_data_index = np.random.randint(low=0, high=self.num_item, size=self.length) 
-
-            for i in range(self.length):  #
-
-                uid = self.data[i][0]
-                iid_neg = self.neg_data[i][index] = self.neg_data_index[i]
-                iid_pos = self.pos_data[i][index] = self.pos_data_index[i]
-
-                if (uid, iid_neg) in beh_dok:
-                    while (uid, iid_neg) in beh_dok:
-                        iid_neg = np.random.randint(low=0, high=self.num_item)
-                        self.neg_data[i][index] = iid_neg
-                    self.neg_data[i][index] = iid_neg
-
-                if index == (len(self.behavior)-1):
-                    self.pos_data[i][index] = train_v[i]
-                elif (uid, iid_pos) not in beh_dok:
-                    if len(self.behaviors_data[index][uid].data)==0:
-                        self.pos_data[i][index] = -1
-                    else:
-                        t_array = self.behaviors_data[index][uid].toarray()
-                        pos_index = np.where(t_array!=0)[1]
-                        iid_pos = np.random.choice(pos_index, size = 1, replace=True, p=None)[0]   
-                        self.pos_data[i][index] = iid_pos
 
 
