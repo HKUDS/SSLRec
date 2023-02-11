@@ -31,12 +31,10 @@ class DataHandlerMultiBehavior:
         self.trn_file = predir + 'train_mat_'  # train_mat_buy.pkl 
         self.val_file = predir + 'test_mat.pkl'
         self.tst_file = predir + 'test_mat.pkl'
-        # self.trn_file = args.path + args.dataset + '/trn_'
-        # self.tst_file = args.path + args.dataset + '/tst_int'     
         self.meta_multi_single_file = predir + 'meta_multi_single_beh_user_index_shuffle'
 
 
-    def _load_data(self, file):
+    def _load_data(self):
         self.meta_multi_single = pickle.load(open(self.meta_multi_single_file, 'rb'))
 
         self.t_max = -1 
@@ -46,7 +44,6 @@ class DataHandlerMultiBehavior:
         self.user_num = -1
         self.item_num = -1
         self.behavior_mats = {} 
-        self.behaviors = []
         self.behaviors_data = {}
         for i in range(0, len(self.behaviors)):
             with open(self.trn_file + self.behaviors[i] + '.pkl', 'rb') as fs:  
@@ -63,7 +60,7 @@ class DataHandlerMultiBehavior:
                 if data.data.min() < self.t_min:
                     self.t_min = data.data.min()
 
-                if self.behaviors[i]==args.target:
+                if self.behaviors[i]==configs['model']['target']:  
                     self.trn_mat = data  
                     self.trainLabel = 1*(self.trn_mat != 0)  
                     self.labelP = np.squeeze(np.array(np.sum(self.trainLabel, axis=0)))  
@@ -73,7 +70,7 @@ class DataHandlerMultiBehavior:
         self.userNum = self.behaviors_data[0].shape[0]
         self.itemNum = self.behaviors_data[0].shape[1]
         # self.behavior = None
-        self.behavior_mats = self.data2mat()
+        self.behavior_mats = self._data2mat()
 
     def _data2mat(self):
         time = datetime.datetime.now()
@@ -103,6 +100,8 @@ class DataHandlerMultiBehavior:
         colsum = np.array(adj.sum(0))
         colsum_diag = sp.diags(np.power(colsum+1e-8, -0.5).flatten())
         return adj
+        return rowsum_diag*adj
+        return adj*colsum_diag
 
 
     def _matrix_to_tensor(self, cur_matrix):
@@ -115,13 +114,15 @@ class DataHandlerMultiBehavior:
         return torch.sparse.FloatTensor(indices, values, shape).to(torch.float32).cuda()  
 
     def load_data(self):  
+        self._load_data()
         configs['data']['user_num'], configs['data']['item_num'] = self.trn_mat.shape
+        tst_data = AllRankTstData(self.tst_mat, self.trn_mat)
         # self.torch_adj = self._make_torch_adj(self.trn_mat)  # TODO
         train_u, train_v = self.trn_mat.nonzero()
         train_data = np.hstack((train_u.reshape(-1,1), train_v.reshape(-1,1))).tolist()
         train_dataset = RecDatasetBeh(self.behaviors, train_data, self.item_num, self.behaviors_data, True)
         self.train_dataloader = dataloader.DataLoader(train_dataset, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=4, pin_memory=True)
-        self.test_dataloader = dataloader.DataLoader(self.tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
+        self.test_dataloader = dataloader.DataLoader(tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
 
 
 
