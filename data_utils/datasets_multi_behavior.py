@@ -4,10 +4,8 @@ from config.configurator import configs
 import numpy as np
 
 
-
-class RecDataset_beh(data.Dataset):
+class RecDatasetBeh(data.Dataset):
     def __init__(self, beh, data, num_item, behaviors_data=None, num_ng=1, is_training=True):  
-        super(RecDataset_beh, self).__init__()
 
         self.data = np.array(data)
         self.num_item = num_item
@@ -73,30 +71,6 @@ class RecDataset_beh(data.Dataset):
             return user, item_i, item_j
         else:  
             return user, item_i
-
-
-class PairwiseTrnData(data.Dataset):
-	def __init__(self, coomat):
-		self.rows = coomat.row
-		self.cols = coomat.col
-		self.dokmat = coomat.todok()
-		self.negs = np.zeros(len(self.rows)).astype(np.int32)
-	
-	def sample_negs(self):
-		for i in range(len(self.rows)):
-			u = self.rows[i]
-			while True:
-				iNeg = np.random.randint(configs['data']['item_num'])
-				if (u, iNeg) not in self.dokmat:
-					break
-			self.negs[i] = iNeg
-	
-	def __len__(self):
-		return len(self.rows)
-
-	def __getitem__(self, idx):
-		return self.rows[idx], self.cols[idx], self.negs[idx]
-	
 
 class AllRankTstData(data.Dataset):
 	def __init__(self, coomat, trn_mat):
