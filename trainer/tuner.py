@@ -14,6 +14,7 @@ class Tuner(object):
         self.hex_length = [1 for _ in range(len(self.tune_list))]
         for i in range(len(self.para_length) - 2, -1, -1):
             self.hex_length[i] = self.para_length[i + 1] * self.hex_length[i + 1]
+        self.origin_model_para = configs['model'].copy()
 
     def zero_step(self):
         self.now_step = 0
@@ -46,3 +47,5 @@ class Tuner(object):
             del model
             torch.cuda.empty_cache()
             self.step()
+        configs['model'] = self.origin_model_para.copy()
+

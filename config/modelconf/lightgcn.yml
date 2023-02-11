@@ -19,7 +19,9 @@ test:
   batch_size: 1024 # How many users per batch during validation
 
 data:
+  type: general_cf # choose in {general_cf, multi_behavior, sequential, social}
   name: yelp
+
 
 model:
   name: lightgcn # case-insensitive

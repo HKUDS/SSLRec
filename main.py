@@ -1,13 +1,13 @@
 from trainer.trainer import *
 from models.bulid_model import *
 from trainer.logger import *
-from data_utils.data_handler_general_cf import *
+from data_utils.build_data_handler import *
 from trainer.tuner import *
 
 def main():
     # First Step: Create data_handler
     init_seed()
-    data_handler = DataHandler()
+    data_handler = build_data_handler()
     data_handler.load_data()
 
     # Second Step: Create model
@@ -28,7 +28,7 @@ def main():
 def tune():
     # First Step: Create data_handler
     init_seed()
-    data_handler = DataHandler()
+    data_handler = build_data_handler()
     data_handler.load_data()
 
     # Second Step: Create logger
