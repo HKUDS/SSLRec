@@ -2,6 +2,7 @@ from trainer.trainer import *
 from models.bulid_model import *
 from trainer.logger import *
 from data_utils.build_data_handler import *
+from trainer.build_trainer import *
 from trainer.tuner import *
 
 def main():
@@ -17,7 +18,7 @@ def main():
     logger = Logger()
 
     # Fourth Step: Create trainer
-    trainer = Trainer(data_handler, logger)
+    trainer = build_trainer(data_handler, logger)
 
     # Fifth Step: training
     trainer.train(model)
@@ -38,7 +39,7 @@ def tune():
     tuner = Tuner(logger)
 
     # Fourth Step: Create trainer
-    trainer = Trainer(data_handler, logger)
+    trainer = build_trainer(data_handler, logger)
 
     # Fifth Step: Start grid search
     tuner.grid_search(data_handler, trainer)

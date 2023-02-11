@@ -13,9 +13,7 @@ import torch.utils.data as data
 from data_utils.datasets_general_cf import PairwiseTrnData, AllRankTstData
 from config.configurator import configs
 
-
-
-class DataHandler:
+class DataHandlerMultiBehavior:
     def __init__(self):
         if configs['data']['name'] == 'ijcai_15':
             predir = './datasets/ijcai_15/'

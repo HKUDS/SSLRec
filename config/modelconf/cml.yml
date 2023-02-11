@@ -26,6 +26,7 @@ train:
   reg: 1e-3
   beta: 0.005
   patience: 100  #early stop
+  trainer: cml_trainer
 
 test:
   metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
