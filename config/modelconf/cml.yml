@@ -1,0 +1,58 @@
+optimizer:
+  name: adam
+  lr: 3e-4 # not 1e-3
+  weight_decay: 0
+  opt_base_lr: 1e-3
+  opt_max_lr: 2e-3
+  opt_weight_decay: 1e-4
+  meta_opt_base_lr: 1e-4
+  meta_opt_max_lr: 1e-3
+  meta_opt_weight_decay: 1e-4
+  meta_lr: 1e-3
+  decay: 0.96
+
+train:
+  epoch: 300
+  batch_size: 8192
+  save_model: true
+  loss: pairwise # bpr
+  test_step: 5 # evaluate per {test_step} epochs
+  #pretrain_path: ./checkpoint/xxxx.pth
+  reproducible: ture
+  seed: 2023
+  sampNum: 10
+  meta_batch: 128
+  SSL_batch: 30
+  reg: 1e-3
+  beta: 0.005
+  inner_product_mult: 1
+  patience: 100  #early stop
+
+test:
+  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
+  k: [10, 20, 40] # top-k, i.e., shoot
+  batch_size: 1024 # How many users per batch during validation
+
+data:
+  name: IJCAI_15
+
+model:
+  name: lightgcn # case-insensitive
+  keep_rate: 0.5
+  layer_num: 2
+  reg_weight: 1.0e-2
+  embedding_size: 32
+  hidden_dim: 16
+  gnn_layer: 3
+  drop_rate: 0.8
+  drop_rate1: 0.5
+  slope: 0.1
+  target: 'buy'
+
+tune:
+  enable: false # Whether to enable grid search to search for optimal hyperparameters
+  hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
+  layer_num: [1, 2, 3] # Use a list to store the search range
+  reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
+
+
