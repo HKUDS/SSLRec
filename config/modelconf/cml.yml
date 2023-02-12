@@ -35,7 +35,7 @@ test:
 
 data:
   type: multi_behavior # choose in {general_cf, multi_behavior, sequential, social}
-  name: ijcai_15
+  name: retail_rocket  ## choose in {tmall, ijcai_15, retail_rocket}
 
 model:
   name: cml # case-insensitive
