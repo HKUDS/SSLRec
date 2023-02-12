@@ -34,7 +34,7 @@ test:
   batch_size: 1024 # How many users per batch during validation
 
 data:
-  type: multi_behavior # choose in {general_cf, multi_behavior, sequential, social}
+  type: cml # choose in {general_cf, multi_behavior, sequential, social}
   name: retail_rocket  ## choose in {tmall, ijcai_15, retail_rocket}
 
 model:
