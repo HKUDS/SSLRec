@@ -29,11 +29,11 @@ class CML(BaseModel):
 
         self.userNum = data_handler.userNum
         self.itemNum = data_handler.itemNum
-        self.behavior = data_handler.behavior
+        self.behavior = data_handler.behaviors
         self.behavior_mats = data_handler.behavior_mats
         
-        self.embedding_dict = self.init_embedding() 
-        self.weight_dict = self.init_weight()
+        self.embedding_dict = self._init_embedding() 
+        self.weight_dict = self._init_weight()
         self.gcn = GCN(self.userNum, self.itemNum, self.behavior, self.behavior_mats)
 
     def _init_embedding(self):
