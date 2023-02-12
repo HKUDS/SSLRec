@@ -4,7 +4,7 @@ from config.configurator import configs
 import numpy as np
 
 
-class MultiBehaviorData(data.Dataset):
+class CMLData(data.Dataset):
     def __init__(self, beh, data, num_item, behaviors_data=None, num_ng=1, is_training=True):
 
         self.data = np.array(data)
