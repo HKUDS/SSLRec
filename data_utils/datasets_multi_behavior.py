@@ -4,7 +4,7 @@ from config.configurator import configs
 import numpy as np
 
 
-class RecDatasetBeh(data.Dataset):
+class MultiBehaviorData(data.Dataset):
     def __init__(self, beh, data, num_item, behaviors_data=None, num_ng=1, is_training=True):
 
         self.data = np.array(data)
@@ -71,7 +71,7 @@ class RecDatasetBeh(data.Dataset):
             return user, item_i
 
 
-class AllRankTstData(data.Dataset):
+class AllRankTestData(data.Dataset):
     def __init__(self, coomat, trn_mat):
         self.csrmat = (trn_mat.tocsr() != 0) * 1.0
 
