@@ -9,11 +9,11 @@ import scipy.sparse as sp
 from scipy.sparse import *
 import torch
 import torch.utils.data as dataloader
-from data_utils.datasets_multi_behavior import MultiBehaviorData, AllRankTestData
+from data_utils.datasets_multi_behavior import CMLData, AllRankTestData
 from config.configurator import configs
 
 
-class DataHandlerMultiBehavior:
+class DataHandlerCML:
     def __init__(self):
         if configs['data']['name'] == 'ijcai_15':
             predir = './datasets/ijcai_15/'
@@ -117,7 +117,7 @@ class DataHandlerMultiBehavior:
         # self.torch_adj = self._make_torch_adj(self.train_mat)  # TODO
         train_u, train_v = self.train_mat.nonzero()
         train_data = np.hstack((train_u.reshape(-1,1), train_v.reshape(-1,1))).tolist()
-        train_dataset = MultiBehaviorData(self.behaviors, train_data, self.item_num, self.behaviors_data, True)
+        train_dataset = CMLData(self.behaviors, train_data, self.item_num, self.behaviors_data, True)
         self.train_dataloader = dataloader.DataLoader(train_dataset, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=4, pin_memory=True)
         self.test_dataloader = dataloader.DataLoader(test_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
 
