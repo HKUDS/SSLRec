@@ -18,15 +18,12 @@ class DataHandlerMultiBehavior:
         if configs['data']['name'] == 'ijcai_15':
             predir = './datasets/ijcai_15/'
             self.behaviors = ['click','fav', 'cart', 'buy']
-            self.behaviors_SSL = ['click','fav', 'cart', 'buy']
         elif configs['data']['name'] == 'tmall':
             predir = './datasets/tmall/'
             self.behaviors_SSL = ['pv','fav', 'cart', 'buy']
-            self.behaviors = ['pv','fav', 'cart', 'buy']
         elif configs['data']['name'] == 'retail_rocket':
             predir = './datasets/retail_rocket/'
             self.behaviors = ['view','cart', 'buy']
-            self.behaviors_SSL = ['view','cart', 'buy']
 
         self.trn_file = predir + 'train_mat_'  # train_mat_buy.pkl 
         self.val_file = predir + 'test_mat.pkl'
@@ -70,7 +67,7 @@ class DataHandlerMultiBehavior:
         self.userNum = self.behaviors_data[0].shape[0]
         self.itemNum = self.behaviors_data[0].shape[1]
         # self.behavior = None
-        self.behavior_mats = self._data2mat()
+        self._data2mat()
 
     def _data2mat(self):
         time = datetime.datetime.now()
