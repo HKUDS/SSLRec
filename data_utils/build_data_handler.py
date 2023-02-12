@@ -6,6 +6,8 @@ def build_data_handler():
         data_handler = DataHandlerGeneralCF()
     elif configs['data']['type'] == 'multi_behavior':
         data_handler = DataHandlerMultiBehavior()
+    elif configs['data']['type'] == 'social_cf':
+        data_handler = DataHandlerSocialCF()
     else:
         raise NotImplementedError
 
