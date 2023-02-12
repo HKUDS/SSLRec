@@ -1,5 +1,6 @@
 import torch 
 from torch import nn
+from torch.nn import init
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
@@ -93,7 +94,7 @@ class CML(BaseModel):
         return loss, losses
 
     def full_predict(self, batch_data):
-        user_embeds, item_embeds = self.forward(self.adj, 1.0)
+        user_embeds, item_embeds, _, _ = self.forward()
         self.is_training = False
         pck_users, train_mask = batch_data
         pck_users = pck_users.long()
@@ -158,9 +159,9 @@ class GCN(nn.Module):
         self.act = torch.nn.PReLU()
         self.dropout = torch.nn.Dropout(configs['model']['drop_rate']) 
 
-        self.gnn_layer = eval(configs['model']['gnn_layer']) 
+        self.gnn_layer = configs['model']['gnn_layer'] 
         self.layers = nn.ModuleList()
-        for i in range(0, len(self.gnn_layer)):  
+        for i in range(0, self.gnn_layer):  
             self.layers.append(GCNLayer(configs['model']['hidden_dim'], configs['model']['hidden_dim'], self.userNum, self.itemNum, self.behavior, self.behavior_mats))  
 
     def init_embedding(self):
@@ -173,14 +174,14 @@ class GCN(nn.Module):
 
     def init_weight(self):
         alpha = nn.Parameter(torch.ones(2))  
-        i_concatenation_w = nn.Parameter(torch.Tensor(len(eval(configs['model']['gnn_layer']))*configs['model']['hidden_dim'], configs['model']['hidden_dim']))
-        u_concatenation_w = nn.Parameter(torch.Tensor(len(eval(configs['model']['gnn_layer']))*configs['model']['hidden_dim'], configs['model']['hidden_dim']))
+        i_concatenation_w = nn.Parameter(torch.Tensor(configs['model']['gnn_layer']*configs['model']['hidden_dim'], configs['model']['hidden_dim']))
+        u_concatenation_w = nn.Parameter(torch.Tensor(configs['model']['gnn_layer']*configs['model']['hidden_dim'], configs['model']['hidden_dim']))
         i_input_w = nn.Parameter(torch.Tensor(configs['model']['hidden_dim'], configs['model']['hidden_dim']))
         u_input_w = nn.Parameter(torch.Tensor(configs['model']['hidden_dim'], configs['model']['hidden_dim']))
-        init.xavier_uniform_(i_concatenation_w)
-        init.xavier_uniform_(u_concatenation_w)
-        init.xavier_uniform_(i_input_w)
-        init.xavier_uniform_(u_input_w)
+        nn.init.xavier_uniform_(i_concatenation_w)
+        nn.init.xavier_uniform_(u_concatenation_w)
+        nn.init.xavier_uniform_(i_input_w)
+        nn.init.xavier_uniform_(u_input_w)
         # init.xavier_uniform_(alpha)
 
         return alpha, i_concatenation_w, u_concatenation_w, i_input_w, u_input_w
@@ -234,8 +235,8 @@ class GCNLayer(nn.Module):
         self.i_w = nn.Parameter(torch.Tensor(in_dim, out_dim))
         self.u_w = nn.Parameter(torch.Tensor(in_dim, out_dim))
         self.ii_w = nn.Parameter(torch.Tensor(in_dim, out_dim))
-        init.xavier_uniform_(self.i_w)
-        init.xavier_uniform_(self.u_w)
+        nn.init.xavier_uniform_(self.i_w)
+        nn.init.xavier_uniform_(self.u_w)
 
     def forward(self, user_embedding, item_embedding):
 
