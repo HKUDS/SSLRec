@@ -45,6 +45,8 @@ class CMLTrainer(Trainer):
         print("end_ng_samp:  ", time)
         
         epoch_loss = 0
+        # # for recording loss
+        # loss_log_dict = {}
     
         #prepare
         self.behavior_loss_list = [None]*len(self.data_handler.behaviors)      
@@ -179,9 +181,17 @@ class CMLTrainer(Trainer):
             nn.utils.clip_grad_norm_(model.parameters(), max_norm=20, norm_type=2)
             self.opt.step()
 
+            # # record loss
+            # for loss_name in loss_dict:
+            #     _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
+            #     if loss_name not in loss_log_dict: loss_log_dict[loss_name] = _loss_val
+            #     else: loss_log_dict[loss_name] += _loss_val
+
+
             cnt+=1
 
-        return epoch_loss, user_embed, item_embed, user_embeds, item_embeds
+        # # log
+        # self.logger.log_loss(epoch_idx, loss_log_dict)
 
 
     def _innerProduct(self, u, i, j):  
