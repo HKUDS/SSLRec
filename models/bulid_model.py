@@ -6,7 +6,10 @@ def build_model(data_handler):
         model = LightGCN(data_handler)
     elif configs['model']['name'] == 'sgl':
         model = SGL(data_handler)
+    elif configs['model']['name'] == 'cml':
+        model = CML(data_handler)
     else:
         raise NotImplementedError
 
     return model
+
