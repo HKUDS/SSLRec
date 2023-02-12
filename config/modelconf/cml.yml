@@ -1,14 +1,14 @@
 optimizer:
   name: adam
-  lr: 3e-4 # not 1e-3
+  lr: 3.e-4 # not 1e-3
   weight_decay: 0
-  opt_base_lr: 1e-3
-  opt_max_lr: 2e-3
-  opt_weight_decay: 1e-4
-  meta_opt_base_lr: 1e-4
-  meta_opt_max_lr: 1e-3
-  meta_opt_weight_decay: 1e-4
-  meta_lr: 1e-3
+  opt_base_lr: 1.e-3
+  opt_max_lr: 2.e-3
+  opt_weight_decay: 1.e-4
+  meta_opt_base_lr: 1.e-4
+  meta_opt_max_lr: 1.e-3
+  meta_opt_weight_decay: 1.e-4
+  meta_lr: 1.e-3
   decay: 0.96
 
 train:
@@ -23,7 +23,7 @@ train:
   sampNum: 10
   meta_batch: 128
   SSL_batch: 30
-  reg: 1e-3
+  reg: 1.e-3
   beta: 0.005
   patience: 100  #early stop
   trainer: cml_trainer
