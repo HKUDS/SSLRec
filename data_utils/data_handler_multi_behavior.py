@@ -57,7 +57,7 @@ class DataHandlerMultiBehavior:
                 if data.data.min() < self.t_min:
                     self.t_min = data.data.min()
 
-                if self.behaviors[i]==configs['model']['target']:  
+                if self.behaviors[i] == configs['model']['target']:
                     self.trn_mat = data  
                     self.trainLabel = 1*(self.trn_mat != 0)  
                     self.labelP = np.squeeze(np.array(np.sum(self.trainLabel, axis=0)))  
