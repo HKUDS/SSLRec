@@ -1,4 +1,5 @@
 from .trainer import *
+from .trainer_cml import *
 from config.configurator import configs
 
 def build_trainer(data_handler, logger):
