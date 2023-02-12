@@ -41,6 +41,7 @@ For acquainted users who wish to learn more, read the [User Guide](), which expl
 + How to implement your own model using SSLRec
 + How to deploy your own datasets in SSLRec
 + How to implement your own training process in SSLRec
++ How to tune hyper-parameters automatically in SSLRec
 
 and so on.
 
