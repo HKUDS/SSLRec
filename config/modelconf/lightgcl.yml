@@ -1,0 +1,37 @@
+optimizer:
+  name: adam
+  lr: 1.0e-4
+  weight_decay: 1.0e-4
+
+train:
+  epoch: 100
+  batch_size: 256
+  save_model: true
+  loss: pairwise # bpr
+  test_step: 5 # evaluate per {test_step} epochs
+  #pretrain_path: ./checkpoint/xxxx.pth
+  reproducible: ture
+  seed: 2023
+
+test:
+  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
+  k: [10, 20, 40] # top-k
+  batch_size: 256 # How many users per batch during validation
+
+data:
+  name: amazon
+
+model:
+  name: lightgcl # case-insensitive
+  dropout: 0
+  layer_num: 2
+  reg_weight: 1.0e-7
+  temp: 0.5
+  embedding_size: 32
+  svd_q: 5
+
+tune:
+  enable: true # Whether to enable grid search to search for optimal hyperparameters
+  hyperparameters: [temp, reg_weight] # The name of the hyperparameter
+  temp: [0.1, 0.3, 1,  3] # Use a list to store the search range
+  reg_weight: [1.0e-5, 1.0e-6, 1.0e-7,1.0e-8]
