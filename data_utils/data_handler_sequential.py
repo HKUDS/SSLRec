@@ -28,7 +28,7 @@ class DataHandlerSequential:
                 if len(seq) >= self.max_seq_len:
                     seq = seq[:self.max_seq_len]
                 else:
-                    seq = seq + [0] * (self.max_seq_len - len(seq))
+                    seq = [0] * (self.max_seq_len - len(seq)) + seq
                 user_seqs["uid"].append(int(uid))
                 user_seqs["item_seq"].append(seq)
                 user_seqs["item_id"].append(int(last_item))
