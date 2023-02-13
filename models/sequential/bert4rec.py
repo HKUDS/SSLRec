@@ -37,7 +37,7 @@ class BERT4Rec(BaseModel):
         self.mask_token = self.item_num + 1
 
         self.emb_layer = BERTEmbLayer(
-            self.item_num + 1, self.emb_size, self.max_len)
+            self.item_num + 2, self.emb_size, self.max_len)
 
         self.n_layers = configs['model']['n_layers']
         self.n_heads = configs['model']['n_heads']
@@ -117,8 +117,9 @@ class BERT4Rec(BaseModel):
         logits = self.out_fc(logits)
         # B, T, E -> B*T, E
         logits = logits.view(-1, logits.size(-1))
-        loss = self.loss_func(logits, masked_items.view(-1))
-        return loss
+        loss = self.loss_func(logits, masked_items.reshape(-1))
+        loss_dict = {'rec_loss': loss.item()}
+        return loss, loss_dict
 
     def full_predict(self, batch_data):
         batch_user, batch_seqs, _ = batch_data
