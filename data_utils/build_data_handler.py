@@ -6,8 +6,8 @@ def build_data_handler():
         data_handler = DataHandlerGeneralCF()
     elif configs['data']['type'] == 'cml':
         data_handler = DataHandlerCML()
-    elif configs['data']['type'] == 'social_cf':
-        data_handler = DataHandlerSocialCF()
+    elif configs['data']['type'] == 'social':
+        data_handler = DataHandlerSocial()
     else:
         raise NotImplementedError
 

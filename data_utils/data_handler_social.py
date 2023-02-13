@@ -7,7 +7,7 @@ from data_utils.datasets_general_cf import PairwiseTrnData, AllRankTstData
 import torch as t
 import torch.utils.data as data
 
-class DataHandlerSocialCF:
+class DataHandlerSocial:
 	def __init__(self):
 		if configs['data']['name'] == 'ciao':
 			predir = './datasets/social_ciao/'
