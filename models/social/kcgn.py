@@ -45,18 +45,42 @@ class KCGN(BaseModel):
 	def _propagate(self, adj, embeds):
 		return t.spmm(adj, embeds)
 	
-	def forward(self, adj, keep_rate):
+	def forward(self, graph, time_seq, out_dim, r_class=5):
 		if not self.is_training:
-			return self.final_embeds[:self.user_num], self.final_embeds[self.user_num:]
-		embeds = t.concat([self.user_embeds, self.item_embeds], axis=0)
-		embeds_list = [embeds]
-		adj = self.edge_dropper(adj, keep_rate)
-		for i in range(self.layer_num):
-			embeds = self._propagate(adj, embeds_list[-1])
-			embeds_list.append(embeds)
-		embeds = sum(embeds_list) / len(embeds_list)
-		self.final_embeds = embeds
-		return embeds[:self.user_num], embeds[self.user_num:]
+			return self.final_user_embeds, self.final_item_embeds
+		all_user_embeds = [self.user_embeds]
+		all_item_embeds = [self.item_embeds]
+		if len(self.layer) == 0:
+			item_embeds = self.item_embeds.view(-1, r_class, out_dim)
+			ret_item_embeds = t.div(t.sum(item_embeds, dim=1), r_class)
+			return self.user_embeds, ret_item_embeds
+		edge_feat = self.t_e(time_seq)
+
+		for i, layer in enumerate(self.layers):
+			if i == 0:
+				embeds = layer(graph, self.user_embeds, self.item_embeds, edge_feat)
+			else:
+				embeds = layer(graph, embeds[: self.user_num], embeddings[self.user_num: ], edge_feat)
+			
+			norm_embeds = F.normalize(embeds, p=2, dim=1)
+			all_user_embeds += [norm_embeds[: self.user_num]]
+			all_item_embeds += [norm_embeds[self.user_num: ]]
+
+		user_embeds = t.cat(all_user_embeds, 1)
+		item_embeds = t.cat(all_item_embeds, 1)
+		if r_class == 1:
+			return user_embeds, item_embeds
+		item_embeds = item_embeds.view(-1, r_class, out_dim)
+
+		if self.fuse == "mean":
+			ret_item_embeds = t.div(t.sum(item_embeds, dim=1), r_class)
+		elif self.fuse == "weight":
+			weight = t.softmax(self.w, dim=1)
+			item_embeds = item_embeds * weight
+			ret_item_embeds = t.sum(item_embeds, dim=1)
+		self.final_user_embeds = user_embeds
+		self.final_item_embeds = item_embeds
+		return user_embeds, item_embeds
 	
 	def cal_loss(self, batch_data):
 		self.is_training = True
