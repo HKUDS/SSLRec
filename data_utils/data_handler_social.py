@@ -203,4 +203,3 @@ class DataHandlerSocial:
 									idtype=t.int32,
 									num_nodes=multi_adj_time_norm.shape[0],
 									device=t.device('cuda'))
-			

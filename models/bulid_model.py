@@ -12,6 +12,8 @@ def build_model(data_handler):
         model = CML(data_handler)
     elif configs['model']['name'] == 'smin':
         model = SMIN(data_handler)
+    elif configs['model']['name'] == 'kcgn':
+        model = KCGN(data_handler)
     elif configs['model']['name'] == 'mmclr':
         model = MMCLR(data_handler)
     else:

@@ -1,5 +1,6 @@
 import torch as t
 from torch import nn
+from torch.nn import init
 import dgl.function as fn
 from config.configurator import configs
 
@@ -118,3 +119,48 @@ class GCN(nn.Module):
         h = features
         h = self.layer(self.g, h)
         return h
+
+class GCNLayer(nn.Module):
+    def __init__(self,
+                in_feats,
+                out_feats,
+                weight=True,
+                bias=False,
+                activation=None):
+        super(GCNLayer, self).__init__()
+        self.bias = bias
+        self._in_feats = in_feats
+        self._out_feats = out_feats
+        self.weight = weight
+        if self.weight:
+            self.u_w = nn.Parameter(t.Tensor(in_feats, out_feats))
+            self.v_w = nn.Parameter(t.Tensor(in_feats, out_feats))
+            init.xavier_uniform_(self.u_w)
+            init.xavier_uniform_(self.v_w)
+        self._activation = activation
+    
+    def forward(self, graph, u_f, v_f, e_f):
+        with graph.local_scope():
+            if self.weight:
+                u_f = t.mm(u_f, self.u_w)
+                v_f = t.mm(v_f, self.v_w)
+            node_f = t.cat([u_f, v_f], dim=0)
+            degs = graph.out_degrees().to(u_f.device).float().clamp(min=1)
+            norm = t.pow(degs, -0.5).view(-1, 1)
+
+            node_f = node_f * norm
+
+            graph.ndata['n_f'] = node_f
+            graph.edata['e_f'] = e_f
+            graph.update_all(message_func=message_func, reduce_func=fn.sum(msg='m', out='n_f'))
+
+            rst = graph.ndata['n_f']
+
+            degs = graph.in_degrees().to(u_f.device).float().clamp(min=1)
+            norm = t.pow(degs, -0.5).view(-1, 1)
+            rst = rst * norm
+
+            if self._activation is not None:
+                rst = self._activation(rst)
+
+            return rst
