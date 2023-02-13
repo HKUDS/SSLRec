@@ -115,11 +115,6 @@ class Trainer(object):
             self.logger.log("Load model parameters from {}".format(pretrain_path))
 
 
-
-
-
-
-
 class CMLTrainer(Trainer):
     def __init__(self, data_handler, logger):
         super(CMLTrainer, self).__init__(data_handler, logger)
@@ -456,4 +451,4 @@ class MMCLRTrainer(Trainer):
             loss.backward()
             self.optimizer.step()
 
-            
+

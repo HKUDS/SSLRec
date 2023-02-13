@@ -19,7 +19,8 @@ test:
   batch_size: 256 # How many users per batch during validation
 
 data:
-  name: amazon
+  type: general_cf
+  name: yelp
 
 model:
   name: lightgcl # case-insensitive
