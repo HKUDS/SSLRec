@@ -138,13 +138,13 @@ class DataHandlerSocial:
 			ii_mat = uu_vv_graph['II'].astype(bool)
 		
 			uu_mat_edge_src, uu_mat_edge_dst = uu_mat.nonzero()
-			uu_graph = dgl.graph(data=(uu_mat_edge_src, uu_mat_edge_dst),
+			self.uu_graph = dgl.graph(data=(uu_mat_edge_src, uu_mat_edge_dst),
 							idtype=t.int32,
 							num_nodes=uu_mat.shape[0],
 							device=t.device('cuda'))
 
 			ii_mat_edge_src, ii_mat_edge_dst = ii_mat.nonzero()
-			ii_graph = dgl.graph(data=(ii_mat_edge_src, ii_mat_edge_dst),
+			self.ii_graph = dgl.graph(data=(ii_mat_edge_src, ii_mat_edge_dst),
 							idtype=t.int32,
 							num_nodes=ii_mat.shape[0],
 							device=t.device('cuda'))
