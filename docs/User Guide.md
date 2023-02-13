@@ -1,11 +1,11 @@
 # User Guide
-The user guide contains the following content, you can quickly jump to the corresponding section
+The user guide contains the following content, you can quickly jump to the corresponding section.
 
 + Architecture Design of SSLRec
 
 ## Architecture Design of SSLRec
 SSLRec is a unified self-supervised recommendation algorithm framework, 
-which includes the following 6 main basic classes.
+which includes the following 5 main parts.
 ### DataHandler
 **DataHandler** is used to read the raw data, perform data preprocessing (such as converting to a sparse matrix format), and finally organize the data into a DataLoader for training and testing.
 In our design, it contains two important functions:
@@ -27,9 +27,22 @@ It has four necessary functions:
 + ```__init__()```: It stores the hyper-parameter settings from user configuration as the attribute of the model, and initializes trainable parameters (e.g., user embeddings).
 + ```forward()```: It performs the model-specific forward process, such as message passing and aggregation in graph-based methods.
 + ```cal_loss(batch_data)```: The input ```batch_data (tuple)``` is a batch of training samples provided by ```train_loader```. 
-  This function calculates the loss function defined by the model and has two return values: (1)```loss (0-d torch.Tensor)``` : the overall weighted loss, (2)```losses (dict)``` dict for specific terms of losses for printing.
+  This function calculates the loss function defined by the model and has two return values: (1) ```loss (0-d torch.Tensor)``` : the overall weighted loss, (2) ```losses (dict)``` dict for specific terms of losses for printing.
 + ```full_predict(batch_data)```: The input ```batch_data (tuple)``` is the data in a test batch (e.g., ```batch_users``` (the tested users in this batch) and ```train_mask``` (training items of those users)). 
   This function return a prediction tensor ```full_pred (torch.Tensor)``` for all-rank evaluation.
 
 You can get a more detailed understanding by reading the source code of [LightGCN](https://github.com/HKUDS/SSLRec/blob/main/models/general_cf/lightgcn.py).
 
+### Trainer
+**Trainer** provides a unified process of training, testing and storing model parameters. 
+Using a unified trainer for different models can ensure the fairness of comparison. Our trainer including the following six functions:
++ ```create_optimizer(model)```: It creates the optimizer (e.g., ```torch.optim.Adam```) according to the configuration.
++ ```train_epoch(model, epoch_idx)```: It performs one epoch training, including calculating loss, optimizing parameters and printing the losses.
++ ```save_model(model)```: It saves the model parameters as a ```pth``` file.
++ ```load_model(model)```: It loads the model parameters from a ```pth``` file.
++ ```evaluate(model)```: It evaluates the model on test/validation set and return the results of selected metrics according to the configuration.
++ ```train(model)```: It conducts the whole training, testing and saving process.
+
+Sometimes, some models may use different training process during one epoch. 
+We recommend only overwriting the ```train_epoch(model, epoch_idx)``` to ensure a fair comparison.
+You can read [Create My Own Trainer]() for more details.
