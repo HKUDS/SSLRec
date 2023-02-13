@@ -1,9 +1,12 @@
 # User Guide
 The user guide contains the following content, you can quickly jump to the corresponding section.
 
-+ [Architecture Design of SSLRec](#Architecture Design of SSLRec)
-+ [Create My Own Model](#Create My Own Model)
-+ [Create My Own DataHandler and Dataset](#Create My Own DataHandler and Dataset)
++ Architecture Design of SSLRec
++ Create My Own Model
++ Create My Own DataHandler and Dataset
++ Create My Own Trainer
++ Create My Own Configuration
++ Tune My Model
 
 ## Architecture Design of SSLRec
 SSLRec is a unified self-supervised recommendation algorithm framework, 
@@ -102,7 +105,18 @@ If you need different sampling methods, you can code your own ```Dataset``` in `
 And modify the ```load_data()``` function in ```DataHandler``` to choose your own ```Dataset``` by configuration.
 
 ## Create My Own Trainer
+SSLRec provides a unified training process for different models in order to compare different models fairly. 
+Generally, you only build your own ```Trainer``` when you need to perform some additional operations (e.g., fix parameters) during the training epoch.
+You can follow the 3 steps below to create your own ```Trainer```.
 
+**First**, create your own ```Trainer``` class in ```trainer/trainer.py```, which inherit the original ```Trainer``` class.
+Then, you need to overwrite the ```train_epoch()``` function to perform your specific training operations in one epoch.
+
+**Second**, in the {model_name}.yml, specify your trainer through the key of ```trainer``` in ```train```, 
+and the recommended value is ```{model_name}_trainer```. 
+You can refer to [cml.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/cml.yml), which uses its own trainer.
+
+**Third**, import your ```Trainer``` in ```trainer/__init__.py``` and add additional selection codes in ```trainer/build_trainer.py```.
 
 ## Create My Own Configuration
 
