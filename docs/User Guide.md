@@ -1,9 +1,9 @@
 # User Guide
 The user guide contains the following content, you can quickly jump to the corresponding section.
 
-+ Architecture Design of SSLRec
-+ Create My Own Model
-+ Create My Own DataHandler and Dataset
++ [Architecture Design of SSLRec](#Architecture Design of SSLRec)
++ [Create My Own Model](#Create My Own Model)
++ [Create My Own DataHandler and Dataset](#Create My Own DataHandler and Dataset)
 
 ## Architecture Design of SSLRec
 SSLRec is a unified self-supervised recommendation algorithm framework, 
@@ -102,3 +102,9 @@ If you need different sampling methods, you can code your own ```Dataset``` in `
 And modify the ```load_data()``` function in ```DataHandler``` to choose your own ```Dataset``` by configuration.
 
 ## Create My Own Trainer
+
+
+## Create My Own Configuration
+
+
+## Tune My Model
