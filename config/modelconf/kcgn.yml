@@ -1,11 +1,11 @@
 optimizer:
   name: adam
-  lr: 5.0e-2 # not 1e-3
-  weight_decay: 0.97
+  lr: 1.0e-2 # not 1e-3
+  weight_decay: 0.98
 
 train:
-  epoch: 400
-  batch_size: 8192
+  epoch: 180
+  batch_size: 2048
   save_model: true
   loss: pairwise # bpr
   test_step: 5 # evaluate per {test_step} epochs
@@ -16,25 +16,23 @@ train:
 test:
   metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
   k: [10, 20, 40] # top-k
-  batch_size: 1024 # How many users per batch during validation
+  batch_size: 2048 # How many users per batch during validation
 
 data:
   type: social # choose in {general_cf, multi_behavior, sequential, social}
-  name: ciao
-
+  name: yelp
 
 model:
   name: smin # case-insensitive
   layer_num: 2
   reg_weight: 5.0e-2
-  embedding_size: 16
-  user_graph_indx: uu_uiu_uitiu
-  item_graph_indx: iui_iti
-  gcn_act: prelu
-  informax: 1
-  lambda1: 0.06
-  lambda2: 0.002
-  k_hop_num: 2
+  embedding_size: 64
+  slope: 0.4
+  fuse: mean
+  dgi_graph_act: sigmoid
+  lam: [0.1,0.001]
+  sub_node: 10
+  time_step: 360
 
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters

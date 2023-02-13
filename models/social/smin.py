@@ -16,7 +16,6 @@ class SMIN(BaseModel):
 		super(SMIN, self).__init__(data_handler)
 		self.layer_num = configs['model']['layer_num']
 		self.reg_weight = configs['model']['reg_weight']
-		self.keep_rate = configs['model']['keep_rate']
 		self.user_graph_indx = configs['model']['user_graph_indx']
 		self.item_graph_indx = configs['model']['item_graph_indx']
 		self.gcn_act = configs['model']['gcn_act']
