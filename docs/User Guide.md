@@ -22,7 +22,7 @@ For example, in General Collaborative Filtering, we provide [PairwiseTrnData](ht
 and provide [AllRankTstData](https://github.com/HKUDS/SSLRec/blob/main/data_utils/datasets_general_cf.py) for ```test_dataloader``` to achieve All-rank evaluation.
 
 ### Model
-**Model** inherits the BasicModel class inherits the [BasicModel](https://github.com/HKUDS/SSLRec/blob/main/models/base_model.py) class to implement various self-supervised recommendation algorithms in different scenarios.
+**Model** inherits the [BasicModel](https://github.com/HKUDS/SSLRec/blob/main/models/base_model.py) class to implement various self-supervised recommendation algorithms in different scenarios.
 It has four necessary functions:
 + ```__init__()```: It stores the hyper-parameter settings from user configuration as the attribute of the model, and initializes trainable parameters (e.g., user embeddings).
 + ```forward()```: It performs the model-specific forward process, such as message passing and aggregation in graph-based methods.
