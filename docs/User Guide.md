@@ -119,6 +119,35 @@ You can refer to [cml.yml](https://github.com/HKUDS/SSLRec/blob/main/config/mode
 **Third**, import your ```Trainer``` in ```trainer/__init__.py``` and add additional selection codes in ```trainer/build_trainer.py```.
 
 ## Create My Own Configuration
+After you have created your own model, you need to create a ```{model_name}.yml``` file for your model in ```config/modelconf```.
+The content of the configuration file must follow the following format:
+```yaml
+optimizer: # to define the optimizer
+  name: # name of the optimizer, e.g., adam
+  lr: # learning rate
+  ... # other parameters, such as weight_decay for adam optimizer
 
+train: # to define the training process
+  epoch: # total number of training epochs
+  batch_size: # the size of each batch
+  loss: # It is used to define the Dataset for training in load_data() function from DataHandler
+  test_step: # evaluate per {test_step} epochs
+  reproducible: # {true, false}, whether to fix random seed
+  seed: # random seed
+
+test:
+  metrics:  # list, choose in {ndcg, recall, precision, mrr}
+  k: # list, top-k
+  batch_size: # How many users per batch during validation
+
+data:
+  type: # choose in {general_cf, multi_behavior, sequential, social}
+  name: # the name of the raw data, such as yelp
+
+
+model:
+  name: # case-insensitive model name, must be the same as {model_name}
+  ... # other model-specific hyper-parameters, such as the number of graph neural layers
+```
 
 ## Tune My Model
