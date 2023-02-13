@@ -159,7 +159,7 @@ _Here we take LightGCN as an example._
 
 ```yaml
 tune:
-  enable: false # Whether to enable grid search to search for optimal hyper-parameters
+  enable: true # Whether to enable grid search to search for optimal hyper-parameters
   hyperparameters: [layer_num, reg_weight] # The name of the hyper-parameter
   layer_num: [1, 2, 3] # Use a list to store the search range
   reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
