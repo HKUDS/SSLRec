@@ -46,3 +46,16 @@ Using a unified trainer for different models can ensure the fairness of comparis
 Sometimes, some models may use different training process during one epoch. 
 We recommend only overwriting the ```train_epoch(model, epoch_idx)``` to ensure a fair comparison.
 You can read [Create My Own Trainer]() for more details.
+
+### Configuration
+Each model has its own different configuration, we write it in a ```yml``` file (e.g., [lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml))
+In a ```yml``` file, the following keys are required:
++ ```optimizer```: It contains necessary information to create an optimizer, such as the name of that optimizer and learing rate.
++ ```train```: It contains the setting of training process, such as the number of epochs, the size of each batch and so on.
++ ```test```: It sets the necessary configuration for testing, such as metrics, etc.
++ ```data```: It determines which dataset to use.
++ ```model```: It determines which model to create and the hyper-parameters of that model.
+
+If you create your own model, then you have to create a configuration file for it. We recommend you to read 
+[lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml) to get a basic impression of how to write configuration files, 
+then jump to [Create My Own Configuration](), in which we provided a more detailed description.
