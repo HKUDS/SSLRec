@@ -8,7 +8,11 @@ def build_data_handler():
         data_handler = DataHandlerCML()
     elif configs['data']['type'] == 'social':
         data_handler = DataHandlerSocial()
+    elif configs['data']['type'] == 'mmclr':
+        data_handler = DataHandlerMMCLR()
     else:
         raise NotImplementedError
 
     return data_handler
+
+
