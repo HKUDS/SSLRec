@@ -150,4 +150,20 @@ model:
   ... # other model-specific hyper-parameters, such as the number of graph neural layers
 ```
 
+You can refer to [lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml) for more details.
+
 ## Tune My Model
+You only need to add the following content in the configuration file to search for the optimal hyper-parameters through grid search.
+
+_Here we take LightGCN as an example._
+
+```yaml
+tune:
+  enable: false # Whether to enable grid search to search for optimal hyper-parameters
+  hyperparameters: [layer_num, reg_weight] # The name of the hyper-parameter
+  layer_num: [1, 2, 3] # Use a list to store the search range
+  reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
+```
+
+After that, use the same script: ```python main.py --model LightGCN``` and the search will start automatically.
+Note that the model name ```LightGCN``` can also be typed as ```lightgcn```, because it is case-insensitive.
