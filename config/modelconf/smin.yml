@@ -25,7 +25,6 @@ data:
 
 model:
   name: smin # case-insensitive
-  keep_rate: 0.5
   layer_num: 2
   reg_weight: 5.0e-2
   embedding_size: 16
