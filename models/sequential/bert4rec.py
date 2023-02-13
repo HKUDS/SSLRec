@@ -1,6 +1,7 @@
 from torch import nn
 import torch.nn.functional as F
 from models.base_model import BaseModel
+from models.model_utils import TransformerLayer
 from config.configurator import configs
 
 class BERTEmbLayer(nn.Module):
@@ -30,3 +31,17 @@ class BERT4Rec(BaseModel):
         self.max_len = configs['data']['max_seq_len']
 
         self.emb_layer = BERTEmbLayer(self.item_num, self.emb_size, self.max_len)
+
+        self.n_layers = configs['model']['n_layers']
+        self.n_heads = configs['model']['n_heads']
+        self.dropout_rate = configs['model']['dropout_rate']
+
+        self.transformer_layers = nn.ModuleList([TransformerLayer(self.emb_size, self.n_heads, self.emb_size * 4, self.dropout_rate) for _ in range(self.n_layers)])
+    
+    def forward(self, batch_seqs):
+        mask = (batch_seqs > 0).unsqueeze(1).repeat(1, batch_seqs.size(1), 1).unsqueeze(1)
+        x = self.emb_layer(batch_seqs)
+        for transformer in self.transformer_layers:
+            x = transformer(x, mask)
+        
+        return x
