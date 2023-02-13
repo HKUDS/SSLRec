@@ -7,6 +7,7 @@ from data_utils.datasets_social import PairwiseTrnData, AllRankTstData
 import torch as t
 import torch.utils.data as data
 import dgl
+from dgl import DGLGraph
 
 class DataHandlerSocial:
 	def __init__(self):
@@ -35,6 +36,16 @@ class DataHandlerSocial:
 		if type(mat) != coo_matrix:
 			mat = coo_matrix(mat)
 		return mat
+
+	def _sparse_mx_to_torch_sparse_tensor(self, sparse_mx):
+		"""Convert a scipy sparse matrix to a torch sparse tensor."""
+		if type(sparse_mx) != sp.coo_matrix:
+			sparse_mx = sparse_mx.tocoo().astype(np.float32)
+		indices = t.from_numpy(
+			np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
+		values = t.from_numpy(sparse_mx.data)
+		shape = t.Size(sparse_mx.shape)
+		return t.sparse.FloatTensor(indices, values, shape)
 
 	def load_data(self):
 		trn_mat = self._load_one_mat(self.trn_file)
@@ -82,4 +93,12 @@ class DataHandlerSocial:
 
 		del graph_dict, uu_graph, uiu_graph, uitiu_graph, iui_graph, iti_graph
 
+		if configs['model']['informax'] == 1:
+			(ui_graph_adj, ui_subgraph_adj) = subgraph
+			ui_subgraph_adj_Tensor = self._sparse_mx_to_torch_sparse_tensor(ui_subgraph_adj).cuda()
+			ui_subgraph_adj_norm =t.from_numpy(np.sum(ui_subgraph_adj,axis=1)).float().cuda()
+			ui_graph = DGLGraph(ui_graph_adj)
 		
+		
+
+			
