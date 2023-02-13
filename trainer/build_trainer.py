@@ -1,5 +1,4 @@
 from .trainer import *
-from .trainer_multi_behavior import *
 from config.configurator import configs
 
 def build_trainer(data_handler, logger):
