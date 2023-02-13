@@ -3,18 +3,18 @@ The user guide contains the following content, you can quickly jump to the corre
 
 + Architecture Design of SSLRec
 + Create My Own Model
-+ Create My Own Trainer
++ Create My Own DataHandler and Dataset
 
 ## Architecture Design of SSLRec
 SSLRec is a unified self-supervised recommendation algorithm framework, 
 which includes the following 5 main parts.
 ### DataHandler
-**DataHandler** is used to read the raw data, perform data preprocessing (such as converting to a sparse matrix format), and finally organize the data into a DataLoader for training and testing.
+**DataHandler** is used to read the raw data, perform data preprocessing (such as converting to a sparse matrix format), and finally organize the data into a DataLoader for training and evaluation.
 In our design, it contains two important functions:
 + ```__init__()```: It stores the original path of the corresponding dataset according to the configuration provided by the user.
 + ```load_data()```: It reads the raw data, performs necessary data preprocessing and finally instantiates ```train_dataloader``` and ```test_dataloader```
 
-We designed different DataHandlers for four categories (i.e., General Collaborative Filtering, Sequential Recommendation, Multi-behavior Recommendation, 
+We designed different DataHandlers for four scenario (i.e., General Collaborative Filtering, Sequential Recommendation, Multi-behavior Recommendation, 
 Social Recommendation) respectively. You can get a more detailed understanding by reading the source code of [DataHandlerGeneralCF](https://github.com/HKUDS/SSLRec/blob/main/data_utils/data_handler_general_cf.py).
 
 ### Dataset
@@ -36,14 +36,14 @@ It has four necessary functions:
 You can get a more detailed understanding by reading the source code of [LightGCN](https://github.com/HKUDS/SSLRec/blob/main/models/general_cf/lightgcn.py).
 
 ### Trainer
-**Trainer** provides a unified process of training, testing and storing model parameters. 
+**Trainer** provides a unified process of training, evaluation and storing model parameters. 
 Using a unified trainer for different models can ensure the fairness of comparison. Our trainer including the following six functions:
 + ```create_optimizer(model)```: It creates the optimizer (e.g., ```torch.optim.Adam```) according to the configuration.
 + ```train_epoch(model, epoch_idx)```: It performs one epoch training, including calculating loss, optimizing parameters and printing the losses.
 + ```save_model(model)```: It saves the model parameters as a ```pth``` file.
 + ```load_model(model)```: It loads the model parameters from a ```pth``` file.
 + ```evaluate(model)```: It evaluates the model on test/validation set and return the results of selected metrics according to the configuration.
-+ ```train(model)```: It conducts the whole training, testing and saving process.
++ ```train(model)```: It conducts the whole training, evaluation and saving process.
 
 Sometimes, some models may use different training process during one epoch. 
 We recommend only overwriting the ```train_epoch(model, epoch_idx)``` to ensure a fair comparison.
@@ -54,7 +54,7 @@ Each model has its own different configuration, we write it in a ```yml``` file 
 In a ```yml``` file, the following keys are required:
 + ```optimizer```: It contains necessary information to create an optimizer, such as the name of that optimizer and learing rate.
 + ```train```: It contains the setting of training process, such as the number of epochs, the size of each batch and so on.
-+ ```test```: It sets the necessary configuration for testing, such as metrics, etc.
++ ```test```: It sets the necessary configuration for evaluation, such as metrics, etc.
 + ```data```: It determines which dataset to use.
 + ```model```: It determines which model to create and the hyper-parameters of that model.
 
@@ -65,7 +65,7 @@ then jump to [Create My Own Configuration](), in which we provided a more detail
 ## Create My Own Model
 You can follow the 5 steps below to create and train your model:
 
-_Here we assume that your model belongs to General Collaborative Filtering, which only affects the location where the model source files are placed._
+_Here we assume that your model belongs to General Collaborative Filtering, which only affects the location where the model files are placed._
 
 **First**, please create a file named ```{model_name}.py``` under ```models/general_cf/```, where ```{model_name}``` is the name of your model in lowercase.
 In this file, you can code your model and implement at least these four functions: (1) ```__init__()```, (2)```forward()```, (3)```cal_loss(batch_data)``` and (4) ```full_predict(batch_data)```.
@@ -81,3 +81,24 @@ Otherwise, you can skip this step and directly use the default [Trainer](https:/
 **Fourth**, import your model in ```models/__init__.py``` and add additional codes in ```models/build_model.py``` like other models.
 
 **Fifth**, train your model by this script: ```python main.py --model {model_name}```.
+
+## Create My Own DataHandler and Dataset
+
+### DataHandler
+Currently, SSLRec has four different ```DataHandler``` classes for training and evaluation under different scenario.
+
+We recommend that users can directly modify the existing DataHandler to avoid redundant code writing, 
+for example, users can add new raw data path in the ```__init__()``` function of existed ```DataHandlers``` 
+or perform different data preprocessing operations in the ```load_data()``` function.
+
+Generally speaking, only different scenarios will use different ```DataHandlers```. 
+If users need to create their own ```DataHandler```, they need to implement two functions: ```__init__()``` and ```load_data()```. 
+And create two instances of the ```torch.data.DataLoader``` in load_data(), namely ```train_loader``` and ```test_loader```, for training set and test set respectively.
+
+### Dataset
+
+The ```Dataset``` class is used to provide sampled data for training and evaluation. 
+If you need different sampling methods, you can code your own ```Dataset``` in ```data_utils/datasets_{scenario}.py```. 
+And modify the ```load_data()``` function in ```DataHandler``` to choose your own ```Dataset``` by configuration.
+
+## Create My Own Trainer
