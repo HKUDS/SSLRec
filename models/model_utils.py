@@ -1,5 +1,6 @@
 import torch as t
 from torch import nn
+import dgl.function as fn
 from config.configurator import configs
 
 class SpAdjEdgeDrop(nn.Module):
@@ -40,7 +41,7 @@ class GraphConv(nn.Module):
         self._out_feats = out_feats
         self._norm = "both"
         if weight:
-            self.weight = nn.Parameter(th.Tensor(in_feats, out_feats))
+            self.weight = nn.Parameter(t.Tensor(in_feats, out_feats))
         else:
             self.register_parameter('weight', None)
 
@@ -58,9 +59,9 @@ class GraphConv(nn.Module):
 
         if self._norm == 'both':
             degs = graph.out_degrees().to(feat.device).float().clamp(min=1) # outdegree of nodes
-            norm = th.pow(degs, -0.5)
+            norm = t.pow(degs, -0.5)
             shp = norm.shape + (1,) * (feat.dim() - 1) # (n, 1)
-            norm = th.reshape(norm, shp) # (n, 1)
+            norm = t.reshape(norm, shp) # (n, 1)
             # feat = feat * norm
 
         if weight is not None:
@@ -74,7 +75,7 @@ class GraphConv(nn.Module):
         if self._in_feats > self._out_feats:
             # mult W first to reduce the feature size for aggregation.
             if weight is not None:
-                feat = th.matmul(feat, weight)
+                feat = t.matmul(feat, weight)
             feat = feat * norm
             graph.srcdata['h'] = feat
             graph.update_all(fn.copy_u(u='h', out='m'),
@@ -87,16 +88,16 @@ class GraphConv(nn.Module):
                              fn.sum(msg='m', out='h'))
             rst = graph.dstdata['h']
             if weight is not None:
-                rst = th.matmul(rst, weight)
+                rst = t.matmul(rst, weight)
 
         if self._norm != 'none':
             degs = graph.in_degrees().to(feat.device).float().clamp(min=1)
             if self._norm == 'both':
-                norm = th.pow(degs, -0.5)
+                norm = t.pow(degs, -0.5)
             else:
                 norm = 1.0 / degs
             shp = norm.shape + (1,) * (feat.dim() - 1)
-            norm = th.reshape(norm, shp)
+            norm = t.reshape(norm, shp)
             rst = rst * norm
         if self._activation is not None:
             rst = self._activation(rst)
