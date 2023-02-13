@@ -6,6 +6,7 @@ from config.configurator import configs
 from data_utils.datasets_social import PairwiseTrnData, AllRankTstData
 import torch as t
 import torch.utils.data as data
+import dgl
 
 class DataHandlerSocial:
 	def __init__(self):
@@ -52,4 +53,33 @@ class DataHandlerSocial:
 		tst_data = AllRankTstData(tst_mat, trn_mat)
 		self.test_dataloader = data.DataLoader(tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
 		self.train_dataloader = data.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
+
+		uu_graph = dgl.from_scipy(metapath['UU'])
+		uiu_graph = dgl.from_scipy(metapath['UIU'])
+		uitiu_graph = dgl.from_scipy(metapath['UITIU'])
+
+		iti_graph = dgl.from_scipy(metapath['ITI'])
+		iui_graph = dgl.from_scipy(metapath['IUI'])
+
+		graph_dict={}
+		graph_dict['uu'] = uu_graph
+		graph_dict['uiu'] = uiu_graph
+		graph_dict['uitiu'] = uitiu_graph
+		graph_dict['iui'] = iui_graph
+		graph_dict['iti'] = iti_graph
+
+		print('user metapath: ' + configs['model']['user_graph_indx'])
+		user_graph_list = configs['model']['user_graph_indx'].split('_')
+		user_graph = []
+		for i in range(len(user_graph_list)):
+			user_graph.append(graph_dict[user_graph_list[i]])
+		
+		print('item metapath: ' + configs['model']['item_graph_indx'])
+		item_graph_list = configs['model']['item_graph_indx'].split('_')
+		item_graph = []
+		for i in range(len(item_graph_list)):
+			item_graph.append(graph_dict[item_graph_list[i]])
+
+		del graph_dict, uu_graph, uiu_graph, uitiu_graph, iui_graph, iti_graph
+
 		
