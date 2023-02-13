@@ -19,10 +19,17 @@ Social Recommendation) respectively. You can get a more detailed understanding b
 **Dataset** inherits the ```torch.data.Dataset``` class for instantiating ```data_loader```. 
 Generally, ```train_dataloader``` and ```test_dataloader``` require different Dataset classes. 
 For example, in General Collaborative Filtering, we provide [PairwiseTrnData](https://github.com/HKUDS/SSLRec/blob/main/data_utils/datasets_general_cf.py) for ```train_dataloader``` to achieve negative sampling during training, 
-and provide [AllRankTstData](https://github.com/HKUDS/SSLRec/blob/main/data_utils/datasets_general_cf.py) for ```test_dataloader``` to achieve All-rank evaluation.
+and provide [AllRankTstData](https://github.com/HKUDS/SSLRec/blob/main/data_utils/datasets_general_cf.py) for ```test_dataloader``` to achieve all-rank evaluation.
 
 ### Model
 **Model** inherits the [BasicModel](https://github.com/HKUDS/SSLRec/blob/main/models/base_model.py) class to implement various self-supervised recommendation algorithms in different scenarios.
 It has four necessary functions:
 + ```__init__()```: It stores the hyper-parameter settings from user configuration as the attribute of the model, and initializes trainable parameters (e.g., user embeddings).
 + ```forward()```: It performs the model-specific forward process, such as message passing and aggregation in graph-based methods.
++ ```cal_loss(batch_data)```: The input ```batch_data (tuple)``` is a batch of training samples provided by ```train_loader```. 
+  This function calculates the loss function defined by the model and has two return values: (1)```loss (0-d torch.Tensor)``` : the overall weighted loss, (2)```losses (dict)``` dict for specific terms of losses for printing.
++ ```full_predict(batch_data)```: The input ```batch_data (tuple)``` is the data in a test batch (e.g., ```batch_users``` (the tested users in this batch) and ```train_mask``` (training items of those users)). 
+  This function return a prediction tensor ```full_pred (torch.Tensor)``` for all-rank evaluation.
+
+You can get a more detailed understanding by reading the source code of [LightGCN](https://github.com/HKUDS/SSLRec/blob/main/models/general_cf/lightgcn.py).
+
