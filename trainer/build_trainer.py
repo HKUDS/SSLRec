@@ -7,7 +7,7 @@ def build_trainer(data_handler, logger):
         trainer = Trainer(data_handler, logger)
     elif configs['train']['trainer'] == 'cml_trainer':
         trainer = CMLTrainer(data_handler, logger)
-     elif configs['train']['trainer'] == 'mmclr_trainer':
+    elif configs['train']['trainer'] == 'mmclr_trainer':
         trainer = MMCLRTrainer(data_handler, logger)
     else:
         raise NotImplementedError
