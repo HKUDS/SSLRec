@@ -137,7 +137,7 @@ class SMIN(BaseModel):
 		return loss, losses
 
 	def full_predict(self, batch_data):
-		user_embeds, item_embeds = self.forward(self.adj, 1.0)
+		user_embeds, item_embeds = self.forward()
 		self.is_training = False
 		pck_users, train_mask = batch_data
 		pck_users = pck_users.long()
