@@ -12,7 +12,7 @@ optimizer:
   decay: 0.96
 
 train:
-  epoch: 300
+  epoch: 1  # 300
   batch_size: 8192
   save_model: true
   loss: pairwise # bpr
