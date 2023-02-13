@@ -2,6 +2,8 @@
 The user guide contains the following content, you can quickly jump to the corresponding section.
 
 + Architecture Design of SSLRec
++ Create My Own Model
++ Create My Own Trainer
 
 ## Architecture Design of SSLRec
 SSLRec is a unified self-supervised recommendation algorithm framework, 
@@ -48,7 +50,7 @@ We recommend only overwriting the ```train_epoch(model, epoch_idx)``` to ensure 
 You can read [Create My Own Trainer]() for more details.
 
 ### Configuration
-Each model has its own different configuration, we write it in a ```yml``` file (e.g., [lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml))
+Each model has its own different configuration, we write it in a ```yml``` file (e.g., [lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml)).
 In a ```yml``` file, the following keys are required:
 + ```optimizer```: It contains necessary information to create an optimizer, such as the name of that optimizer and learing rate.
 + ```train```: It contains the setting of training process, such as the number of epochs, the size of each batch and so on.
@@ -59,3 +61,23 @@ In a ```yml``` file, the following keys are required:
 If you create your own model, then you have to create a configuration file for it. We recommend you to read 
 [lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml) to get a basic impression of how to write configuration files, 
 then jump to [Create My Own Configuration](), in which we provided a more detailed description.
+
+## Create My Own Model
+You can follow the 5 steps below to create and train your model:
+
+_Here we assume that your model belongs to General Collaborative Filtering, which only affects the location where the model source files are placed._
+
+**First**, please create a file named ```{model_name}.py``` under ```models/general_cf/```, where ```{model_name}``` is the name of your model in lowercase.
+In this file, you can code your model and implement at least these four functions: (1) ```__init__()```, (2)```forward()```, (3)```cal_loss(batch_data)``` and (4) ```full_predict(batch_data)```.
+We recommend that your model class inherit the [BaseModel](https://github.com/HKUDS/SSLRec/blob/main/models/base_model.py) class to ensure the consistency of the interface.
+
+**Second**, please create a configuration file named ```{model_name}.py``` under ```config/modelconf/``` for your model. 
+You can refer to [Create My Own Configuration]() for more details.
+
+**Third**, create a trainer in the file ```trainer/trinaer.py``` for your model if you need additional operations when training your model (e.g., fix parameters).
+You can refer to [Create My Own Trainer]() to see how to create and use it. 
+Otherwise, you can skip this step and directly use the default [Trainer](https://github.com/HKUDS/SSLRec/blob/main/trainer/trainer.py).
+
+**Fourth**, import your model in ```models/__init__.py``` and add additional codes in ```models/build_model.py``` like other models.
+
+**Fifth**, train your model by this script: ```python main.py --model {model_name}```.
