@@ -17,4 +17,4 @@ class SequentialDataset(data.Dataset):
 		return len(self.uids)
 
 	def __getitem__(self, idx):
-		return torch.LongTensor(self.uids[idx]), torch.LongTensor(self.seqs[idx]), torch.LongTensor(self.last_items[idx])
+		return torch.LongTensor([self.uids[idx]]), torch.LongTensor(self.seqs[idx]), torch.LongTensor([self.last_items[idx]])

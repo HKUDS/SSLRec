@@ -62,7 +62,8 @@ class BERT4Rec(BaseModel):
             module.bias.data.zero_()
 
     def _transform_train_seq(self, batch_seqs, batch_last_items):
-        seqs = torch.cat([batch_seqs, batch_last_items.unsqueeze(1)], dim=1)
+        device = batch_seqs.device
+        seqs = torch.cat([batch_seqs, batch_last_items], dim=1)
         seqs = seqs.tolist()
         masked_seqs = []
         masked_items = []
@@ -89,8 +90,8 @@ class BERT4Rec(BaseModel):
                     masked_item.append(0)
             masked_seqs.append(masked_seq)
             masked_items.append(masked_item)
-        masked_seqs = torch.LongTensor(masked_seqs)[:, -self.max_len:]
-        masked_items = torch.LongTensor(masked_items)[:, -self.max_len:]
+        masked_seqs = torch.tensor(masked_seqs, device=device, dtype=torch.long)[:, -self.max_len:]
+        masked_items = torch.tensor(masked_items, device=device, dtype=torch.long)[:, -self.max_len:]
         return masked_seqs, masked_items
 
     def _transform_test_seq(self, batch_seqs):

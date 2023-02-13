@@ -3,3 +3,7 @@ log/
 refer.py
 checkpoint/
 .DS_Store
+.vscode
+.idea/
+*.pyc
+*.log
