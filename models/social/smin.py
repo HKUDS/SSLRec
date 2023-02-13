@@ -27,64 +27,117 @@ class SMIN(BaseModel):
 		self.user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
 		self.item_embeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))
 
-		self.user_metapath_num = len(data_handler.user_graph)
-		self.item_metapath_num = len(data_handler.item_graph)
-
+		self.data_handler = data_handler
+		self.user_graph = data_handler.user_graph
+		self.item_graph = data_handler.item_graph
+		self.user_metapath_num = len(self.user_graph)
+		self.item_metapath_num = len(self.item_graph)
+		self.in_size = self.layer_num * self.embedding_size
+		self.out_dim = self.layer_num * self.embedding_size
 		self.act = nn.PReLU()
 		self.is_training = True
 
 		self.user_meta_layers = nn.ModuleList()
 		for _ in range(self.user_metapath_num):
 			user_layers = nn.ModuleList()
-			for i in range(self.layer_num):
-				user_layers.append(GraphConv(self.embedding_size,self.embedding_size, bias=False, activation=self.act))
+			for i in range(self.layer_num-1):
+				user_layers.append(GraphConv(self.embedding_size, self.embedding_size, bias=False, activation=self.act))
 			self.user_meta_layers.append(user_layers)
 
 		self.item_meta_layers = nn.ModuleList()
 		for _ in range(self.item_metapath_num):
 			item_layers = nn.ModuleList()
-			for i in range(self.layer_num):
-				item_layers.append(GraphConv(self.embedding_size,self.embedding_size, bias=False, activation=self.act))
+			for i in range(self.layer_num-1):
+				item_layers.append(GraphConv(self.embedding_size, self.embedding_size, bias=False, activation=self.act))
 			self.item_meta_layers.append(item_layers)
 		
 
-		self.semantic_user_attn = SemanticAttention(self.embedding_size)
-		self.semantic_item_attn = SemanticAttention(self.embedding_size)
+		self.semantic_user_attn = SemanticAttention(self.in_size)
+		self.semantic_item_attn = SemanticAttention(self.in_size)
 
 		informax_graph_act = nn.Sigmoid()
-		self.ui_informax = Informax(data_handler.ui_graph, self.embedding_size, self.embedding_size, nn.PReLU, informax_graph_act, data_handler.ui_graph_adj).cuda()
-
-	def _propagate(self, adj, embeds):
-		return t.spmm(adj, embeds)
+		self.ui_informax = Informax(data_handler.ui_graph, self.out_dim, self.out_dim, nn.PReLU(), informax_graph_act, data_handler.ui_graph_adj).cuda()
 	
-	def forward(self, adj, keep_rate):
+	def forward(self, norm=1):
 		if not self.is_training:
-			return self.final_embeds[:self.user_num], self.final_embeds[self.user_num:]
-		embeds = t.concat([self.user_embeds, self.item_embeds], axis=0)
-		embeds_list = [embeds]
-		adj = self.edge_dropper(adj, keep_rate)
-		for i in range(self.layer_num):
-			embeds = self._propagate(adj, embeds_list[-1])
-			embeds_list.append(embeds)
-		embeds = sum(embeds_list) / len(embeds_list)
-		self.final_embeds = embeds
-		return embeds[:self.user_num], embeds[self.user_num:]
+			return self.final_user_embeds, self.final_item_embeds
+		
+		semantic_user_embeds = []
+		semantic_item_embeds = []
+
+		path_num, block_num = np.shape(self.user_meta_layers)
+		for i in range(path_num):
+			all_user_embeds = [self.user_embeds]
+			layers = self.user_meta_layers[i]
+			for j in range(block_num):
+				layer = layers[j]
+				if j == 0:
+					user_embeds = layer(self.user_graph[i], self.user_embeds)
+				else:
+					user_embeds = layer(self.user_graph[i], user_embeds)
+				
+				if norm == 1:
+					norm_embeds = F.normalize(user_embeds, p=2, dim=1)
+					all_user_embeds += [norm_embeds]
+				else:
+					all_user_embeds += [user_embeds]
+			user_embeds = t.cat(all_user_embeds, 1)
+			semantic_user_embeds.append(user_embeds)
+		
+		path_num, block_num = np.shape(self.item_meta_layers)
+		for i in range(path_num):
+			all_item_embeds = [self.item_embeds]
+			layers = self.item_meta_layers[i]
+			for j in range(block_num):
+				layer = layers[j]
+				if j == 0:
+					item_embeds = layer(self.item_graph[i], self.item_embeds)
+				else:
+					item_embeds = layer(self.item_graph[i], item_embeds)
+				
+				if norm == 1:
+					norm_embeds = F.normalize(item_embeds, p=2, dim=1)
+					all_item_embeds += [norm_embeds]
+				else:
+					all_item_embeds += [item_embeds]
+			item_embeds = t.cat(all_item_embeds, 1)
+			semantic_item_embeds.append(item_embeds)
+
+		semantic_user_embeds = t.stack(semantic_user_embeds, dim=1)
+		semantic_item_embeds = t.stack(semantic_item_embeds, dim=1)
+
+		user_embeds = self.semantic_user_attn(semantic_user_embeds)
+		item_embeds = self.semantic_item_attn(semantic_item_embeds)
+		
+		self.final_user_embeds = user_embeds
+		self.final_item_embeds = item_embeds
+
+		return user_embeds, item_embeds
 	
 	def cal_loss(self, batch_data):
 		self.is_training = True
-		user_embeds, item_embeds = self.forward(self.adj, self.keep_rate)
+		user_embeds, item_embeds = self.forward()
 		ancs, poss, negs = batch_data
 		anc_embeds = user_embeds[ancs]
 		pos_embeds = item_embeds[poss]
 		neg_embeds = item_embeds[negs]
 		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
 		reg_loss = reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds])
-		loss = bpr_loss + self.reg_weight * reg_loss
-		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss}
+		
+		all_embeds = t.cat([user_embeds, item_embeds], dim=0)
+		res = self.ui_informax(all_embeds, self.data_handler.ui_subgraph_adj, self.data_handler.ui_subgraph_adj_tensor, self.data_handler.ui_subgraph_adj_norm)
+		mask = t.zeros((self.user_num + self.item_num)).cuda()
+		mask[ancs] = 1
+		mask[self.user_num + poss] = 1
+		mask[self.user_num + negs] = 1
+		informax_loss = configs['model']['lambda1'] * (((mask * res[0]).sum() + (mask * res[1]).sum()) / t.sum(mask))\
+			+ configs['model']['lambda2'] * (((mask * res[2]).sum() + (mask * res[3]).sum()) / t.sum(mask) + res[4])
+		loss = bpr_loss + self.reg_weight * reg_loss + informax_loss
+		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'informax_loss': informax_loss}
 		return loss, losses
 
 	def full_predict(self, batch_data):
-		user_embeds, item_embeds = self.forward(self.adj, 1.0)
+		user_embeds, item_embeds = self.forward()
 		self.is_training = False
 		pck_users, train_mask = batch_data
 		pck_users = pck_users.long()
@@ -116,7 +169,7 @@ class Encoder(nn.Module):
 
     def forward(self, features, corrupt=False):
         if corrupt:
-            perm = torch.randperm(self.g.number_of_nodes())
+            perm = t.randperm(self.g.number_of_nodes())
             features = features[perm]
         features = self.conv(features)
         return features
@@ -128,12 +181,12 @@ class Discriminator(nn.Module):
         self.loss = nn.BCEWithLogitsLoss(reduction='none') # combines a Sigmoid layer and the BCELoss
 
     def forward(self,node_embedding,graph_embedding, corrupt=False):
-        score = torch.sum(node_embedding*graph_embedding,dim=1) 
+        score = t.sum(node_embedding*graph_embedding,dim=1) 
         
         if corrupt:
-            res = self.loss(score,torch.zeros_like(score))
+            res = self.loss(score,t.zeros_like(score))
         else:
-            res = self.loss(score,torch.ones_like(score))
+            res = self.loss(score,t.ones_like(score))
         return res
 
 class Informax(nn.Module):
@@ -148,12 +201,12 @@ class Informax(nn.Module):
 		self.graph_adj_data = np.array(self.graph_adj_data)
 		self.mse_loss = nn.MSELoss(reduction='sum')
 	
-	def forward(self, features, subgraph_adj, subgraph_adj_tensor,subgraph_adj_norm):
+	def forward(self, features, subgraph_adj, subgraph_adj_tensor, subgraph_adj_norm):
 		positive = self.encoder(features, corrupt=False)
 		negative = self.encoder(features, corrupt=True)
 
 		tmp_features = features
-		graph_embeds = torch.sparse.mm(subgraph_adj_tensor, tmp_features) / subgraph_adj_norm
+		graph_embeds = t.sparse.mm(subgraph_adj_tensor, tmp_features) / subgraph_adj_norm
 		graph_embeds = self.graph_act(graph_embeds)
 
 		pos_hi_xj_loss = self.discriminator(positive, graph_embeds, corrupt=False)

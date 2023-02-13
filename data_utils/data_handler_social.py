@@ -65,12 +65,12 @@ class DataHandlerSocial:
 		self.test_dataloader = data.DataLoader(tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
 		self.train_dataloader = data.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
 
-		uu_graph = dgl.from_scipy(metapath['UU'])
-		uiu_graph = dgl.from_scipy(metapath['UIU'])
-		uitiu_graph = dgl.from_scipy(metapath['UITIU'])
+		uu_graph = dgl.from_scipy(metapath['UU'], device=t.device('cuda'))
+		uiu_graph = dgl.from_scipy(metapath['UIU'], device=t.device('cuda'))
+		uitiu_graph = dgl.from_scipy(metapath['UITIU'], device=t.device('cuda'))
 
-		iti_graph = dgl.from_scipy(metapath['ITI'])
-		iui_graph = dgl.from_scipy(metapath['IUI'])
+		iti_graph = dgl.from_scipy(metapath['ITI'], device=t.device('cuda'))
+		iui_graph = dgl.from_scipy(metapath['IUI'], device=t.device('cuda'))
 
 		graph_dict={}
 		graph_dict['uu'] = uu_graph
@@ -93,10 +93,10 @@ class DataHandlerSocial:
 
 		del graph_dict, uu_graph, uiu_graph, uitiu_graph, iui_graph, iti_graph
 
-		(self.ui_graph_adj, ui_subgraph_adj) = subgraph
-		ui_subgraph_adj_Tensor = self._sparse_mx_to_torch_sparse_tensor(ui_subgraph_adj).cuda()
-		ui_subgraph_adj_norm =t.from_numpy(np.sum(ui_subgraph_adj,axis=1)).float().cuda()
-		self.ui_graph = DGLGraph(self.ui_graph_adj)
+		(self.ui_graph_adj, self.ui_subgraph_adj) = subgraph
+		self.ui_subgraph_adj_tensor = self._sparse_mx_to_torch_sparse_tensor(self.ui_subgraph_adj).cuda()
+		self.ui_subgraph_adj_norm =t.from_numpy(np.sum(self.ui_subgraph_adj,axis=1)).float().cuda()
+		self.ui_graph = DGLGraph(self.ui_graph_adj).to(t.device('cuda'))
 		
 		
 
