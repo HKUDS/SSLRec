@@ -20,3 +20,9 @@ Social Recommendation) respectively. You can get a more detailed understanding b
 Generally, ```train_dataloader``` and ```test_dataloader``` require different Dataset classes. 
 For example, in General Collaborative Filtering, we provide [PairwiseTrnData](https://github.com/HKUDS/SSLRec/blob/main/data_utils/datasets_general_cf.py) for ```train_dataloader``` to achieve negative sampling during training, 
 and provide [AllRankTstData](https://github.com/HKUDS/SSLRec/blob/main/data_utils/datasets_general_cf.py) for ```test_dataloader``` to achieve All-rank evaluation.
+
+### Model
+**Model** inherits the BasicModel class inherits the [BasicModel](https://github.com/HKUDS/SSLRec/blob/main/models/base_model.py) class to implement various self-supervised recommendation algorithms in different scenarios.
+It has four necessary functions:
++ ```__init__()```: It stores the hyper-parameter settings from user configuration as the attribute of the model, and initializes trainable parameters (e.g., user embeddings).
++ ```forward()```: It performs the model-specific forward process, such as message passing and aggregation in graph-based methods.
