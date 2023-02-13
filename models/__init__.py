@@ -5,3 +5,4 @@ from models.multi_behavior.cml import CML, MetaWeightNet
 from models.social.smin import SMIN
 from models.social.kcgn import KCGN
 from models.multi_behavior.mmclr import MMCLR
+from models.sequential.bert4rec import BERT4Rec

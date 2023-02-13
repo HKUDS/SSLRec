@@ -15,11 +15,14 @@ class DataHandlerSequential:
         self.trn_file = path.join(predir, 'train.tsv')
         self.val_file = path.join(predir, 'test.tsv')
         self.tst_file = path.join(predir, 'test.tsv')
-        self.max_seq_len = configs['data']['max_seq_len']
+        self.max_seq_len = configs['model']['max_seq_len']
+        self.max_item_id = 0
 
     def _read_tsv_to_padded_seqs(self, tsv_file):
         user_seqs = {"uid": [], "item_seq": [], "item_id": []}
         with open(tsv_file, 'r') as f:
+            line = f.readline()
+            # skip header
             line = f.readline()
             while line:
                 uid, seq, last_item = line.strip().split('\t')
@@ -28,19 +31,20 @@ class DataHandlerSequential:
                 if len(seq) >= self.max_seq_len:
                     seq = seq[:self.max_seq_len]
                 else:
-                    seq = seq + [0] * (self.max_seq_len - len(seq))
+                    seq = [0] * (self.max_seq_len - len(seq)) + seq
                 user_seqs["uid"].append(int(uid))
                 user_seqs["item_seq"].append(seq)
                 user_seqs["item_id"].append(int(last_item))
+
+                self.max_item_id = max(self.max_item_id, max(max(seq), int(last_item)))
                 line = f.readline()
         return user_seqs
     
     def _set_statistics(self, user_seqs_train, user_seqs_test):
         user_num = max(max(user_seqs_train["uid"]), max(user_seqs_test["uid"])) + 1
-        # item originally starts with 1
-        item_num = max(max(user_seqs_train["item_id"]), max(user_seqs_test["item_id"]), max(user_seqs_train["item_seq"]), max(user_seqs_test["item_seq"]))
         configs['data']['user_num'] = user_num
-        configs['data']['item_num'] = item_num
+        # item originally starts with 1
+        configs['data']['item_num'] = self.max_item_id
     
     def _seq_aug(self, user_seqs):
         user_seqs_new = {"uid": [], "item_seq": [], "item_id": []}
@@ -57,7 +61,7 @@ class DataHandlerSequential:
         self._set_statistics(user_seqs_train, user_seqs_test)
 
         # seqeuntial augmentation: [1, 2, 3,] -> [1,2], [3]
-        if configs['data']['seq_aug']:
+        if 'seq_aug' in configs['data'] and configs['data']['seq_aug']:
             user_seqs_train = self._seq_aug(user_seqs_train)
             
         trn_data = SequentialDataset(user_seqs_train)

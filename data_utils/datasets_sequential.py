@@ -2,6 +2,7 @@ from scipy.sparse import coo_matrix, dok_matrix
 import torch.utils.data as data
 from config.configurator import configs
 import numpy as np
+import torch
 
 class SequentialDataset(data.Dataset):
 	def __init__(self, user_seqs):
@@ -16,4 +17,4 @@ class SequentialDataset(data.Dataset):
 		return len(self.uids)
 
 	def __getitem__(self, idx):
-		return self.uids[idx], self.seqs[idx], self.last_items[idx]
+		return torch.LongTensor(self.uids[idx]), torch.LongTensor(self.seqs[idx]), torch.LongTensor(self.last_items[idx])

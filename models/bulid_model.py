@@ -16,6 +16,8 @@ def build_model(data_handler):
         model = KCGN(data_handler)
     elif configs['model']['name'] == 'mmclr':
         model = MMCLR(data_handler)
+    elif configs['model']['name'] == 'bert4rec':
+        model = BERT4Rec(data_handler)
     else:
         raise NotImplementedError
 
