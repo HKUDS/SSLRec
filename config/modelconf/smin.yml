@@ -20,7 +20,7 @@ test:
 
 data:
   type: social # choose in {general_cf, multi_behavior, sequential, social}
-  name: yelp
+  name: ciao
 
 
 model:
