@@ -33,7 +33,7 @@ class BERT4Rec(BaseModel):
         super(BERT4Rec, self).__init__(data_handler)
         self.item_num = configs['data']['item_num']
         self.emb_size = configs['model']['embedding_size']
-        self.max_len = configs['data']['max_seq_len']
+        self.max_len = configs['model']['max_seq_len']
         self.mask_token = self.item_num + 1
 
         self.emb_layer = BERTEmbLayer(
@@ -54,7 +54,7 @@ class BERT4Rec(BaseModel):
 
     def _init_weights(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
-            module.weight.data.normal_(mean=0.0, std=self.initializer_range)
+            module.weight.data.normal_(mean=0.0, std=0.02)
         elif isinstance(module, nn.LayerNorm):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
