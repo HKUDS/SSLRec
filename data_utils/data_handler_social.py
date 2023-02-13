@@ -93,11 +93,10 @@ class DataHandlerSocial:
 
 		del graph_dict, uu_graph, uiu_graph, uitiu_graph, iui_graph, iti_graph
 
-		if configs['model']['informax'] == 1:
-			(ui_graph_adj, ui_subgraph_adj) = subgraph
-			ui_subgraph_adj_Tensor = self._sparse_mx_to_torch_sparse_tensor(ui_subgraph_adj).cuda()
-			ui_subgraph_adj_norm =t.from_numpy(np.sum(ui_subgraph_adj,axis=1)).float().cuda()
-			ui_graph = DGLGraph(ui_graph_adj)
+		(self.ui_graph_adj, ui_subgraph_adj) = subgraph
+		ui_subgraph_adj_Tensor = self._sparse_mx_to_torch_sparse_tensor(ui_subgraph_adj).cuda()
+		ui_subgraph_adj_norm =t.from_numpy(np.sum(ui_subgraph_adj,axis=1)).float().cuda()
+		self.ui_graph = DGLGraph(self.ui_graph_adj)
 		
 		
 

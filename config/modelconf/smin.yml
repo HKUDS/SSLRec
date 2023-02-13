@@ -33,7 +33,6 @@ model:
   item_graph_indx: iui_iti
   gcn_act: prelu
   informax: 1
-  informax_graph_act: sigmoid
   lambda1: 0.06
   lambda2: 0.002
   k_hop_num: 2
