@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from torch.nn import init
 
 from tqdm import tqdm
-from .trainer import *
+from trainer import *
 from models import *
 from config.configurator import configs
 
@@ -186,10 +186,7 @@ class CMLTrainer(Trainer):
             #     _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
             #     if loss_name not in loss_log_dict: loss_log_dict[loss_name] = _loss_val
             #     else: loss_log_dict[loss_name] += _loss_val
-
-
             cnt+=1
-
         # # log
         # self.logger.log_loss(epoch_idx, loss_log_dict)
 
@@ -236,7 +233,6 @@ class CMLTrainer(Trainer):
         return t.as_tensor(np.array(user_id)).cuda(), t.as_tensor(np.array(item_id_pos)).cuda(), t.as_tensor(np.array(item_id_neg)).cuda() 
 
 
-
     def _SSL(self, user_embeddings, item_embeddings, target_user_embeddings, target_item_embeddings, user_step_index):
         def row_shuffle(embedding):
             corrupted_embedding = embedding[t.randperm(embedding.size()[0])]  
@@ -253,10 +249,8 @@ class CMLTrainer(Trainer):
                 index_set = set(np.arange(x1.shape[0]))
                 index_set.remove(i)
                 index_set_neg = t.as_tensor(np.array(list(index_set))).long().cuda()  
-
                 x_pos = x1[i].repeat(x1.shape[0]-1, 1)
                 x_neg = x2[index_set]  
-                
                 if i==0:
                     x_pos_all = x_pos
                     x_neg_all = x_neg
@@ -265,18 +259,14 @@ class CMLTrainer(Trainer):
                     x_neg_all = t.cat((x_neg_all, x_neg), 0)
             x_pos_all = t.as_tensor(x_pos_all)  #[9900, 100]
             x_neg_all = t.as_tensor(x_neg_all)  #[9900, 100]  
-
             return x_pos_all, x_neg_all
 
         def one_neg_sample_pair_index(i, step_index, embedding1, embedding2):
-
             index_set = set(np.array(step_index))
             index_set.remove(i.item())
             neg2_index = t.as_tensor(np.array(list(index_set))).long().cuda()
-
             neg1_index = t.ones((2,), dtype=t.long)
             neg1_index = neg1_index.new_full((len(index_set),), i)
-
             neg_score_pre = t.sum(compute(embedding1, embedding2, neg1_index, neg2_index).squeeze())
             return neg_score_pre
 
@@ -289,31 +279,24 @@ class CMLTrainer(Trainer):
             neg2_index = t.unsqueeze(neg2_index, 0)                              #[1, 910]
             neg2_index = neg2_index.repeat(len(batch_index), 1)                  #[100, 910]
             neg2_index = t.reshape(neg2_index, (1, -1))                          #[1, 91000]
-            neg2_index = t.squeeze(neg2_index)                                   #[91000]
-                                                                                 #target
+            neg2_index = t.squeeze(neg2_index)                                   #[91000]                                                                  
             neg1_index = batch_index.long().cuda()     #[100]
             neg1_index = t.unsqueeze(neg1_index, 1)                              #[100, 1]
             neg1_index = neg1_index.repeat(1, len(neg2_index_set))               #[100, 910]
             neg1_index = t.reshape(neg1_index, (1, -1))                          #[1, 91000]           
             neg1_index = t.squeeze(neg1_index)                                   #[91000]
-
             neg_score_pre = t.sum(compute(embedding1, embedding2, neg1_index, neg2_index).squeeze().view(len(batch_index), -1), -1)  #[91000,1]==>[91000]==>[100, 910]==>[100]
             return neg_score_pre  #[100]
 
         def compute(x1, x2, neg1_index=None, neg2_index=None, τ = 0.05):  #[1024, 16], [1024, 16]
-
             if neg1_index!=None:
                 x1 = x1[neg1_index]
                 x2 = x2[neg2_index]
-
             N = x1.shape[0]  
             D = x1.shape[1]
-
             x1 = x1
             x2 = x2
-
             scores = t.exp(t.div(t.bmm(x1.view(N, 1, D), x2.view(N, D, 1)).view(N, 1), np.power(D, 1)+1e-8))  #[1024, 1]
-            
             return scores
         def single_infoNCE_loss_simple(embedding1, embedding2):
             pos = score(embedding1, embedding2)  #[100]
@@ -327,9 +310,7 @@ class CMLTrainer(Trainer):
         def single_infoNCE_loss(embedding1, embedding2):
             N = embedding1.shape[0]
             D = embedding1.shape[1]
-
             pos_score = compute(embedding1, embedding2).squeeze()  #[100, 1]
-
             neg_x1, neg_x2 = neg_sample_pair(embedding1, embedding2)  #[9900, 100], [9900, 100]
             neg_score = t.sum(compute(neg_x1, neg_x2).view(N, (N-1)), dim=1)  #[100]  
             con_loss = -t.log(1e-8 +t.div(pos_score, neg_score))   
@@ -339,42 +320,64 @@ class CMLTrainer(Trainer):
         def single_infoNCE_loss_one_by_one(embedding1, embedding2, step_index):  #target, beh
             N = step_index.shape[0]
             D = embedding1.shape[1]
-
             pos_score = compute(embedding1[step_index], embedding2[step_index]).squeeze()  #[1024]
             neg_score = t.zeros((N,), dtype = t.float64).cuda()  #[1024]
-
             #-------------------------------------------------multi version-----------------------------------------------------
             steps = int(np.ceil(N / configs['train']['SSL_batch']))  
             for i in range(steps):
                 st = i * configs['train']['SSL_batch']
                 ed = min((i+1) * configs['train']['SSL_batch'], N)
                 batch_index = step_index[st: ed]
-
                 neg_score_pre = multi_neg_sample_pair_index(batch_index, step_index, embedding1, embedding2)
                 if i ==0:
                     neg_score = neg_score_pre
                 else:
                     neg_score = t.cat((neg_score, neg_score_pre), 0)
             #-------------------------------------------------multi version-----------------------------------------------------
-
             con_loss = -t.log(1e-8 +t.div(pos_score, neg_score+1e-8))  #[1024]/[1024]==>1024
-
-
             assert not t.any(t.isnan(con_loss))
             assert not t.any(t.isinf(con_loss))
-
             return t.where(t.isnan(con_loss), t.full_like(con_loss, 0+1e-8), con_loss)
 
         user_con_loss_list = []
         item_con_loss_list = []
-
         SSL_len = int(user_step_index.shape[0]/10)
         user_step_index = t.as_tensor(np.random.choice(user_step_index.cpu(), size=SSL_len, replace=False, p=None)).cuda()
-
         for i in range(len(self.data_handler.behaviors)):
-
             user_con_loss_list.append(single_infoNCE_loss_one_by_one(user_embeddings[-1], user_embeddings[i], user_step_index))
-
         user_con_losss = t.stack(user_con_loss_list, dim=0)  
-
         return user_con_loss_list, user_step_index  #4*[1024]
+
+
+
+
+
+class MMCLRTrainer(Trainer):
+    def __init__(self, data_handler, logger):
+        super(MMCLRTrainer, self).__init__(data_handler, logger)
+
+    # def create_optimizer(self, model):
+    #     optim_config = configs['optimizer']
+    #     if optim_config['name'] == 'adam':
+    #         self.optimizer = optim.Adam(model.parameters(), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
+
+
+
+    def train_epoch(self, model, epoch_idx):
+
+        model.train()
+        for input_nodes,pos_graph,neg_graph,blocks,block_src_nodes,seq_tensors,neg_user_ids in tqdm(self.data_handler.train_dataloader):
+            if block_src_nodes is not None:
+                block_src_nodes=[{k:v.to(configs['train']['device'])   for k,v in nodes.items()} for nodes in block_src_nodes ]
+                input_nodes={k:v.to(configs['train']['device']) for k,v in input_nodes.items()}
+                pos_graph=pos_graph.to(configs['train']['device'])
+                neg_graph=neg_graph.to(configs['train']['device'])
+                blocks=[block.to(configs['train']['device']) for block in blocks]
+            seq_tensors=[seq.to(configs['train']['device']) for seq in seq_tensors]
+            graph_data=(input_nodes,pos_graph,neg_graph,blocks,block_src_nodes)
+            loss,link_loss,seq_cl_loss,graph_cl_loss,cross_constra_loss,graph_inner_loss,seq_inner_loss=model(graph_data,seq_tensors,is_eval=False)
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+
+            
