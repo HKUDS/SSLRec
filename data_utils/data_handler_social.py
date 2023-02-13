@@ -81,15 +81,15 @@ class DataHandlerSocial:
 
 		print('user metapath: ' + configs['model']['user_graph_indx'])
 		user_graph_list = configs['model']['user_graph_indx'].split('_')
-		user_graph = []
+		self.user_graph = []
 		for i in range(len(user_graph_list)):
-			user_graph.append(graph_dict[user_graph_list[i]])
+			self.user_graph.append(graph_dict[user_graph_list[i]])
 		
 		print('item metapath: ' + configs['model']['item_graph_indx'])
 		item_graph_list = configs['model']['item_graph_indx'].split('_')
-		item_graph = []
+		self.item_graph = []
 		for i in range(len(item_graph_list)):
-			item_graph.append(graph_dict[item_graph_list[i]])
+			self.item_graph.append(graph_dict[item_graph_list[i]])
 
 		del graph_dict, uu_graph, uiu_graph, uitiu_graph, iui_graph, iti_graph
 
