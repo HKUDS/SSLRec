@@ -20,10 +20,10 @@ test:
 
 data:
   type: social # choose in {general_cf, multi_behavior, sequential, social}
-  name: yelp
+  name: epinions
 
 model:
-  name: smin # case-insensitive
+  name: kcgn # case-insensitive
   layer_num: 2
   reg_weight: 5.0e-2
   embedding_size: 64
@@ -31,7 +31,7 @@ model:
   fuse: mean
   dgi_graph_act: sigmoid
   lam: [0.1,0.001]
-  sub_node: 10
+  subnode: 10
   time_step: 360
 
 tune:
