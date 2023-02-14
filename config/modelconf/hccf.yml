@@ -23,11 +23,11 @@ data:
 model:
   name: hccf # case-insensitive
   keep_rate: 0.5
-  layer_num: 3
-  reg_weight: 1.0e-2
-  cl_weight: 1.0e-3
-  temperature: 1
+  layer_num: 2
+  reg_weight: 1.0e-6
+  cl_weight: 1.0
+  temperature: 0.1
   embedding_size: 32
-  mult: 1.0e-1
+  mult: 1.0e-3
   hyper_num: 16
   leaky: 0.5
