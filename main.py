@@ -12,7 +12,7 @@ def main():
     data_handler.load_data()
 
     # Second Step: Create model
-    model = build_model(data_handler).cuda()
+    model = build_model(data_handler).to(configs['device'])
 
     # Third Step: Create logger
     logger = Logger()
