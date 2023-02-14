@@ -20,7 +20,6 @@ class DirectAU(BaseModel):
 		self.user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
 		self.item_embeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))
 
-		self.edge_dropper = SpAdjEdgeDrop()
 		self.is_training = True
 	
 	def _propagate(self, adj, embeds):
@@ -55,7 +54,6 @@ class DirectAU(BaseModel):
 		align_loss = self.alignment(anc_embeds, pos_embeds)
 		uniform_loss = self.gamma * (self.uniformity(anc_embeds) + self.uniformity(pos_embeds))
 		loss = align_loss + uniform_loss
-
 		losses = {'align_loss': align_loss, 'uniform_loss': uniform_loss}
 		return loss, losses
 

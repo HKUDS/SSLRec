@@ -2,6 +2,7 @@ from models.general_cf.lightgcn import LightGCN
 from models.general_cf.sgl import SGL
 from models.general_cf.lightgcl import LightGCL
 from models.general_cf.hccf import HCCF
+from models.general_cf.directau import DirectAU
 from models.social.smin import SMIN
 from models.social.kcgn import KCGN
 from models.sequential.bert4rec import BERT4Rec

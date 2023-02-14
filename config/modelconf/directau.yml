@@ -1,0 +1,35 @@
+optimizer:
+  name: adam
+  lr: 1.0e-3 # not 1e-3
+  weight_decay: 1e-6
+
+train:
+  epoch: 100
+  batch_size: 4096
+  save_model: true
+  loss: pairwise # bpr
+  test_step: 5 # evaluate per {test_step} epochs
+  #pretrain_path: ./checkpoint/xxxx.pth
+  reproducible: ture
+  seed: 2023
+
+test:
+  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
+  k: [10, 20, 40] # top-k
+  batch_size: 1024 # How many users per batch during validation
+
+data:
+  type: general_cf # choose in {general_cf, multi_behavior, sequential, social}
+  name: yelp
+
+model:
+  name: directau # case-insensitive
+  layer_num: 2
+  gamma: 1.0
+  embedding_size: 32
+
+tune:
+  enable: false # Whether to enable grid search to search for optimal hyperparameters
+  hyperparameters: [layer_num, gamma] # The name of the hyperparameter
+  layer_num: [1, 2, 3] # Use a list to store the search range
+  reg_weight: [0.5, 1, 2, 5]

@@ -8,6 +8,8 @@ def build_model(data_handler):
         model = SGL(data_handler)
     elif configs['model']['name'] == 'lightgcl':
         model = LightGCL(data_handler)
+    elif configs['model']['name'] == 'directau':
+        model = DirectAU(data_handler)
     elif configs['model']['name'] == 'cml':
         model = CML(data_handler)
     elif configs['model']['name'] == 'smin':
