@@ -223,9 +223,9 @@ class PositionwiseFeedForward(nn.Module):
     def forward(self, x):
         return self.w_2(self.dropout(self.activation(self.w_1(x))))
 
-class SublayerConnection(nn.Module):
+class ResidualConnection(nn.Module):
     def __init__(self, hidden_size, dropout):
-        super(SublayerConnection, self).__init__()
+        super(ResidualConnection, self).__init__()
         self.norm = nn.LayerNorm(hidden_size)
         self.dropout = nn.Dropout(dropout)
 
@@ -238,11 +238,31 @@ class TransformerLayer(nn.Module):
         super().__init__()
         self.attention = MultiHeadAttention(num_heads=num_heads, hidden_size=hidden_size, dropout=dropout_rate)
         self.feed_forward = PositionwiseFeedForward(hidden_size=hidden_size, d_ff=feed_forward_size, dropout=dropout_rate)
-        self.input_sublayer = SublayerConnection(hidden_size=hidden_size, dropout=dropout_rate)
-        self.output_sublayer = SublayerConnection(hidden_size=hidden_size, dropout=dropout_rate)
+        self.input_sublayer = ResidualConnection(hidden_size=hidden_size, dropout=dropout_rate)
+        self.output_sublayer = ResidualConnection(hidden_size=hidden_size, dropout=dropout_rate)
         self.dropout = nn.Dropout(p=dropout_rate)
 
     def forward(self, x, mask):
         x = self.input_sublayer(x, lambda _x: self.attention.forward(_x, _x, _x, mask=mask))
         x = self.output_sublayer(x, self.feed_forward)
+        return self.dropout(x)
+
+class TransformerEmbedding(nn.Module):
+    def __init__(self, item_num, emb_size, max_len, dropout=0.1):
+        """
+        :param vocab_size: total vocab size
+        :param embed_size: embedding size of token embedding
+        :param dropout: dropout rate
+        """
+        super().__init__()
+        self.token_emb = nn.Embedding(item_num, emb_size, padding_idx=0)
+        self.position_emb = nn.Embedding(max_len, emb_size)
+        self.dropout = nn.Dropout(p=dropout)
+        self.emb_size = emb_size
+
+    def forward(self, batch_seqs):
+        batch_size = batch_seqs.size(0)
+        pos_emb = self.position_emb.weight.unsqueeze(
+            0).repeat(batch_size, 1, 1)
+        x = self.token_emb(batch_seqs) + pos_emb
         return self.dropout(x)
