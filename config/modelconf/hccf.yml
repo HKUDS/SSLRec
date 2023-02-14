@@ -30,3 +30,4 @@ model:
   embedding_size: 32
   mult: 1e-1
   hyper_num: 16
+  leaky: 0.5
