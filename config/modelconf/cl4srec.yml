@@ -22,13 +22,14 @@ data:
   name: ml-20m
 
 model:
-  name: bert4rec # case-insensitive
+  name: cl4srec # case-insensitive
   dropout_rate: 0.1
   n_layers: 2
   embedding_size: 64
-  mask_prob: 0.2
   n_heads: 2
   max_seq_len: 50
+  lmd: 0.1
+  tau: 1
 
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
