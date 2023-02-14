@@ -16,7 +16,7 @@ train:
 test:
   metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
   k: [10, 20, 40] # top-k
-  batch_size: 2048 # How many users per batch during validation
+  batch_size: 512 # How many users per batch during validation
 
 data:
   type: social # choose in {general_cf, multi_behavior, sequential, social}

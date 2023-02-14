@@ -107,7 +107,7 @@ class KCGN(BaseModel):
 		return loss, losses
 
 	def full_predict(self, batch_data):
-		user_embeds, item_embeds = self.forward(self.adj, 1.0)
+		user_embeds, item_embeds = self.forward(self.data_handler.uv_g, self.data_handler.time_seq_tensor, self.out_dim, self.data_handler.rating_class)
 		self.is_training = False
 		pck_users, train_mask = batch_data
 		pck_users = pck_users.long()
