@@ -61,7 +61,7 @@ class HCCF(BaseModel):
 		anc_embeds = user_embeds[ancs]
 		pos_embeds = item_embeds[poss]
 		neg_embeds = item_embeds[negs]
-		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
+		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds) / anc_embeds.shape[0]
 
 		cl_loss = 0
 		for i in range(len(gcn_embeds_list)):
@@ -71,8 +71,8 @@ class HCCF(BaseModel):
 			pck_user_embeds2 = embeds2[:self.user_num][ancs]
 			pck_item_embeds1 = embeds1[self.user_num:][poss]
 			pck_item_embeds2 = embeds2[self.user_num:][poss]
-			cl_loss += cal_infonce_loss(pck_user_embeds1, pck_user_embeds2, embeds2[:self.user_num], self.temperature)
-			cl_loss += cal_infonce_loss(pck_item_embeds1, pck_item_embeds2, embeds2[self.user_num:], self.temperature)
+			cl_loss += cal_infonce_loss(pck_user_embeds1, pck_user_embeds2, embeds2[:self.user_num], self.temperature) / pck_user_embeds1.shape[0]
+			cl_loss += cal_infonce_loss(pck_item_embeds1, pck_item_embeds2, embeds2[self.user_num:], self.temperature) / pck_item_embeds1.shape[0]
 		
 		reg_loss = reg_params(self)
 
