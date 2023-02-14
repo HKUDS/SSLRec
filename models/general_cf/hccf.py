@@ -32,7 +32,7 @@ class HCCF(BaseModel):
 
 		self.edge_drop = SpAdjEdgeDrop()
 	
-	def GCNLayer(self, adj, embeds):
+	def _gcn_layer(self, adj, embeds):
 		return t.spmm(adj, embeds)
 	
 	def forward(self, adj, keep_rate):
@@ -44,7 +44,7 @@ class HCCF(BaseModel):
 		ii_hyper = self.item_embeds @ self.item_hyper_embeds * self.mult
 
 		for i in range(self.layer_num):
-			tem_embeds = self.GCNLayer(self.edge_drop(adj, keep_rate), embeds_list[-1])
+			tem_embeds = self._gcn_layer(self.edge_drop(adj, keep_rate), embeds_list[-1])
 			hyper_user_embeds = self.hgnn_layer(F.dropout(uu_hyper, p=1-keep_rate), embeds_list[-1][:self.user_num])
 			hyper_item_embeds = self.hgnn_layer(F.dropout(ii_hyper, p=1-keep_rate), embeds_list[-1][self.user_num:])
 			gcn_embeds_list.append(tem_embeds)
