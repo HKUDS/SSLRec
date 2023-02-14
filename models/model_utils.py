@@ -122,6 +122,9 @@ class GCN(nn.Module):
         h = self.layer(self.g, h)
         return h
 
+def message_func(edges):
+    return {'m' : edges.src['n_f'] + edges.data['e_f']}
+
 class GCNLayer(nn.Module):
     def __init__(self,
                 in_feats,

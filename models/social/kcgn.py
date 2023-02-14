@@ -13,6 +13,7 @@ uniformInit = nn.init.uniform
 class KCGN(BaseModel):
 	def __init__(self, data_handler):
 		super(KCGN, self).__init__(data_handler)
+		self.data_handler = data_handler
 		self.layer_num = configs['model']['layer_num']
 		self.reg_weight = configs['model']['reg_weight']
 		self.fuse = configs['model']['fuse']
@@ -21,8 +22,7 @@ class KCGN(BaseModel):
 		self.time_step = configs['model']['time_step']
 
 		self.user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
-		self.item_embeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))
-
+		self.item_embeds = nn.Parameter(init(t.empty(self.item_num * data_handler.rating_class, self.embedding_size)))
 		slope = configs['model']['slope']
 		self.act = nn.LeakyReLU(negative_slope=slope)
 		if self.fuse == 'weight':
@@ -42,15 +42,12 @@ class KCGN(BaseModel):
 
 		self.is_training = True
 	
-	def _propagate(self, adj, embeds):
-		return t.spmm(adj, embeds)
-	
 	def forward(self, graph, time_seq, out_dim, r_class=5):
 		if not self.is_training:
 			return self.final_user_embeds, self.final_item_embeds
 		all_user_embeds = [self.user_embeds]
 		all_item_embeds = [self.item_embeds]
-		if len(self.layer) == 0:
+		if len(self.layers) == 0:
 			item_embeds = self.item_embeds.view(-1, r_class, out_dim)
 			ret_item_embeds = t.div(t.sum(item_embeds, dim=1), r_class)
 			return self.user_embeds, ret_item_embeds
@@ -71,7 +68,6 @@ class KCGN(BaseModel):
 		if r_class == 1:
 			return user_embeds, item_embeds
 		item_embeds = item_embeds.view(-1, r_class, out_dim)
-
 		if self.fuse == "mean":
 			ret_item_embeds = t.div(t.sum(item_embeds, dim=1), r_class)
 		elif self.fuse == "weight":
@@ -79,20 +75,35 @@ class KCGN(BaseModel):
 			item_embeds = item_embeds * weight
 			ret_item_embeds = t.sum(item_embeds, dim=1)
 		self.final_user_embeds = user_embeds
-		self.final_item_embeds = item_embeds
-		return user_embeds, item_embeds
+		self.final_item_embeds = ret_item_embeds
+		return user_embeds, ret_item_embeds
 	
 	def cal_loss(self, batch_data):
 		self.is_training = True
-		user_embeds, item_embeds = self.forward(self.adj, self.keep_rate)
+		user_embeds, item_embeds = self.forward(self.data_handler.uv_g, self.data_handler.time_seq_tensor, self.out_dim, self.data_handler.rating_class)
 		ancs, poss, negs = batch_data
 		anc_embeds = user_embeds[ancs]
 		pos_embeds = item_embeds[poss]
 		neg_embeds = item_embeds[negs]
 		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
 		reg_loss = reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds])
-		loss = bpr_loss + self.reg_weight * reg_loss
-		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss}
+		
+		uu_dgi_pos_loss, uu_dgi_neg_loss = self.uu_dgi(user_embeds, self.data_handler.uu_subgraph_adj_tensor, \
+			self.data_handler.uu_subgraph_adj_norm, self.data_handler.uu_node_subgraph, self.data_handler.uu_dgi_node)
+		user_mask = t.zeros(self.user_num).cuda()
+		user_mask[ancs] = 1
+		user_mask = user_mask * self.data_handler.uu_dgi_node_mask
+		uu_dgi_loss = ((uu_dgi_pos_loss * user_mask).sum() + (uu_dgi_neg_loss * user_mask).sum())/t.sum(user_mask)
+
+		ii_dgi_pos_loss, ii_dgi_neg_loss = self.ii_dgi(item_embeds, self.data_handler.ii_subgraph_adj_tensor, \
+            self.data_handler.ii_subgraph_adj_norm, self.data_handler.ii_node_subgraph, self.data_handler.ii_dgi_node)
+		ii_mask = t.zeros(self.item_num).cuda()
+		ii_mask[poss] = 1
+		ii_mask[negs] = 1
+		ii_mask = ii_mask * self.data_handler.ii_dgi_node_mask
+		ii_dgi_loss = ((ii_dgi_pos_loss * ii_mask).sum() + (ii_dgi_neg_loss * ii_mask).sum())/t.sum(ii_mask)
+		loss = bpr_loss + self.reg_weight * reg_loss + self.lam[0] * uu_dgi_loss + self.lam[1] * ii_dgi_loss
+		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'uu_dgi_loss': uu_dgi_loss, 'ii_dgi_loss': ii_dgi_loss}
 		return loss, losses
 
 	def full_predict(self, batch_data):

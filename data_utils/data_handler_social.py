@@ -77,7 +77,8 @@ class DataHandlerSocial:
 		return subgraph_list, node_subgraph, adj_mat, node_list
 
 	def load_data(self):
-		trn_mat = self._load_one_mat(self.trn_file)
+		with open(self.trn_file, 'rb') as fs:
+			trn_mat = pickle.load(fs)
 		tst_mat = self._load_one_mat(self.tst_file)
         
 		configs['data']['user_num'], configs['data']['item_num'] = trn_mat.shape
