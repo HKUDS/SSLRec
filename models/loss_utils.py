@@ -13,8 +13,8 @@ def reg_pick_embeds(embeds_list):
 	return reg_loss
 
 def cal_infonce_loss(embeds1, embeds2, all_embeds2, temp=1.0):
-	normed_embeds1 = embeds1 / t.sqrt(embeds1.square().sum(-1, keepdim=True))
-	normed_embeds2 = embeds2 / t.sqrt(embeds2.square().sum(-1, keepdim=True))
+	normed_embeds1 = embeds1 / t.sqrt(1e-8 + embeds1.square().sum(-1, keepdim=True))
+	normed_embeds2 = embeds2 / t.sqrt(1e-8 + embeds2.square().sum(-1, keepdim=True))
 	normed_all_embeds2 = all_embeds2 / t.sqrt(all_embeds2.square().sum(-1, keepdim=True))
 	nume_term = -(normed_embeds1 * normed_embeds2 / temp).sum(-1)
 	deno_term = t.log(t.sum(t.exp(normed_embeds1 @ normed_all_embeds2.T / temp), dim=-1))
