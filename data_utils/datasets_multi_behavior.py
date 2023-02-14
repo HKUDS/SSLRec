@@ -43,6 +43,29 @@ class AllRankTestData(data.Dataset):
         return pck_user, pck_mask
 
 
+class PairwiseTrnData(data.Dataset):
+	def __init__(self, coomat):
+		self.rows = coomat.row
+		self.cols = coomat.col
+		self.dokmat = coomat.todok()
+		self.negs = np.zeros(len(self.rows)).astype(np.int32)
+	
+	def sample_negs(self):
+		for i in range(len(self.rows)):
+			u = self.rows[i]
+			while True:
+				iNeg = np.random.randint(configs['data']['item_num'])
+				if (u, iNeg) not in self.dokmat:
+					break
+			self.negs[i] = iNeg
+	
+	def __len__(self):
+		return len(self.rows)
+
+	def __getitem__(self, idx):
+		return self.rows[idx], self.cols[idx], self.negs[idx]
+
+
 
 class CMLData(data.Dataset):
     def __init__(self, beh, data, num_item, behaviors_data=None, num_ng=1, is_training=True):
@@ -514,12 +537,44 @@ class MMCLRData(Dataset):
         return cur_tensor
 
 
+class HMGCRData(data.Dataset):
+	def __init__(self, data, num_item, train_mat=None, num_ng=0, is_training=None):
+		super(HMGCRData, self).__init__()
+		""" Note that the labels are only useful when training, we thus 
+			add them in the ng_sample() function.
+		"""
+		self.data = np.array(data)
+		self.num_item = num_item
+		self.train_mat = train_mat
+		self.num_ng = num_ng
+		self.is_training = is_training
 
+	def sample_negs(self):
+		# assert self.is_training, 'no need to sampling when testing'
+		tmp_trainMat = self.train_mat.todok()
+		length = self.data.shape[0]
+		self.neg_data = np.random.randint(low=0, high=self.num_item, size=length)
 
+		for i in range(length):
+			uid = self.data[i][0]
+			iid = self.neg_data[i]
+			if (uid, iid) in tmp_trainMat:
+				while (uid, iid) in tmp_trainMat:
+					iid = np.random.randint(low=0, high=self.num_item)
+				self.neg_data[i] = iid
 
+	def __len__(self):
+		return len(self.data)
 
-
-
+	def __getitem__(self, idx):
+		user = self.data[idx][0]
+		item_i = self.data[idx][1]
+		if self.is_training:
+			neg_data = self.neg_data
+			item_j = neg_data[idx]
+			return user, item_i, item_j 
+		else:
+			return user, item_i
 
 
 
