@@ -18,6 +18,8 @@ class DataHandlerSocial:
 			predir = './datasets/social_epinions/'
 		elif configs['data']['name'] == 'yelp':
 			predir = './datasets/social_yelp/'
+		elif configs['data']['name'] == 'lastfm':
+			predir = './datasets/social_lastfm/'
 		self.trn_file = predir + 'trn_mat.pkl'
 		self.tst_file = predir + 'tst_mat.pkl'
 		if configs['model']['name'] == 'smin':
@@ -28,6 +30,8 @@ class DataHandlerSocial:
 			self.uu_vv_graph_file = predir + 'uu_vv_graph.pkl'
 			self.uu_subgraph_file = predir + 'uu_mat_subgraph.pkl'
 			self.ii_subgraph_file = predir + 'ii_mat_subgraph.pkl'
+		if configs['model']['name'] == 'mhcn':
+			self.trust_file = predir + 'trust.pkl'
 
 	def _load_one_mat(self, file):
 		"""Load one single adjacent matrix from file
@@ -204,3 +208,7 @@ class DataHandlerSocial:
 									idtype=t.int32,
 									num_nodes=multi_adj_time_norm.shape[0],
 									device=t.device('cuda'))
+
+		elif configs['model']['name'] == 'mhcn':
+			trust_mat = self._load_one_mat(self.trust_file)
+			

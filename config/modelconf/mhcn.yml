@@ -1,0 +1,40 @@
+optimizer:
+  name: adam
+  lr: 1.0e-3 # not 1e-3
+  weight_decay: 0.98
+
+train:
+  epoch: 120
+  batch_size: 2048
+  save_model: true
+  loss: pairwise # bpr
+  test_step: 5 # evaluate per {test_step} epochs
+  #pretrain_path: ./checkpoint/xxxx.pth
+  reproducible: true
+  seed: 2023
+
+test:
+  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
+  k: [10, 20, 40] # top-k
+  batch_size: 512 # How many users per batch during validation
+
+data:
+  type: social # choose in {general_cf, multi_behavior, sequential, social}
+  name: lastfm
+
+model:
+  name: mhcn # case-insensitive
+  layer_num: 2
+  reg_weight: 5.0e-2
+  embedding_size: 50
+  ss_rate: 1.0e-2
+  reg_u: 1.0e-3
+  reg_i: 1.0e-2
+  reg_b: 2.0e-1
+  reg_s: 2.0e-1
+
+tune:
+  enable: false # Whether to enable grid search to search for optimal hyperparameters
+  hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
+  layer_num: [1, 2, 3] # Use a list to store the search range
+  reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
