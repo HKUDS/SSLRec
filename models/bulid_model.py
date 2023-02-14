@@ -18,6 +18,8 @@ def build_model(data_handler):
         model = MMCLR(data_handler)
     elif configs['model']['name'] == 'bert4rec':
         model = BERT4Rec(data_handler)
+    elif configs['model']['name'] == 'cl4srec':
+        model = CL4SRec(data_handler)
     elif configs['model']['name'] == 'hccf':
         model = HCCF(data_handler)
     else:

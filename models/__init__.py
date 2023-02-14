@@ -7,3 +7,4 @@ from models.social.smin import SMIN
 from models.social.kcgn import KCGN
 from models.multi_behavior.mmclr import MMCLR
 from models.sequential.bert4rec import BERT4Rec
+from models.sequential.cl4srec import CL4SRec
