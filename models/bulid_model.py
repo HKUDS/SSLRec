@@ -22,6 +22,10 @@ def build_model(data_handler):
         model = CL4SRec(data_handler)
     elif configs['model']['name'] == 'hccf':
         model = HCCF(data_handler)
+    elif configs['model']['name'] == 'hmgcr':
+        model = HMGCR(data_handler)
+    elif configs['model']['name'] == 'smbrec':
+        model = SMBRec(data_handler)
     else:
         raise NotImplementedError
 
