@@ -20,3 +20,9 @@ def cal_infonce_loss(embeds1, embeds2, all_embeds2, temp=1.0):
 	deno_term = t.log(t.sum(t.exp(normed_embeds1 @ normed_all_embeds2.T / temp), dim=-1))
 	cl_loss = (nume_term + deno_term).sum()
 	return cl_loss
+
+def reg_params(model):
+	reg_loss = 0
+	for W in model.parameters():
+		reg_loss += W.norm(2).square()
+	return reg_loss
