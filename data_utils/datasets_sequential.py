@@ -4,17 +4,33 @@ from config.configurator import configs
 import numpy as np
 import torch
 
-class SequentialDataset(data.Dataset):
-	def __init__(self, user_seqs):
-		self.uids = user_seqs["uid"]
-		self.seqs = user_seqs["item_seq"]
-		self.last_items = user_seqs["item_id"]
-	
-	def sample_negs(self):
-		return None
-	
-	def __len__(self):
-		return len(self.uids)
 
-	def __getitem__(self, idx):
-		return torch.LongTensor([self.uids[idx]]), torch.LongTensor(self.seqs[idx]), torch.LongTensor([self.last_items[idx]])
+class SequentialDataset(data.Dataset):
+    def __init__(self, user_seqs, mode='train'):
+        self.max_seq_len = configs['model']['max_seq_len']
+        self.uids = user_seqs["uid"]
+        self.seqs = self._pad_seqs(user_seqs["item_seq"])
+        self.last_items = user_seqs["item_id"]
+        if mode == 'test':
+            self.test_users = self.uids
+            self.user_pos_lists = user_seqs["item_seq"]
+
+    def _pad_seqs(self, seqs):
+        padded_seqs = []
+        for seq in seqs:
+            if len(seq) >= self.max_seq_len:
+                seq = seq[:self.max_seq_len]
+            else:
+                # pad at the head
+                seq = [0] * (self.max_seq_len - len(seq)) + seq
+            padded_seqs.append(seq)
+        return padded_seqs
+
+    def sample_negs(self):
+        return None
+
+    def __len__(self):
+        return len(self.uids)
+
+    def __getitem__(self, idx):
+        return torch.LongTensor([self.uids[idx]]), torch.LongTensor(self.seqs[idx]), torch.LongTensor([self.last_items[idx]])

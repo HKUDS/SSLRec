@@ -91,7 +91,7 @@ class Metric(object):
         test_user_num = len(test_dataloader.dataset.test_users)
         for _, tem in enumerate(test_dataloader):
             # predict result
-            batch_data = list(map(lambda x: x.long().cuda(), tem))
+            batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
             batch_pred = model.full_predict(batch_data)
             test_user_count += batch_pred.shape[0]
             _, batch_rate = torch.topk(batch_pred, k=max(self.k))

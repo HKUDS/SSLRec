@@ -20,6 +20,7 @@ test:
 data:
   type: sequential # choose in {general_cf, multi_behavior, sequential, social}
   name: ml-20m
+  seq_aug: false
 
 model:
   name: cl4srec # case-insensitive

@@ -67,10 +67,9 @@ class CL4SRec(BaseModel):
             crop_begin = random.randint(0, length - num_left)
             croped_item_seq = np.zeros_like(seq)
             if crop_begin + num_left < seq.shape[0]:
-                croped_item_seq[-num_left:] = seq[-crop_begin:-
-                                                  (crop_begin + num_left)]
+                croped_item_seq[-num_left:] = seq[-(crop_begin + 1 + num_left):-(crop_begin + 1)]
             else:
-                croped_item_seq[-num_left:] = seq[-crop_begin:]
+                croped_item_seq[-num_left:] = seq[-(crop_begin + 1):]
             return croped_item_seq.tolist(), num_left
 
         def item_mask(seq, length, gamma=0.3):
@@ -78,7 +77,8 @@ class CL4SRec(BaseModel):
             mask_index = random.sample(range(length), k=num_mask)
             masked_item_seq = seq[:]
             # token 0 has been used for semantic masking
-            masked_item_seq[-mask_index] = self.mask_token
+            mask_index = [-i-1 for i in mask_index]
+            masked_item_seq[mask_index] = self.mask_token
             return masked_item_seq.tolist(), length
 
         def item_reorder(seq, length, beta=0.6):
@@ -89,8 +89,7 @@ class CL4SRec(BaseModel):
                 range(reorder_begin, reorder_begin + num_reorder))
             random.shuffle(shuffle_index)
             shuffle_index = [-i for i in shuffle_index]
-            reordered_item_seq[-reorder_begin:-(reorder_begin +
-                                                num_reorder)] = reordered_item_seq[shuffle_index]
+            reordered_item_seq[-(reorder_begin + 1 + num_reorder):-(reorder_begin+1)] = reordered_item_seq[shuffle_index]
             return reordered_item_seq.tolist(), length
 
         seqs = batch_seqs.tolist()
@@ -182,27 +181,31 @@ class CL4SRec(BaseModel):
         output = x[:, -1, :]
         return output  # [B H]
 
-    def calculate_loss(self, batch_data):
+    def cal_loss(self, batch_data):
         batch_user, batch_seqs, batch_last_items = batch_data
         seq_output = self.forward(batch_seqs)
 
         test_item_emb = self.emb_layer.token_emb.weight[:self.item_num + 1]
         logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
-        loss = self.loss_func(logits, batch_last_items)
+        loss = self.loss_func(logits, batch_last_items.squeeze())
 
         # NCE
         aug_seq1, aug_seq2 = self._cl4srec_aug(batch_seqs)
         seq_output1 = self.forward(aug_seq1)
         seq_output2 = self.forward(aug_seq2)
 
-        nce_loss = self.info_nce(
+        cl_loss = self.lmd * self.info_nce(
             seq_output1, seq_output2, temp=self.tau, batch_size=aug_seq1.shape[0])
 
-        return loss + self.lmd * nce_loss
+        loss_dict = {
+            'rec_loss': loss.item(),
+            'cl_loss': cl_loss.item(),
+        }
+        return loss + cl_loss, loss_dict
 
     def full_predict(self, batch_data):
         batch_user, batch_seqs, _ = batch_data
-        logits = self.forward(batch_data)
+        logits = self.forward(batch_seqs)
         test_item_emb = self.emb_layer.token_emb.weight[:self.item_num + 1]
         scores = torch.matmul(logits, test_item_emb.transpose(0, 1))
         return scores
