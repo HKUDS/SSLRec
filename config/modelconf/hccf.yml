@@ -28,6 +28,6 @@ model:
   cl_weight: 1.0e-3
   temperature: 0.1
   embedding_size: 32
-  mult: 1e-1
+  mult: 1.0e-1
   hyper_num: 16
   leaky: 0.5
