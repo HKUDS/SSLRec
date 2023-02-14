@@ -12,6 +12,8 @@ def build_data_handler():
         data_handler = DataHandlerSocial()
     elif configs['data']['type'] == 'mmclr':
         data_handler = DataHandlerMMCLR()
+    elif configs['data']['type'] == 'hmgcr' or 'smbrec':
+        data_handler = DataHandlerHMGCRSMBRec()
     else:
         raise NotImplementedError
 
