@@ -59,7 +59,7 @@ class Trainer(object):
         model.train()
         for _, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
             self.optimizer.zero_grad()
-            batch_data = list(map(lambda x: x.long().cuda(), tem))
+            batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
             loss, loss_dict = model.cal_loss(batch_data)
             loss.backward()
             self.optimizer.step()
