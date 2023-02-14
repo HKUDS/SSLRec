@@ -74,7 +74,7 @@ class BERT4Rec(BaseModel):
 
     def _transform_test_seq(self, batch_seqs):
         batch_mask_token = torch.LongTensor(
-            [self.mask_token] * batch_seqs.size(0)).unsqueeze(1)
+            [self.mask_token] * batch_seqs.size(0)).unsqueeze(1).to(batch_seqs.device)
         seqs = torch.cat([batch_seqs, batch_mask_token], dim=1)
         return seqs[:, -self.max_len:]
 

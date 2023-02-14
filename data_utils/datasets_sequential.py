@@ -13,7 +13,7 @@ class SequentialDataset(data.Dataset):
         self.last_items = user_seqs["item_id"]
         if mode == 'test':
             self.test_users = self.uids
-            self.user_pos_lists = user_seqs["item_seq"]
+            self.user_pos_lists = np.asarray(self.last_items, dtype=np.int32).reshape(-1, 1).tolist()
 
     def _pad_seqs(self, seqs):
         padded_seqs = []
@@ -33,4 +33,4 @@ class SequentialDataset(data.Dataset):
         return len(self.uids)
 
     def __getitem__(self, idx):
-        return torch.LongTensor([self.uids[idx]]), torch.LongTensor(self.seqs[idx]), torch.LongTensor([self.last_items[idx]])
+        return self.uids[idx], torch.LongTensor(self.seqs[idx]), torch.LongTensor([self.last_items[idx]])
