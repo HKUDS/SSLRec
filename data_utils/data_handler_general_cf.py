@@ -69,7 +69,7 @@ class DataHandlerGeneralCF:
 		idxs = t.from_numpy(np.vstack([mat.row, mat.col]).astype(np.int64))
 		vals = t.from_numpy(mat.data.astype(np.float32))
 		shape = t.Size(mat.shape)
-		return t.sparse.FloatTensor(idxs, vals, shape).cuda()
+		return t.sparse.FloatTensor(idxs, vals, shape).to(configs['device'])
 	
 	def load_data(self):
 		trn_mat = self._load_one_mat(self.trn_file)

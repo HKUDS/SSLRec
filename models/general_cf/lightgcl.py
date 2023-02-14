@@ -141,8 +141,8 @@ class LightGCL(BaseModel):
             neg_score = t.exp(gnn_i @ hyper_i.T/self.temp).sum(1)
             loss_s_i = ((-1 * t.log(pos_score/(neg_score+1e-8) + 1e-8))*i_mask).sum()
             reg_loss = reg_loss + loss_s_i
-
-        loss = bpr_loss + self.reg_weight * reg_loss
+        reg_loss = self.reg_weight * reg_loss
+        loss = bpr_loss + reg_loss
         losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss}
         return loss, losses
 

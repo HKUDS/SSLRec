@@ -2,22 +2,20 @@ import torch as t
 from torch import nn
 import torch.nn.functional as F
 from config.configurator import configs
-from models.loss_utils import cal_bpr_loss, reg_pick_embeds
 from models.base_model import BaseModel
 from models.model_utils import SpAdjEdgeDrop
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
 
-class LightGCN(BaseModel):
+class DirectAU(BaseModel):
 	def __init__(self, data_handler):
-		super(LightGCN, self).__init__(data_handler)
+		super(DirectAU, self).__init__(data_handler)
 
 		self.adj = data_handler.torch_adj
 
 		self.layer_num = configs['model']['layer_num']
-		self.reg_weight = configs['model']['reg_weight']
-		self.keep_rate = configs['model']['keep_rate']
+		self.gamma = configs['model']['gamma']
 
 		self.user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
 		self.item_embeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))
@@ -28,30 +26,37 @@ class LightGCN(BaseModel):
 	def _propagate(self, adj, embeds):
 		return t.spmm(adj, embeds)
 	
-	def forward(self, adj, keep_rate):
+	def forward(self, adj):
 		if not self.is_training:
 			return self.final_embeds[:self.user_num], self.final_embeds[self.user_num:]
 		embeds = t.concat([self.user_embeds, self.item_embeds], axis=0)
 		embeds_list = [embeds]
-		adj = self.edge_dropper(adj, keep_rate)
 		for i in range(self.layer_num):
 			embeds = self._propagate(adj, embeds_list[-1])
 			embeds_list.append(embeds)
 		embeds = sum(embeds_list) / len(embeds_list)
 		self.final_embeds = embeds
 		return embeds[:self.user_num], embeds[self.user_num:]
-	
+
+	def alignment(self, x, y, alpha=2):
+		return (x - y).norm(p=2, dim=1).pow(alpha).mean()
+
+	def uniformity(self, x, t=2):
+		return t.pdist(x, p=2).pow(2).mul(-t).exp().mean().log()
+
 	def cal_loss(self, batch_data):
 		self.is_training = True
-		user_embeds, item_embeds = self.forward(self.adj, self.keep_rate)
-		ancs, poss, negs = batch_data
+		user_embeds, item_embeds = self.forward(self.adj)
+		ancs, poss, _ = batch_data
+		user_embeds = F.normalize(user_embeds)
+		item_embeds = F.normalize(item_embeds)
 		anc_embeds = user_embeds[ancs]
 		pos_embeds = item_embeds[poss]
-		neg_embeds = item_embeds[negs]
-		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
-		reg_loss = self.reg_weight * reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds])
-		loss = bpr_loss + reg_loss
-		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss}
+		align_loss = self.alignment(anc_embeds, pos_embeds)
+		uniform_loss = self.gamma * (self.uniformity(anc_embeds) + self.uniformity(pos_embeds))
+		loss = align_loss + uniform_loss
+
+		losses = {'align_loss': align_loss, 'uniform_loss': uniform_loss}
 		return loss, losses
 
 	def full_predict(self, batch_data):
