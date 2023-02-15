@@ -10,6 +10,8 @@ def build_model(data_handler):
         model = LightGCL(data_handler)
     elif configs['model']['name'] == 'directau':
         model = DirectAU(data_handler)
+    elif configs['model']['name'] == 'simgcl':
+        model = SimGCL(data_handler)
     elif configs['model']['name'] == 'cml':
         model = CML(data_handler)
     elif configs['model']['name'] == 'smin':
