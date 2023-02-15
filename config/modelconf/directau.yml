@@ -1,7 +1,7 @@
 optimizer:
   name: adam
   lr: 1.0e-3 # not 1e-3
-  weight_decay: 1e-6
+  weight_decay: 1.0e-6
 
 train:
   epoch: 100
