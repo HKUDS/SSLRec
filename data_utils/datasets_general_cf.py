@@ -35,7 +35,7 @@ class PairwiseWEpochFlagTrnData(PairwiseTrnData):
 		flag = 1 if self.epoch_flag_counter % self.epoch_period else 0
 		if idx == 0:
 			self.epoch_flag_counter += 1
-		anc, pos, neg = super(PairwiseWEpochFlag, self).__getitem__(idx)
+		anc, pos, neg = super(PairwiseWEpochFlagTrnData, self).__getitem__(idx)
 		return anc, pos, neg, flag
 
 class AllRankTstData(data.Dataset):
