@@ -57,7 +57,8 @@ class SGL(LightGCN):
 
 		bpr_loss = cal_bpr_loss(anc_embeds3, pos_embeds3, neg_embeds3)
 		cl_loss = cal_infonce_loss(anc_embeds1, anc_embeds2, user_embeds2, self.temperature) + cal_infonce_loss(pos_embeds1, pos_embeds2, item_embeds2, self.temperature) + cal_infonce_loss(neg_embeds1, neg_embeds2, item_embeds2, self.temperature)
-		reg_loss = reg_pick_embeds([anc_embeds3, pos_embeds3, neg_embeds3])
-		loss = bpr_loss + self.reg_weight * reg_loss + self.cl_weight * cl_loss
+		reg_loss = self.reg_weight * reg_pick_embeds([anc_embeds3, pos_embeds3, neg_embeds3])
+		cl_loss *= self.cl_weight
+		loss = bpr_loss + reg_loss + cl_loss
 		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'cl_loss': cl_loss}
 		return loss, losses

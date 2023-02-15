@@ -74,9 +74,10 @@ class HCCF(BaseModel):
 			cl_loss += cal_infonce_loss(pck_user_embeds1, pck_user_embeds2, embeds2[:self.user_num], self.temperature) / pck_user_embeds1.shape[0]
 			cl_loss += cal_infonce_loss(pck_item_embeds1, pck_item_embeds2, embeds2[self.user_num:], self.temperature) / pck_item_embeds1.shape[0]
 		
-		reg_loss = reg_params(self)
+		reg_loss = reg_params(self) * self.reg_weight
+		cl_loss *= self.cl_weight
 
-		loss = bpr_loss + self.reg_weight * reg_loss + self.cl_weight * cl_loss
+		loss = bpr_loss + reg_loss + cl_loss
 		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'cl_loss': cl_loss}
 		return loss, losses
 	
