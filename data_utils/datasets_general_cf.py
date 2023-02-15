@@ -28,13 +28,18 @@ class PairwiseTrnData(data.Dataset):
 class PairwiseWEpochFlagTrnData(PairwiseTrnData):
 	def __init__(self, coomat):
 		super(PairwiseWEpochFlagTrnData, self).__init__(coomat)
-		self.epoch_flag_counter = 0
+		self.epoch_flag_counter = -1
 		self.epoch_period = configs['model']['epoch_period']
 	
 	def __getitem__(self, idx):
-		flag = 1 if self.epoch_flag_counter % self.epoch_period == 0 else 0
+		flag = 0
+		if self.epoch_flag_counter == -1:
+			flag = 1
+			self.epoch_flag_counter = 0
 		if idx == 0:
 			self.epoch_flag_counter += 1
+			if self.epoch_flag_counter % self.epoch_period == 0:
+				flag = 1
 		anc, pos, neg = super(PairwiseWEpochFlagTrnData, self).__getitem__(idx)
 		return anc, pos, neg, flag
 
