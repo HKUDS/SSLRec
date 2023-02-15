@@ -9,7 +9,7 @@ train:
   save_model: true
   test_step: 1 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
-  reproducible: ture
+  reproducible: true
   seed: 2023
 
 test:
