@@ -35,16 +35,12 @@ class MMCLR(BaseModel):
             torch.nn.ReLU(True),
              torch.nn.LayerNorm(configs['model']['embedding_size']),
             torch.nn.Linear(configs['model']['embedding_size'],configs['model']['embedding_size']),
-           
-
-
         )
         self.user_fusion=torch.nn.Sequential(
             torch.nn.Linear(configs['model']['embedding_size']*2,configs['model']['embedding_size']),
             torch.nn.ReLU(True),
             torch.nn.LayerNorm(configs['model']['embedding_size']),
             torch.nn.Linear(configs['model']['embedding_size'],configs['model']['embedding_size'])
-
         )
         self.fc_cl_graph=torch.nn.Sequential(
             torch.nn.Linear(configs['model']['embedding_size'], configs['model']['embedding_size']*2),
@@ -61,15 +57,11 @@ class MMCLR(BaseModel):
            
              torch.nn.ReLU(True),
             torch.nn.Linear(configs['model']['embedding_size']*2, configs['model']['embedding_size']),
-            
-
         )
         self.fc_sequence=torch.nn.Sequential(
             torch.nn.Linear(configs['model']['embedding_size'], configs['model']['embedding_size']*2),
-            
             torch.nn.ReLU(True),
             torch.nn.Linear(configs['model']['embedding_size']*2, configs['model']['embedding_size']),
-
         )
         self.metric=torch.nn.BCELoss()
         #self.f=open('/data/wuyq/MMCLR/res.graph','w')
@@ -158,7 +150,6 @@ class MMCLR(BaseModel):
             cross_constra_loss=self.constrat(seq_user_embs=seq_user_embedding,graph_user_embs=graph_user_embedding, user_ids=user4seq)
             inner_cl_loss=self.inner_CL(graph_buy_emb=graph_click_emb[0],graph_click_emb=graph_click_emb[1],seq_buy_emb=seq_click_emb[0], seq_click_emb=seq_click_emb[1], user_ids=seq_data[0], have_diff_behaviors=have_constra)
  
-
             pos_score=torch.mul(mutliView_user_embedding,mutliView_item_embedding).sum(-1)
             neg_score=torch.mul(mutliView_user_embedding,mutliView_neg_item_embedding).sum(-1)
 
@@ -191,7 +182,6 @@ class MMCLR(BaseModel):
                 neg4seq=neg
          
                 graph_user_embedding,graph_item_embedding,graph_neg_item_embedding,graph_cl_loss,graph_click_emb,graph_inner_loss,graph_sampled_click_emb=self.graph_layer(blocks,constra_b=sampled_view,have_cart=have_cart,seq_tensor=seq_data,is_eval=is_eval)
-
 
             mutliView_user_embedding=torch.cat((seq_user_embedding,graph_user_embedding),dim=-1)
             mutliView_item_embedding=torch.cat((seq_item_embedding,graph_item_embedding),dim=-1)
@@ -240,26 +230,18 @@ class MMCLR(BaseModel):
 
 
 class PR_loss_for_bert(torch.nn.Module):
-
     def __init__(self):
         super (PR_loss_for_bert,self).__init__()
         self.criterion = torch.nn.BCELoss(reduction='none')
     
     def forward(self,masked_item_sequence,point_i,point_j,is_eval=False):
-        
         # print(point_i.shape,point_j.shape)
         distance=(point_i-point_j).sigmoid()
-       
         distance=distance.flatten()
-        
         distance = self.criterion(distance, torch.ones_like(distance, dtype=torch.float32))
         if is_eval:
             loss=torch.sum(distance)/distance.shape[0]
-        
         else:
             mip_mask = (masked_item_sequence == configs['model']['mask_id']).float()
-            
             loss = torch.sum(distance * mip_mask.flatten())/mip_mask.sum()
-        
-       
         return loss

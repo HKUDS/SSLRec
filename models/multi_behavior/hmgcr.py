@@ -15,30 +15,14 @@ uniformInit = nn.init.uniform
 class HMGCR(BaseModel):
     def __init__(self, data_handler):
         super(HMGCR, self).__init__(data_handler)
-
         self.data_handler = data_handler
         self.userNum = data_handler.userNum
         self.itemNum = data_handler.itemNum
         self.behavior = data_handler.behaviors
         self.behavior_mats = data_handler.behavior_mats
-        
-        self.embedding_dict = self._init_embedding() 
-        self.weight_dict = self._init_weight()
         self.hypergcns = nn.ModuleList()
         for i in range(len(data_handler.beh_meta_path)):
             self.hypergcns.append(GCN(self.userNum, self.itemNum, self.data_handler.beh_meta_path_mats[i]))  
-
-    def _init_embedding(self): 
-        embedding_dict = {  
-            'user_embedding': None,
-            'item_embedding': None,
-            'user_embeddings': None,
-            'item_embeddings': None,
-        }
-        return embedding_dict
-
-    def _init_weight(self):  
-        pass
 
     def _propagate(self, adj, embeds):
         return torch.spmm(adj, embeds)
@@ -51,35 +35,26 @@ class HMGCR(BaseModel):
         return torch.mm(z1, z2.t())
 
     def _batched_contrastive_loss(self, z1, z2, batch_size=1024):
-
         device = z1.device
         num_nodes = z1.size(0)
         num_batches = (num_nodes - 1) // batch_size + 1
         f = lambda x: torch.exp(x / configs['model']['tau'])      
-
         indices = torch.arange(0, num_nodes).to(device)
         losses = []
-
         for i in range(num_batches):
             tmp_i = indices[i * batch_size:(i + 1) * batch_size]
-
             tmp_refl_sim_list = []
             tmp_between_sim_list = []
             for j in range(num_batches):
                 tmp_j = indices[j * batch_size:(j + 1) * batch_size]
                 tmp_refl_sim = f(self.sim(z1[tmp_i], z1[tmp_j]))  
                 tmp_between_sim = f(self.sim(z1[tmp_i], z2[tmp_j]))  
-
                 tmp_refl_sim_list.append(tmp_refl_sim)
                 tmp_between_sim_list.append(tmp_between_sim)
-
             refl_sim = torch.cat(tmp_refl_sim_list, dim=-1)
             between_sim = torch.cat(tmp_between_sim_list, dim=-1)
-
             losses.append(-torch.log(between_sim[:, i * batch_size:(i + 1) * batch_size].diag()/ (refl_sim.sum(1) + between_sim.sum(1) - refl_sim[:, i * batch_size:(i + 1) * batch_size].diag())+1e-8))
-
-            del refl_sim, between_sim, tmp_refl_sim_list, tmp_between_sim_list
-                   
+            del refl_sim, between_sim, tmp_refl_sim_list, tmp_between_sim_list      
         loss_vec = torch.cat(losses)
         return loss_vec.mean()
 
@@ -128,44 +103,6 @@ class HMGCR(BaseModel):
         full_preds = pck_user_embeds @ item_embeds.T
         full_preds = self._mask_predict(full_preds, train_mask)
         return full_preds
-    
-    def para_dict_to_tenser(self, para_dict): 
-    
-        tensors = []
-        for beh in para_dict.keys():
-            tensors.append(para_dict[beh])
-        tensors = torch.stack(tensors, dim=0)
-
-        return tensors.float()
-
-    def update_params(self, lr_inner, first_order=False, source_params=None, detach=False):
-        if source_params is not None:
-            for tgt, src in zip(self.named_parameters(), source_params):
-                name_t, param_t = tgt
-                grad = src
-                if first_order:
-                    grad = to_var(grad.detach().data)
-                tmp = param_t - lr_inner * grad
-                self.set_param(self, name_t, tmp)
-        else:
-
-            for name, param in self.named_parameters()(self):
-                if not detach:
-                    grad = param.grad
-                    if first_order:
-                        grad = to_var(grad.detach().data)
-                    tmp = param - lr_inner * grad
-                    self.set_param(self, name, tmp)
-                else:
-                    param = param.detach_()  
-                    self.set_param(self, name, param)
-
-
-def to_var(x, requires_grad=True):
-    if torch.cuda.is_available():
-        x = x.cuda()
-    return Variable(x, requires_grad=requires_grad)
-
 
 class GCN(nn.Module):
     def __init__(self, userNum, itemNum, mats):
@@ -173,17 +110,12 @@ class GCN(nn.Module):
         self.userNum = userNum
         self.itemNum = itemNum
         self.hidden_dim = configs['model']['hidden_dim']
-
         self.mats = mats
-
         self.user_embedding, self.item_embedding = self.init_embedding()         
-        
         self.alpha, self.i_concatenation_w, self.u_concatenation_w, self.i_input_w, self.u_input_w = self.init_weight()
-        
         self.sigmoid = torch.nn.Sigmoid()
         self.act = torch.nn.PReLU()
         self.dropout = torch.nn.Dropout(configs['model']['dropout']) 
-
         self.layer_num = configs['model']['layer_num'] 
         self.layers = nn.ModuleList()
         for i in range(0, self.layer_num):  
@@ -194,7 +126,6 @@ class GCN(nn.Module):
         item_embedding = torch.nn.Embedding(self.itemNum, configs['model']['hidden_dim'])
         nn.init.xavier_uniform_(user_embedding.weight)
         nn.init.xavier_uniform_(item_embedding.weight)
-
         return user_embedding, item_embedding
 
     def init_weight(self):
@@ -208,7 +139,6 @@ class GCN(nn.Module):
         nn.init.xavier_uniform_(i_input_w)
         nn.init.xavier_uniform_(u_input_w)
         # init.xavier_uniform_(alpha)
-
         return alpha, i_concatenation_w, u_concatenation_w, i_input_w, u_input_w
 
     def forward(self, user_embedding_input=None, item_embedding_input=None):
@@ -234,12 +164,9 @@ class GCN(nn.Module):
 class GCNLayer(nn.Module):
     def __init__(self, in_dim, out_dim, userNum, itemNum, mat):
         super(GCNLayer, self).__init__()
-
         self.mat = mat
-
         self.userNum = userNum
         self.itemNum = itemNum
-
         self.act = torch.nn.Sigmoid()
         self.i_w = nn.Parameter(torch.Tensor(in_dim, out_dim))
         self.u_w = nn.Parameter(torch.Tensor(in_dim, out_dim))

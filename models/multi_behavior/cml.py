@@ -16,18 +16,6 @@ class CML(BaseModel):
     def __init__(self, data_handler):
         super(CML, self).__init__(data_handler)
 
-        # self.adj = data_handler.torch_adj
-
-        # self.layer_num = configs['model']['layer_num']
-        # self.reg_weight = configs['model']['reg_weight']
-        # self.keep_rate = configs['model']['keep_rate']
-
-        # self.user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
-        # self.item_embeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))
-
-        # self.edge_dropper = SpAdjEdgeDrop()
-        # self.is_training = True
-
         self.userNum = data_handler.userNum
         self.itemNum = data_handler.itemNum
         self.behavior = data_handler.behaviors
@@ -62,19 +50,6 @@ class CML(BaseModel):
     def _propagate(self, adj, embeds):
         return torch.spmm(adj, embeds)
     
-    # def forward(self, adj, keep_rate):
-        # if not self.is_training:
-        #     return self.final_embeds[:self.user_num], self.final_embeds[self.user_num:]
-        # embeds = t.concat([self.user_embeds, self.item_embeds], axis=0)
-        # embeds_list = [embeds]
-        # adj = self.edge_dropper(adj, keep_rate)
-        # for i in range(self.layer_num):
-        #     embeds = self._propagate(adj, embeds_list[-1])
-        #     embeds_list.append(embeds)
-        # embeds = sum(embeds_list) / len(embeds_list)
-        # self.final_embeds = embeds
-        # return embeds[:self.user_num], embeds[self.user_num:]
-
     def forward(self):
         user_embed, item_embed, user_embeds, item_embeds = self.gcn()
         return user_embed, item_embed, user_embeds, item_embeds 
@@ -224,13 +199,10 @@ class GCN(nn.Module):
 class GCNLayer(nn.Module):
     def __init__(self, in_dim, out_dim, userNum, itemNum, behavior, behavior_mats):
         super(GCNLayer, self).__init__()
-
         self.behavior = behavior
         self.behavior_mats = behavior_mats
-
         self.userNum = userNum
         self.itemNum = itemNum
-
         self.act = torch.nn.Sigmoid()
         self.i_w = nn.Parameter(torch.Tensor(in_dim, out_dim))
         self.u_w = nn.Parameter(torch.Tensor(in_dim, out_dim))
@@ -239,27 +211,17 @@ class GCNLayer(nn.Module):
         nn.init.xavier_uniform_(self.u_w)
 
     def forward(self, user_embedding, item_embedding):
-
         user_embedding_list = [None]*len(self.behavior)
         item_embedding_list = [None]*len(self.behavior)
-
         for i in range(len(self.behavior)):
             user_embedding_list[i] = torch.spmm(self.behavior_mats[i]['A'], item_embedding)
             item_embedding_list[i] = torch.spmm(self.behavior_mats[i]['AT'], user_embedding)
-
-  
-
         user_embeddings = torch.stack(user_embedding_list, dim=0) 
         item_embeddings = torch.stack(item_embedding_list, dim=0)
-
-
         user_embedding = self.act(torch.matmul(torch.mean(user_embeddings, dim=0), self.u_w))
         item_embedding = self.act(torch.matmul(torch.mean(item_embeddings, dim=0), self.i_w))
-
         user_embeddings = self.act(torch.matmul(user_embeddings, self.u_w))
         item_embeddings = self.act(torch.matmul(item_embeddings, self.i_w))
-
-
         return user_embedding, item_embedding, user_embeddings, item_embeddings             
 
 
@@ -271,17 +233,13 @@ class MetaModule(nn.Module):
     def params(self):
         for name, param in self.named_params(self):
             yield param
-
     def named_leaves(self):
         return []
-
     def named_submodules(self):
         return []
-
     def named_params(self, curr_module=None, memo=None, prefix=''):
         if memo is None:
             memo = set()
-
         if hasattr(curr_module, 'named_leaves'):
             for name, p in curr_module.named_leaves():
                 if p is not None and p not in memo:
@@ -292,7 +250,6 @@ class MetaModule(nn.Module):
                 if p is not None and p not in memo:
                     memo.add(p)
                     yield prefix + ('.' if prefix else '') + name, p
-
         for mname, module in curr_module.named_children():
             submodule_prefix = prefix + ('.' if prefix else '') + mname
             for name, p in self.named_params(module, memo, submodule_prefix):
@@ -302,16 +259,12 @@ class MetaModule(nn.Module):
         if source_params is not None:
             for tgt, src in zip(self.named_params(self), source_params):
                 name_t, param_t = tgt
-                # name_s, param_s = src
-                # grad = param_s.grad
-                # name_s, param_s = src
                 grad = src
                 if first_order:
                     grad = to_var(grad.detach().data)
                 tmp = param_t - lr_inner * grad
                 self.set_param(self, name_t, tmp)
         else:
-
             for name, param in self.named_params(self):
                 if not detach:
                     grad = param.grad
@@ -350,13 +303,10 @@ class MetaLinear(MetaModule):
     def __init__(self, *args, **kwargs):
         super().__init__()
         ignore = nn.Linear(*args, **kwargs)
-
         self.register_buffer('weight', to_var(ignore.weight.data, requires_grad=True))
         self.register_buffer('bias', to_var(ignore.bias.data, requires_grad=True))
-
     def forward(self, x):
         return F.linear(x, self.weight, self.bias)
-
     def named_leaves(self):
         return [('weight', self.weight), ('bias', self.bias)]
 
@@ -365,7 +315,6 @@ class MetaConv2d(MetaModule):
     def __init__(self, *args, **kwargs):
         super().__init__()
         ignore = nn.Conv2d(*args, **kwargs)
-
         self.in_channels = ignore.in_channels
         self.out_channels = ignore.out_channels
         self.stride = ignore.stride
@@ -373,9 +322,7 @@ class MetaConv2d(MetaModule):
         self.dilation = ignore.dilation
         self.groups = ignore.groups
         self.kernel_size = ignore.kernel_size
-
         self.register_buffer('weight', to_var(ignore.weight.data, requires_grad=True))
-
         if ignore.bias is not None:
             self.register_buffer('bias', to_var(ignore.bias.data, requires_grad=True))
         else:
@@ -397,9 +344,7 @@ class MetaConvTranspose2d(MetaModule):
         self.padding = ignore.padding
         self.dilation = ignore.dilation
         self.groups = ignore.groups
-
         self.register_buffer('weight', to_var(ignore.weight.data, requires_grad=True))
-
         if ignore.bias is not None:
             self.register_buffer('bias', to_var(ignore.bias.data, requires_grad=True))
         else:
@@ -409,7 +354,6 @@ class MetaConvTranspose2d(MetaModule):
         output_padding = self._output_padding(x, output_size)
         return F.conv_transpose2d(x, self.weight, self.bias, self.stride, self.padding,
                                   output_padding, self.groups, self.dilation)
-
     def named_leaves(self):
         return [('weight', self.weight), ('bias', self.bias)]
 
@@ -418,7 +362,6 @@ class MetaBatchNorm2d(MetaModule):
     def __init__(self, *args, **kwargs):
         super().__init__()
         ignore = nn.BatchNorm2d(*args, **kwargs)
-
         self.num_features = ignore.num_features
         self.eps = ignore.eps
         self.momentum = ignore.momentum
@@ -428,7 +371,6 @@ class MetaBatchNorm2d(MetaModule):
         if self.affine:
             self.register_buffer('weight', to_var(ignore.weight.data, requires_grad=True))
             self.register_buffer('bias', to_var(ignore.bias.data, requires_grad=True))
-
         if self.track_running_stats:
             self.register_buffer('running_mean', torch.zeros(self.num_features))
             self.register_buffer('running_var', torch.ones(self.num_features))
@@ -439,7 +381,6 @@ class MetaBatchNorm2d(MetaModule):
     def forward(self, x):
         return F.batch_norm(x, self.running_mean, self.running_var, self.weight, self.bias,
                             self.training or not self.track_running_stats, self.momentum, self.eps)
-
     def named_leaves(self):
         return [('weight', self.weight), ('bias', self.bias)]
 
@@ -454,7 +395,6 @@ class LambdaLayer(MetaModule):
     def __init__(self, lambd):
         super(LambdaLayer, self).__init__()
         self.lambd = lambd
-
     def forward(self, x):
         return self.lambd(x)
 
@@ -468,7 +408,6 @@ class BasicBlock(MetaModule):
         self.bn1 = MetaBatchNorm2d(planes)
         self.conv2 = MetaConv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = MetaBatchNorm2d(planes)
-
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != planes:
             if option == 'A':
@@ -502,18 +441,14 @@ class ResNet32(MetaModule):
         self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
         self.linear = MetaLinear(64, num_classes)
-
         self.apply(_weights_init)
-
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
         layers = []
         for stride in strides:
             layers.append(block(self.in_planes, planes, stride))
             self.in_planes = planes * block.expansion
-
         return nn.Sequential(*layers)
-
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
@@ -532,13 +467,9 @@ class VNet(MetaModule):
         self.linear1 = MetaLinear(input, hidden1)
         self.relu1 = nn.ReLU(inplace=True)
         self.linear2 = MetaLinear(hidden1, output)
-        # self.linear3 = MetaLinear(hidden2, output)
-
     def forward(self, x):
         x = self.linear1(x)
         x = self.relu1(x)
-        # x = self.linear2(x)
-        # x = self.relu1(x)
         out = self.linear2(x)
         return F.sigmoid(out)
 
@@ -546,9 +477,7 @@ class VNet(MetaModule):
 class MetaWeightNet(nn.Module):
     def __init__(self, beh_num):
         super(MetaWeightNet, self).__init__()
-
         self.beh_num = beh_num
-
         self.sigmoid = torch.nn.Sigmoid()
         self.act = torch.nn.LeakyReLU(negative_slope=configs['model']['slope'])  
         self.prelu = torch.nn.PReLU()
@@ -557,40 +486,30 @@ class MetaWeightNet(nn.Module):
         self.dropout7 = torch.nn.Dropout(configs['model']['drop_rate'])
         self.dropout5 = torch.nn.Dropout(configs['model']['drop_rate1'])
         self.batch_norm = torch.nn.BatchNorm1d(1)
-
         initializer = nn.init.xavier_uniform_
-
-
         self.SSL_layer1 = nn.Linear(configs['model']['hidden_dim']*3, int((configs['model']['hidden_dim']*3)/2))
         self.SSL_layer2 = nn.Linear(int((configs['model']['hidden_dim']*3)/2), 1)
         self.SSL_layer3 = nn.Linear(configs['model']['hidden_dim']*2, 1)
-
         self.RS_layer1 = nn.Linear(configs['model']['hidden_dim']*3, int((configs['model']['hidden_dim']*3)/2))
         self.RS_layer2 = nn.Linear(int((configs['model']['hidden_dim']*3)/2), 1)
         self.RS_layer3 = nn.Linear(configs['model']['hidden_dim'], 1)
-
         self.beh_embedding = nn.Parameter(initializer(torch.empty([beh_num, configs['model']['hidden_dim']]))).cuda()
  
-
     def forward(self, infoNCELoss_list, behavior_loss_multi_list, user_step_index, user_index_list, user_embeds, user_embed):  
         
         infoNCELoss_list_weights = [None]*self.beh_num
         behavior_loss_multi_list_weights = [None]*self.beh_num
         for i in range(self.beh_num):
-
             SSL_input = configs['model']['inner_product_mult']*torch.cat((configs['model']['inner_product_mult']*torch.cat((infoNCELoss_list[i].unsqueeze(1).repeat(1, configs['model']['hidden_dim'])*configs['model']['inner_product_mult'], user_embeds[i][user_step_index]), 1), user_embed[user_step_index]), 1)
             SSL_input3 = configs['model']['inner_product_mult']*((infoNCELoss_list[i].unsqueeze(1).repeat(1, configs['model']['hidden_dim']*2))*torch.cat((user_embeds[i][user_step_index],user_embed[user_step_index]), 1))
-
             infoNCELoss_list_weights[i] = configs['model']['inner_product_mult']*self.sigmoid(self.batch_norm(np.sqrt(SSL_input.shape[1])*self.dropout7(self.SSL_layer2(self.dropout7(self.prelu(self.SSL_layer1(SSL_input)))).squeeze()).unsqueeze(1)).squeeze())
             SSL_weight3 = configs['model']['inner_product_mult']*self.sigmoid(self.batch_norm(self.dropout7(self.prelu(self.SSL_layer3(SSL_input3)))).squeeze())
             infoNCELoss_list_weights[i] = (infoNCELoss_list_weights[i] + SSL_weight3)/2
-
             RS_input = configs['model']['inner_product_mult']*torch.cat((configs['model']['inner_product_mult']*torch.cat((behavior_loss_multi_list[i].unsqueeze(1).repeat(1, configs['model']['hidden_dim'])*configs['model']['inner_product_mult'], user_embed[user_index_list[i]]), 1), user_embeds[i][user_index_list[i]]), 1)
             RS_input3 = configs['model']['inner_product_mult']*((behavior_loss_multi_list[i].unsqueeze(1).repeat(1, configs['model']['hidden_dim']))*user_embed[user_index_list[i]])
             behavior_loss_multi_list_weights[i] = configs['model']['inner_product_mult']*self.sigmoid(self.batch_norm(np.sqrt(RS_input.shape[1])*self.dropout7(self.RS_layer2(self.dropout7(self.prelu(self.RS_layer1(RS_input)))).squeeze()).unsqueeze(1))).squeeze()
             RS_weight3 = configs['model']['inner_product_mult']*self.sigmoid(self.batch_norm(self.dropout7(self.prelu(self.RS_layer3(RS_input3)))).squeeze()).squeeze()
             behavior_loss_multi_list_weights[i] = behavior_loss_multi_list_weights[i] + RS_weight3
-
         return infoNCELoss_list_weights, behavior_loss_multi_list_weights
 
 
