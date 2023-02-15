@@ -34,6 +34,8 @@ def build_model(data_handler):
         model = SMBRec(data_handler)
     elif configs['model']['name'] == 'ncl':
         model = NCL(data_handler)
+    elif configs['model']['name'] == 'duorec':
+        model = DuoRec(data_handler)
     else:
         raise NotImplementedError
 

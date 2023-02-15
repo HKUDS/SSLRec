@@ -8,9 +8,10 @@ from torch import nn
 from config.configurator import configs
 
 
-class CL4SRec(BaseModel):
+class DuoRec(BaseModel):
     def __init__(self, data_handler):
-        super(CL4SRec, self).__init__(data_handler)
+        super(DuoRec, self).__init__(data_handler)
+        self.data_handler = data_handler
         self.item_num = configs['data']['item_num']
         self.emb_size = configs['model']['embedding_size']
         self.max_len = configs['model']['max_seq_len']
@@ -24,7 +25,7 @@ class CL4SRec(BaseModel):
         self.dropout_rate = configs['model']['dropout_rate']
 
         self.batch_size = configs['train']['batch_size']
-        self.lmd = configs['model']['lmd']
+        self.lmd_sem = configs['model']['lmd_sem']
         self.tau = configs['model']['tau']
 
         self.emb_layer = TransformerEmbedding(
@@ -35,12 +36,13 @@ class CL4SRec(BaseModel):
 
         self.loss_func = nn.CrossEntropyLoss()
 
-        self.mask_default = self.mask_correlated_samples(
+        self.mask_default = self._mask_correlated_samples(
             batch_size=self.batch_size)
         self.cl_loss_func = nn.CrossEntropyLoss()
 
         # parameters initialization
         self.apply(self._init_weights)
+        self.same_target_index = self._semantic_augmentation(data_handler)
 
     def _init_weights(self, module):
         """ Initialize the weights """
@@ -52,87 +54,33 @@ class CL4SRec(BaseModel):
         if isinstance(module, nn.Linear) and module.bias is not None:
             module.bias.data.zero_()
 
-    def _cl4srec_aug(self, batch_seqs):
-        def item_crop(seq, length, eta=0.6):
-            num_left = math.floor(length * eta)
-            crop_begin = random.randint(0, length - num_left)
-            croped_item_seq = np.zeros_like(seq)
-            if crop_begin + num_left < seq.shape[0]:
-                croped_item_seq[-num_left:] = seq[-(crop_begin + 1 + num_left):-(crop_begin + 1)]
+    def _semantic_augmentation(self, data_handler):
+        same_target_index = {}
+        train_last_items = np.asarray(data_handler.train_dataloader.dataset.last_items, dtype=np.int32)
+        for index, item_id in enumerate(train_last_items):
+            all_index_same_id = np.where(train_last_items == item_id)[0]  # all index of a specific item id with self item
+            delete_index = np.argwhere(all_index_same_id == index)
+            all_index_same_id_wo_self = np.delete(all_index_same_id, delete_index)
+            sampled_same_id = np.random.choice(all_index_same_id_wo_self, 20, replace=False)
+            same_target_index[item_id] = sampled_same_id
+        same_target_index = np.array(same_target_index)
+        
+        return same_target_index
+
+    def _duorec_aug(self, batch_seqs):
+        last_items = batch_seqs[:, -1].tolist()
+        train_seqs = self.data_handler.train_dataloader.dataset.seqs
+        sampled_pos_seqs = []
+        for i, item in enumerate(last_items):
+            if item in self.same_target_index:
+                sampled_seq_idx = np.random.choice(self.same_target_index[item])
+                sampled_pos_seqs.append(train_seqs[sampled_seq_idx])
             else:
-                croped_item_seq[-num_left:] = seq[-(crop_begin + 1):]
-            return croped_item_seq.tolist(), num_left
+                sampled_pos_seqs.append(batch_seqs[i])
+        sampled_pos_seqs = torch.tensor(sampled_pos_seqs, dtype=torch.long, device=batch_seqs.device)
+        return sampled_pos_seqs
 
-        def item_mask(seq, length, gamma=0.3):
-            num_mask = math.floor(length * gamma)
-            mask_index = random.sample(range(length), k=num_mask)
-            masked_item_seq = seq[:]
-            # token 0 has been used for semantic masking
-            mask_index = [-i-1 for i in mask_index]
-            masked_item_seq[mask_index] = self.mask_token
-            return masked_item_seq.tolist(), length
-
-        def item_reorder(seq, length, beta=0.6):
-            num_reorder = math.floor(length * beta)
-            reorder_begin = random.randint(0, length - num_reorder)
-            reordered_item_seq = seq[:]
-            shuffle_index = list(
-                range(reorder_begin, reorder_begin + num_reorder))
-            random.shuffle(shuffle_index)
-            shuffle_index = [-i for i in shuffle_index]
-            reordered_item_seq[-(reorder_begin + 1 + num_reorder):-(reorder_begin+1)] = reordered_item_seq[shuffle_index]
-            return reordered_item_seq.tolist(), length
-
-        seqs = batch_seqs.tolist()
-        lengths = batch_seqs.count_nonzero(dim=1).tolist()
-
-        aug_seq1 = []
-        aug_len1 = []
-        aug_seq2 = []
-        aug_len2 = []
-        for seq, length in zip(seqs, lengths):
-            seq = np.asarray(seq.copy(), dtype=np.int64)
-            if length > 1:
-                switch = random.sample(range(3), k=2)
-            else:
-                switch = [3, 3]
-                aug_seq = seq
-                aug_len = length
-            if switch[0] == 0:
-                aug_seq, aug_len = item_crop(seq, length)
-            elif switch[0] == 1:
-                aug_seq, aug_len = item_mask(seq, length)
-            elif switch[0] == 2:
-                aug_seq, aug_len = item_reorder(seq, length)
-
-            if aug_len > 0:
-                aug_seq1.append(aug_seq)
-                aug_len1.append(aug_len)
-            else:
-                aug_seq1.append(seq.tolist())
-                aug_len1.append(length)
-
-            if switch[1] == 0:
-                aug_seq, aug_len = item_crop(seq, length)
-            elif switch[1] == 1:
-                aug_seq, aug_len = item_mask(seq, length)
-            elif switch[1] == 2:
-                aug_seq, aug_len = item_reorder(seq, length)
-
-            if aug_len > 0:
-                aug_seq2.append(aug_seq)
-                aug_len2.append(aug_len)
-            else:
-                aug_seq2.append(seq.tolist())
-                aug_len2.append(length)
-
-        aug_seq1 = torch.tensor(
-            aug_seq1, dtype=torch.long, device=batch_seqs.device)
-        aug_seq2 = torch.tensor(
-            aug_seq2, dtype=torch.long, device=batch_seqs.device)
-        return aug_seq1, aug_seq2
-
-    def mask_correlated_samples(self, batch_size):
+    def _mask_correlated_samples(self, batch_size):
         N = 2 * batch_size
         mask = torch.ones((N, N), dtype=bool)
         mask = mask.fill_diagonal_(0)
@@ -141,7 +89,7 @@ class CL4SRec(BaseModel):
             mask[batch_size + i, i] = 0
         return mask
 
-    def info_nce(self, z_i, z_j, temp, batch_size):
+    def _info_nce(self, z_i, z_j, temp, batch_size):
         N = 2 * batch_size
 
         z = torch.cat((z_i, z_j), dim=0)
@@ -153,7 +101,7 @@ class CL4SRec(BaseModel):
 
         positive_samples = torch.cat((sim_i_j, sim_j_i), dim=0).reshape(N, 1)
         if batch_size != self.batch_size:
-            mask = self.mask_correlated_samples(batch_size)
+            mask = self._mask_correlated_samples(batch_size)
         else:
             mask = self.mask_default
         negative_samples = sim[mask].reshape(N, -1)
@@ -181,12 +129,12 @@ class CL4SRec(BaseModel):
         loss = self.loss_func(logits, batch_last_items.squeeze())
 
         # NCE
-        aug_seq1, aug_seq2 = self._cl4srec_aug(batch_seqs)
-        seq_output1 = self.forward(aug_seq1)
-        seq_output2 = self.forward(aug_seq2)
+        seq_output1 = self.forward(batch_seqs)
+        sem_aug_seqs = self._duorec_aug(batch_seqs)
+        seq_output2 = self.forward(sem_aug_seqs)
 
-        cl_loss = self.lmd * self.info_nce(
-            seq_output1, seq_output2, temp=self.tau, batch_size=aug_seq1.shape[0])
+        cl_loss = self.lmd_sem * self._info_nce(
+            seq_output1, seq_output2, temp=self.tau, batch_size=seq_output1.shape[0])
 
         loss_dict = {
             'rec_loss': loss.item(),

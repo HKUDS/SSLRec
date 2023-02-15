@@ -14,3 +14,4 @@ from models.sequential.cl4srec import CL4SRec
 # from models.multi_behavior.smbrec import SMBRec
 from models.multi_behavior.cml import CML, MetaWeightNet
 from models.multi_behavior.mmclr import MMCLR
+from models.sequential.duorec import DuoRec
