@@ -12,20 +12,20 @@ uniformInit = nn.init.uniform
 class MHCN(BaseModel):
 	def __init__(self, data_handler):
 		super(MHCN, self).__init__(data_handler)
-        self.weight = {}
-        self.n_channel = 4
-        for i in range(self.n_channel):
-            self.weights['gating%d' % (i+1)] = nn.Parameter(init(t.empty(self.embedding_size, self.embedding_size)))
-            self.weights['gating_bias%d' %(i+1)] = nn.Parameter(init(t.empty(1, self.embedding_size)))
-            self.weights['sgating%d' % (i + 1)] = nn.Parameter(init(t.empty(self.embedding_size, self.embedding_size)))
-            self.weights['sgating_bias%d' % (i + 1)] = nn.Parameter(init(t.empty(1, self.embedding_size)))
+		self.weight = {}
+		self.n_channel = 4
+		for i in range(self.n_channel):
+			self.weights['gating%d' % (i+1)] = nn.Parameter(init(t.empty(self.embedding_size, self.embedding_size)))
+			self.weights['gating_bias%d' %(i+1)] = nn.Parameter(init(t.empty(1, self.embedding_size)))
+			self.weights['sgating%d' % (i + 1)] = nn.Parameter(init(t.empty(self.embedding_size, self.embedding_size)))
+			self.weights['sgating_bias%d' % (i + 1)] = nn.Parameter(init(t.empty(1, self.embedding_size)))
 		self.weights['attention'] = nn.Parameter(init(t.empty(1, self.embedding_size)))
-        self.weights['attention_mat'] = nn.Parameter(init(t.empty(self.embedding_size, self.embedding_size)))
-        self.layer_num = configs['model']['layer_num']
+		self.weights['attention_mat'] = nn.Parameter(init(t.empty(self.embedding_size, self.embedding_size)))
+		self.layer_num = configs['model']['layer_num']
 		self.reg_weight = configs['model']['reg_weight']
 		self.keep_rate = configs['model']['keep_rate']
-        def self_gating(em, channel):
-            return tf.multiply(em,tf.nn.sigmoid(tf.matmul(em,self.weights['gating%d' % channel])+self.weights['gating_bias%d' %channel]))
+		def self_gating(em, channel):
+			return tf.multiply(em,tf.nn.sigmoid(tf.matmul(em,self.weights['gating%d' % channel])+self.weights['gating_bias%d' %channel]))
 		self.user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
 		self.item_embeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))
 
