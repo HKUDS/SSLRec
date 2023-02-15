@@ -9,6 +9,7 @@ import torch.utils.data as data
 import dgl
 from dgl import DGLGraph
 import networkx as nx
+from math import sqrt
 
 class DataHandlerSocial:
 	def __init__(self):
@@ -31,7 +32,7 @@ class DataHandlerSocial:
 			self.uu_subgraph_file = predir + 'uu_mat_subgraph.pkl'
 			self.ii_subgraph_file = predir + 'ii_mat_subgraph.pkl'
 		if configs['model']['name'] == 'mhcn':
-			self.trust_file = predir + 'trust.pkl'
+			self.trust_file = predir + 'trust_mat.pkl'
 
 	def _load_one_mat(self, file):
 		"""Load one single adjacent matrix from file
@@ -114,9 +115,15 @@ class DataHandlerSocial:
 		return [H_s,H_j,H_p]
 
 	def _build_joint_adjacency(self, trn_mat):
-		indices = [[item[0], item[1]] for item in trn_mat]
-		print(indices)
-		values = []
+		indices = t.from_numpy(
+			np.vstack((trn_mat.row, trn_mat.col)).astype(np.int64))
+		udegree = np.array(trn_mat.sum(axis=-1)).flatten()
+		idegree = np.array(trn_mat.sum(axis=0)).flatten()
+		values = t.Tensor([float(e) / sqrt(udegree[trn_mat.row[i]]) / sqrt(idegree[trn_mat.col[i]])
+					for i, e in enumerate(trn_mat.data)])
+		shape = t.Size(trn_mat.shape)
+		norm_adj = t.sparse.FloatTensor(indices, values, shape)
+		return norm_adj
 
 	def load_data(self):
 		with open(self.trn_file, 'rb') as fs:

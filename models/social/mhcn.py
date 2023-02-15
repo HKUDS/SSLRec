@@ -25,29 +25,25 @@ class MHCN(BaseModel):
 		self.reg_weight = configs['model']['reg_weight']
         
 		self.user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
-		self.item_embeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))
-
-        H_s = M_matrices[0]
-        H_s = self.adj_to_sparse_tensor(H_s)
-        
+		self.item_embeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))        
 
 		self.is_training = True
+        
+    # def _self_gating(self, em, channel):
+    #     return t.multiply(em, F.sigmoid(t.matmul(em, self.weights['gating%d' % channel]) + self.weights['gating_bias%d' %channel]))
+        
+    # def _self_supervised_gating(self, em, channel):
+    #     return t.multiply(em, F.sigmoid(t.matmul(em, self.weights['sgating%d' % channel]) + self.weights['sgating_bias%d' % channel]))
 
-    def _self_gating(em, channel):
-        return t.multiply(em, F.sigmoid(t.matmul(em, self.weights['gating%d' % channel]) + self.weights['gating_bias%d' %channel]))
-
-    def _self_supervised_gating(em, channel):
-        return t.multiply(em, F.sigmoid(t.matmul(em, self.weights['sgating%d' % channel]) + self.weights['sgating_bias%d' % channel]))
-
-    def _channel_attention(*channel_embeddings):
-        weights = []
-        for embedding in channel_embeddings:
-            weights.append(t.sum(t.multiply(self.weights['attention'], t.matmul(embedding, self.weights['attention_mat'])), 1))
-        score = F.softmax(t.t(weights))
-        mixed_embeddings = 0
-        for i in range(len(weights)):
-            mixed_embeddings += t.t(t.multiply(t.t(score)[i], t.t(channel_embeddings[i])))
-        return mixed_embeddings, score
+    # def _channel_attention(self, *channel_embeddings):
+    #     weights = []
+    #     for embedding in channel_embeddings:
+    #         weights.append(t.sum(t.multiply(self.weights['attention'], t.matmul(embedding, self.weights['attention_mat'])), 1))
+    #     score = F.softmax(t.t(weights))
+    #     mixed_embeddings = 0
+    #     for i in range(len(weights)):
+    #         mixed_embeddings += t.t(t.multiply(t.t(score)[i], t.t(channel_embeddings[i])))
+    #     return mixed_embeddings, score
 
 	def forward(self, adj, keep_rate):
 		if not self.is_training:
