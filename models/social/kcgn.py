@@ -86,14 +86,14 @@ class KCGN(BaseModel):
 		pos_embeds = item_embeds[poss]
 		neg_embeds = item_embeds[negs]
 		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
-		reg_loss = reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds])
+		reg_loss = self.reg_weight * reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds])
 		
 		uu_dgi_pos_loss, uu_dgi_neg_loss = self.uu_dgi(user_embeds, self.data_handler.uu_subgraph_adj_tensor, \
 			self.data_handler.uu_subgraph_adj_norm, self.data_handler.uu_node_subgraph, self.data_handler.uu_dgi_node)
 		user_mask = t.zeros(self.user_num).cuda()
 		user_mask[ancs] = 1
 		user_mask = user_mask * self.data_handler.uu_dgi_node_mask
-		uu_dgi_loss = ((uu_dgi_pos_loss * user_mask).sum() + (uu_dgi_neg_loss * user_mask).sum())/t.sum(user_mask)
+		uu_dgi_loss = self.lam[0] * ((uu_dgi_pos_loss * user_mask).sum() + (uu_dgi_neg_loss * user_mask).sum())/t.sum(user_mask)
 
 		ii_dgi_pos_loss, ii_dgi_neg_loss = self.ii_dgi(item_embeds, self.data_handler.ii_subgraph_adj_tensor, \
             self.data_handler.ii_subgraph_adj_norm, self.data_handler.ii_node_subgraph, self.data_handler.ii_dgi_node)
@@ -101,8 +101,8 @@ class KCGN(BaseModel):
 		ii_mask[poss] = 1
 		ii_mask[negs] = 1
 		ii_mask = ii_mask * self.data_handler.ii_dgi_node_mask
-		ii_dgi_loss = ((ii_dgi_pos_loss * ii_mask).sum() + (ii_dgi_neg_loss * ii_mask).sum())/t.sum(ii_mask)
-		loss = bpr_loss + self.reg_weight * reg_loss + self.lam[0] * uu_dgi_loss + self.lam[1] * ii_dgi_loss
+		ii_dgi_loss = self.lam[1] * ((ii_dgi_pos_loss * ii_mask).sum() + (ii_dgi_neg_loss * ii_mask).sum())/t.sum(ii_mask)
+		loss = bpr_loss + reg_loss + uu_dgi_loss + ii_dgi_loss
 		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'uu_dgi_loss': uu_dgi_loss, 'ii_dgi_loss': ii_dgi_loss}
 		return loss, losses
 

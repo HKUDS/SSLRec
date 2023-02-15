@@ -121,7 +121,7 @@ class SMIN(BaseModel):
 		pos_embeds = item_embeds[poss]
 		neg_embeds = item_embeds[negs]
 		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
-		reg_loss = reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds])
+		reg_loss = self.reg_weight * reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds])
 		
 		all_embeds = t.cat([user_embeds, item_embeds], dim=0)
 		res = self.ui_informax(all_embeds, self.data_handler.ui_subgraph_adj, self.data_handler.ui_subgraph_adj_tensor, self.data_handler.ui_subgraph_adj_norm)
@@ -131,7 +131,7 @@ class SMIN(BaseModel):
 		mask[self.user_num + negs] = 1
 		informax_loss = configs['model']['lambda1'] * (((mask * res[0]).sum() + (mask * res[1]).sum()) / t.sum(mask))\
 			+ configs['model']['lambda2'] * (((mask * res[2]).sum() + (mask * res[3]).sum()) / t.sum(mask) + res[4])
-		loss = bpr_loss + self.reg_weight * reg_loss + informax_loss
+		loss = bpr_loss + reg_loss + informax_loss
 		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'informax_loss': informax_loss}
 		return loss, losses
 
