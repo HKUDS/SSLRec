@@ -113,6 +113,11 @@ class DataHandlerSocial:
 
 		return [H_s,H_j,H_p]
 
+	def _build_joint_adjacency(self, trn_mat):
+		indices = [[item[0], item[1]] for item in trn_mat]
+		print(indices)
+		values = []
+
 	def load_data(self):
 		with open(self.trn_file, 'rb') as fs:
 			trn_mat = pickle.load(fs)
@@ -244,4 +249,12 @@ class DataHandlerSocial:
 
 		elif configs['model']['name'] == 'mhcn':
 			trust_mat = self._load_one_mat(self.trust_file)
-			self.M_matrices = self._build_motif_induced_adjacency_matrix(trust_mat, trn_mat)
+			M_matrices = self._build_motif_induced_adjacency_matrix(trust_mat, trn_mat)
+			H_s = M_matrices[0]
+			H_s = self._sparse_mx_to_torch_sparse_tensor(H_s)
+			H_j = M_matrices[1]
+			H_j = self._sparse_mx_to_torch_sparse_tensor(H_j)
+			H_p = M_matrices[2]
+			H_p = self._sparse_mx_to_torch_sparse_tensor(H_p)
+			R = self._build_joint_adjacency(trn_mat)
+			
