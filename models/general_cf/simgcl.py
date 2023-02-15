@@ -14,7 +14,7 @@ class SimGCL(LightGCN):
 		
 		self.cl_weight = configs['model']['cl_weight']
 		self.temperature = configs['model']['temperature']
-		self.eps = configs['mode']['eps']
+		self.eps = configs['model']['eps']
 
 	def _perturb_embedding(self, embeds):
 		noise = (F.normalize(t.rand(embeds.shape).cuda(), p=2) * t.sign(embeds)) * self.eps
