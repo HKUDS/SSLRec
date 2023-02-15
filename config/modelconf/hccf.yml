@@ -25,7 +25,7 @@ model:
   keep_rate: 1.0
   layer_num: 2
   reg_weight: 1.0e-6
-  cl_weight: 1.0
+  cl_weight: 0.0
   temperature: 0.1
   embedding_size: 32
   mult: 1.0e-3
