@@ -19,27 +19,28 @@ from data_utils.datasets_multi_behavior import CMLData, MMCLRData, PairwiseTrnDa
 from config.configurator import configs
 
 
-class DataHandlerCML:
+class DataHandlerMultiBehavior():
     def __init__(self):
+        super(DataHandlerMultiBehavior, self).__init__()
+                
         if configs['data']['name'] == 'ijcai_15':
-            predir = './datasets/ijcai_15/'
+            self.predir = './datasets/ijcai_15/'
             self.behaviors = ['click','fav', 'cart', 'buy']
         elif configs['data']['name'] == 'tmall':
-            predir = './datasets/tmall/'
+            self.predir = './datasets/tmall/'
             self.behaviors_SSL = ['pv','fav', 'cart', 'buy']
         elif configs['data']['name'] == 'retail_rocket':
-            predir = './datasets/retail_rocket/'
+            self.predir = './datasets/retail_rocket/'
             self.behaviors = ['view','cart', 'buy']
+        elif configs['data']['name'] == 'tima':
+            self.predir = './datasets/tima/'
+            # self.behaviors = ['view','cart', 'buy']
 
-        self.train_file = predir + 'train_mat_'  # train_mat_buy.pkl 
-        self.val_file = predir + 'test_mat.pkl'
-        self.test_file = predir + 'test_mat.pkl'
-        self.meta_multi_single_file = predir + 'meta_multi_single_beh_user_index_shuffle'
-
+        self.train_file = self.predir + 'train_mat_'  
+        self.val_file = self.predir + 'test_mat.pkl'
+        self.test_file = self.predir + 'test_mat.pkl'
 
     def _load_data(self):
-        self.meta_multi_single = pickle.load(open(self.meta_multi_single_file, 'rb'))
-
         self.t_max = -1 
         self.t_min = 0x7FFFFFFF
         self.time_number = -1
@@ -52,27 +53,21 @@ class DataHandlerCML:
             with open(self.train_file + self.behaviors[i] + '.pkl', 'rb') as fs:  
                 data = pickle.load(fs)
                 self.behaviors_data[i] = data 
-
                 if data.get_shape()[0] > self.user_num:  
                     self.user_num = data.get_shape()[0]  
                 if data.get_shape()[1] > self.item_num:  
                     self.item_num = data.get_shape()[1]  
-
                 if data.data.max() > self.t_max:
                     self.t_max = data.data.max()
                 if data.data.min() < self.t_min:
                     self.t_min = data.data.min()
-
                 if self.behaviors[i] == configs['model']['target']:
                     self.train_mat = data  
                     self.trainLabel = 1*(self.train_mat != 0)  
                     self.labelP = np.squeeze(np.array(np.sum(self.trainLabel, axis=0)))  
-
         self.test_mat = pickle.load(open(self.test_file, 'rb'))
-
         self.userNum = self.behaviors_data[0].shape[0]
         self.itemNum = self.behaviors_data[0].shape[1]
-        # self.behavior = None
         self._data2mat()
 
     def _data2mat(self):
@@ -83,16 +78,13 @@ class DataHandlerCML:
         time = datetime.datetime.now()
         print("End building:", time)
 
-
     def _get_use(self, behaviors_data):
         behavior_mats = {}
         behaviors_data = (behaviors_data != 0) * 1
         behavior_mats['A'] = self._matrix_to_tensor(self._normalize_adj(behaviors_data))
         behavior_mats['AT'] = self._matrix_to_tensor(self._normalize_adj(behaviors_data.T))
         behavior_mats['A_ori'] = None
-
         return behavior_mats
-
 
     def _normalize_adj(self, adj):
         """Symmetrically normalize adjacency matrix."""
@@ -103,9 +95,8 @@ class DataHandlerCML:
         colsum = np.array(adj.sum(0))
         colsum_diag = sp.diags(np.power(colsum+1e-8, -0.5).flatten())
         # return adj
-        return rowsum_diag*adj
+        return rowsum_diag*adj*colsum_diag
         # return adj*colsum_diag
-
 
     def _matrix_to_tensor(self, cur_matrix):
         if type(cur_matrix) != sp.coo_matrix:
@@ -113,11 +104,21 @@ class DataHandlerCML:
         indices = torch.from_numpy(np.vstack((cur_matrix.row, cur_matrix.col)).astype(np.int64))  
         values = torch.from_numpy(cur_matrix.data)  
         shape = torch.Size(cur_matrix.shape)
-
         return torch.sparse.FloatTensor(indices, values, shape).to(torch.float32).cuda()  
+
+
+
+class DataHandlerCML(DataHandlerMultiBehavior):
+    def __init__(self):
+        super(DataHandlerCML, self).__init__()
+        self.meta_multi_single_file = self.predir + 'meta_multi_single_beh_user_index_shuffle'
+
+    def _load_meta_file(self):
+        self.meta_multi_single = pickle.load(open(self.meta_multi_single_file, 'rb'))
 
     def load_data(self):  
         self._load_data()
+        self._load_meta_file()
         configs['data']['user_num'], configs['data']['item_num'] = self.train_mat.shape
         test_data = AllRankTestData(self.test_mat, self.train_mat)
         # self.torch_adj = self._make_torch_adj(self.train_mat)  # TODO
@@ -129,17 +130,18 @@ class DataHandlerCML:
 
 
 
-class DataHandlerMMCLR:
+class DataHandlerMMCLR(DataHandlerMultiBehavior):
     def __init__(self):
+        super(DataHandlerMMCLR, self).__init__()
         if configs['data']['name'] == 'tima':
-            predir = './datasets/tima/'
-            self.train_file_seq = predir + 'train_seq'
-            self.train_file_graph = predir + 'traingraph.dgl'
-            self.test_file_graph = predir + 'testgraph.dgl'
-            self.train_file = predir + 'train_mat.pkl'
-            self.test_file = predir + 'test_mat.pkl'
+            self.predir = './datasets/tima/'
+            self.train_file_seq = self.predir + 'train_seq'
+            self.train_file_graph = self.predir + 'traingraph.dgl'
+            self.test_file_graph = self.predir + 'testgraph.dgl'
+            self.train_file = self.predir + 'train_mat.pkl'
+            self.test_file = self.predir + 'test_mat.pkl'
 
-    def _load_data(self):      
+    def _load_MMCLR_data(self):      
         self.train_graph,self.item_ids,self.item_set=self._get_TIMA_Fllow_He(self.train_file_graph)
         self.test_graph,self.item_ids,self.item_set=self._get_TIMA_Fllow_He(self.test_file_graph)
         # return train_graph,test_graph,item_ids,item_set
@@ -149,7 +151,6 @@ class DataHandlerMMCLR:
         configs['model']['item_set'] = self.item_set
         self.train_mat = pickle.load(open(self.train_file, 'rb'))
         self.test_mat = pickle.load(open(self.test_file, 'rb'))
-
 
 
     def _get_TIMA_Fllow_He(self, file):
@@ -172,7 +173,8 @@ class DataHandlerMMCLR:
         return graph,item_ids,item_set
     
     def load_data(self):  
-        self._load_data()
+        # self._load_data()
+        self._load_MMCLR_data()
         train_dataset=MMCLRData(root_dir=self.train_file_seq)        
         train_sampler=MMCLRNeighborSampler(self.train_graph, num_layers=configs['model']['n_gcn_layers'])
         # train_sampler=NeighborSamplerForMGIR(train_graph, num_layers=configs['model']['n_gcn_layers'],args=args)
@@ -194,98 +196,25 @@ class DataHandlerMMCLR:
         self.test_dataloader = dataloader.DataLoader(test_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
 
 
-class DataHandlerHMGCRSMBRec:
+class DataHandlerHMGCRSMBRec(DataHandlerMultiBehavior):
     def __init__(self):
+        super(DataHandlerHMGCRSMBRec, self).__init__()
         if configs['data']['name'] == 'ijcai_15':
-            predir = './datasets/ijcai_15/'
-            self.behaviors = ['click','fav', 'cart', 'buy']
             self.beh_meta_path = ['buy','click_buy','click_fav_buy','click_fav_cart_buy']
         elif configs['data']['name'] == 'retail_rocket':
-            predir = './datasets/retail_rocket/'
-            self.behaviors = ['view','cart', 'buy']
             self.beh_meta_path = ['buy','view_buy','view_cart_buy']
 
-        self.train_file = predir + 'train_mat_'  # 
-        self.val_file = predir + 'test_mat.pkl'
-        self.test_file = predir + 'test_mat.pkl'
-
-    def _load_data(self):
-        self.t_max = -1 
-        self.t_min = 0x7FFFFFFF
-        self.time_number = -1
- 
-        self.user_num = -1
-        self.item_num = -1
-        self.behavior_mats = {} 
-        self.behaviors_data = {}
-        self.beh_meta_path_mats = {}
+    def _load_hyper_meta_data(self):
         self.beh_meta_path_data = {}
-        for i in range(0, len(self.behaviors)):
-            with open(self.train_file + self.behaviors[i] + '.pkl', 'rb') as fs:  
-                data = pickle.load(fs)
-                self.behaviors_data[i] = data 
-
-                if data.get_shape()[0] > self.user_num:  
-                    self.user_num = data.get_shape()[0]  
-                if data.get_shape()[1] > self.item_num:  
-                    self.item_num = data.get_shape()[1]  
-
-                if data.data.max() > self.t_max:
-                    self.t_max = data.data.max()
-                if data.data.min() < self.t_min:
-                    self.t_min = data.data.min()
-
-                if self.behaviors[i] == configs['model']['target']:
-                    self.train_mat = data  
-                    self.trainLabel = 1*(self.train_mat != 0)  
-                    self.labelP = np.squeeze(np.array(np.sum(self.trainLabel, axis=0)))  
-
+        self.beh_meta_path_mats = {}
         for i in range(0, len(self.beh_meta_path)):
             self.beh_meta_path_data[i] = 1*(pickle.load(open(self.train_file + self.beh_meta_path[i] + '.pkl','rb')) != 0) 
-
-        self.test_mat = pickle.load(open(self.test_file, 'rb'))
-
-        self.userNum = self.behaviors_data[0].shape[0]
-        self.itemNum = self.behaviors_data[0].shape[1]
-        # self.behavior = None
-        self._data2mat()
-
-    def _data2mat(self):
         time = datetime.datetime.now()
         print("Start building:  ", time)
         for i in range(0, len(self.behaviors_data)):
-            self.behavior_mats[i] = self._get_use(self.behaviors_data[i])      
             self.beh_meta_path_mats[i] =  self._get_use(self.beh_meta_path_data[i]) 
         time = datetime.datetime.now()
         print("End building:", time)
-
-
-    def _get_use(self, behaviors_data):
-        behavior_mats = {}
-        behaviors_data = (behaviors_data != 0) * 1
-        behavior_mats['A'] = self._matrix_to_tensor(self._normalize_adj(behaviors_data))
-        behavior_mats['AT'] = self._matrix_to_tensor(self._normalize_adj(behaviors_data.T))
-        behavior_mats['A_ori'] = None
-
-        return behavior_mats
-
-
-    def _normalize_adj(self, adj):
-        """Symmetrically normalize adjacency matrix."""
-        adj = sp.coo_matrix(adj)
-        rowsum = np.array(adj.sum(1))
-        rowsum_diag = sp.diags(np.power(rowsum+1e-8, -0.5).flatten())
-        colsum = np.array(adj.sum(0))
-        colsum_diag = sp.diags(np.power(colsum+1e-8, -0.5).flatten())
-        return rowsum_diag*adj*colsum_diag
-
-    def _matrix_to_tensor(self, cur_matrix):
-        if type(cur_matrix) != sp.coo_matrix:
-            cur_matrix = cur_matrix.tocoo()  
-        indices = torch.from_numpy(np.vstack((cur_matrix.row, cur_matrix.col)).astype(np.int64))  
-        values = torch.from_numpy(cur_matrix.data)  
-        shape = torch.Size(cur_matrix.shape)
-        return torch.sparse.FloatTensor(indices, values, shape).to(torch.float32).cuda()  
 
     def _get_degree(self):
         self.beh_degree_list = []
@@ -296,6 +225,7 @@ class DataHandlerHMGCRSMBRec:
         self._load_data()
         if configs['model']['name']=='smbrec':
             self._get_degree()
+        self._load_hyper_meta_data()    
         configs['data']['user_num'], configs['data']['item_num'] = self.train_mat.shape
         test_data = AllRankTestData(self.test_mat, self.train_mat)
         # self.torch_adj = self._make_torch_adj(self.train_mat)  # TODO
