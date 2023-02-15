@@ -3,7 +3,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 import scipy.sparse as sp
 from config.configurator import configs
-from data_utils.datasets_general_cf import PairwiseTrnData, AllRankTstData
+from data_utils.datasets_general_cf import PairwiseTrnData, AllRankTstData, PairwiseWEpochFlagTrnData
 import torch as t
 import torch.utils.data as data
 
@@ -80,6 +80,8 @@ class DataHandlerGeneralCF:
 
 		if configs['train']['loss'] == 'pairwise':
 			trn_data = PairwiseTrnData(trn_mat)
+		elif configs['train']['loss'] == 'pairwise_with_epoch_flag':
+			trn_data = PairwiseWEpochFlagTrnData(trn_mat)
 		# elif configs['train']['loss'] == 'pointwise':
 		# 	trn_data = PointwiseTrnData(trn_mat)
 		tst_data = AllRankTstData(tst_mat, trn_mat)

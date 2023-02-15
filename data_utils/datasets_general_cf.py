@@ -25,6 +25,19 @@ class PairwiseTrnData(data.Dataset):
 	def __getitem__(self, idx):
 		return self.rows[idx], self.cols[idx], self.negs[idx]
 
+class PairwiseWEpochFlag(PairwiseTrnData):
+	def __init__(self, coomat):
+		super(PairwiseWEpochFlag, self).__init__(coomat)
+		self.epoch_flag_counter = 0
+		self.epoch_period = configs['model']['epoch_period']
+	
+	def __getitem__(self, idx):
+		flag = 1 if self.epoch_flag_counter % self.epoch_period else 0
+		if idx == 0:
+			self.epoch_flag_counter += 1
+		anc, pos, neg = super(PairwiseWEpochFlag, self).__getitem__(idx)
+		return anc, pos, neg, flag
+
 class AllRankTstData(data.Dataset):
 	def __init__(self, coomat, trn_mat):
 		self.csrmat = (trn_mat.tocsr() != 0) * 1.0
@@ -48,4 +61,3 @@ class AllRankTstData(data.Dataset):
 		pck_mask = self.csrmat[pck_user].toarray()
 		pck_mask = np.reshape(pck_mask, [-1])
 		return pck_user, pck_mask
-			

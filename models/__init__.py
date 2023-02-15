@@ -4,6 +4,7 @@ from models.general_cf.lightgcl import LightGCL
 from models.general_cf.hccf import HCCF
 from models.general_cf.directau import DirectAU
 from models.general_cf.simgcl import SimGCL
+from models.general_cf.ncl import NCL
 from models.social.smin import SMIN
 from models.social.kcgn import KCGN
 from models.social.mhcn import MHCN

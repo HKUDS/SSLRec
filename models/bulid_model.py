@@ -32,6 +32,8 @@ def build_model(data_handler):
         model = HMGCR(data_handler)
     elif configs['model']['name'] == 'smbrec':
         model = SMBRec(data_handler)
+    elif configs['model']['name'] == 'ncl':
+        model = NCL(data_handler)
     else:
         raise NotImplementedError
 

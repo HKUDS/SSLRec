@@ -1,0 +1,34 @@
+optimizer:
+  name: adam
+  lr: 1.0e-3
+  weight_decay: 0
+
+train:
+  epoch: 100
+  batch_size: 4096
+  save_model: false
+  loss: pairwise_with_epoch_flag
+  test_step: 3
+  #pretrain_path: ./checkpoint/xxxx.pth
+
+test:
+  metrics: [recall, ndcg]
+  k: [10, 20, 40]
+  batch_size: 256
+
+data:
+  type: general_cf # choose in {general_cf, multi_behavior, sequential, social}
+  name: yelp
+
+model:
+  name: ncl # case-insensitive
+  keep_rate: 1.0
+  layer_num: 3
+  high_order: 2
+  reg_weight: 1.0e-2
+  proto_weight: 1.0e-3
+  struct_weight: 1.0e-3
+  temperature: 0.1
+  embedding_size: 32
+  epoch_period: 3
+  cluster_num: 50
