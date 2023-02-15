@@ -6,6 +6,7 @@ from models.general_cf.directau import DirectAU
 from models.general_cf.simgcl import SimGCL
 from models.social.smin import SMIN
 from models.social.kcgn import KCGN
+from models.social.mhcn import MHCN
 from models.sequential.bert4rec import BERT4Rec
 from models.sequential.cl4srec import CL4SRec
 # from models.multi_behavior.hmgcr import HMGCR

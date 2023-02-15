@@ -18,6 +18,8 @@ def build_model(data_handler):
         model = SMIN(data_handler)
     elif configs['model']['name'] == 'kcgn':
         model = KCGN(data_handler)
+    elif configs['model']['name'] == 'mhcn':
+        model = MHCN(data_handler)
     elif configs['model']['name'] == 'mmclr':
         model = MMCLR(data_handler)
     elif configs['model']['name'] == 'bert4rec':
