@@ -25,9 +25,9 @@ class PairwiseTrnData(data.Dataset):
 	def __getitem__(self, idx):
 		return self.rows[idx], self.cols[idx], self.negs[idx]
 
-class PairwiseWEpochFlag(PairwiseTrnData):
+class PairwiseWEpochFlagTrnData(PairwiseTrnData):
 	def __init__(self, coomat):
-		super(PairwiseWEpochFlag, self).__init__(coomat)
+		super(PairwiseWEpochFlagTrnData, self).__init__(coomat)
 		self.epoch_flag_counter = 0
 		self.epoch_period = configs['model']['epoch_period']
 	
