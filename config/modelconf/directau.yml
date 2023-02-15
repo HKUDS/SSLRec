@@ -6,9 +6,9 @@ optimizer:
 train:
   epoch: 100
   batch_size: 4096
-  save_model: true
+  save_model: false
   loss: pairwise # bpr
-  test_step: 5 # evaluate per {test_step} epochs
+  test_step: 10 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
   reproducible: ture
   seed: 2023
@@ -29,7 +29,7 @@ model:
   embedding_size: 32
 
 tune:
-  enable: false # Whether to enable grid search to search for optimal hyperparameters
+  enable: true # Whether to enable grid search to search for optimal hyperparameters
   hyperparameters: [layer_num, gamma] # The name of the hyperparameter
   layer_num: [1, 2, 3] # Use a list to store the search range
-  reg_weight: [0.5, 1, 2, 5]
+  gamma: [0.5, 1, 2, 5]
