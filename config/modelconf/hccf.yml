@@ -22,7 +22,7 @@ data:
 
 model:
   name: hccf # case-insensitive
-  keep_rate: 0.5
+  keep_rate: 1.0
   layer_num: 2
   reg_weight: 1.0e-6
   cl_weight: 1.0
