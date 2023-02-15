@@ -80,6 +80,39 @@ class DataHandlerSocial:
 		adj_mat = adj_mat.tocsr()
 		return subgraph_list, node_subgraph, adj_mat, node_list
 
+    def _build_motif_induced_adjacency_matrix(self, trust_mat, trn_mat):
+        S = trust_mat
+        Y = trn_mat
+        self.user_adjacency = Y.tocsr()
+        self.item_adjacency = Y.T.tocsr()
+        B = S.multiply(S.T)
+        U = S - B
+        C1 = (U.dot(U)).multiply(U.T)
+        A1 = C1 + C1.T
+        C2 = (B.dot(U)).multiply(U.T) + (U.dot(B)).multiply(U.T) + (U.dot(U)).multiply(B)
+        A2 = C2 + C2.T
+        C3 = (B.dot(B)).multiply(U) + (B.dot(U)).multiply(B) + (U.dot(B)).multiply(B)
+        A3 = C3 + C3.T
+        A4 = (B.dot(B)).multiply(B)
+        C5 = (U.dot(U)).multiply(U) + (U.dot(U.T)).multiply(U) + (U.T.dot(U)).multiply(U)
+        A5 = C5 + C5.T
+        A6 = (U.dot(B)).multiply(U) + (B.dot(U.T)).multiply(U.T) + (U.T.dot(U)).multiply(B)
+        A7 = (U.T.dot(B)).multiply(U.T) + (B.dot(U)).multiply(U) + (U.dot(U.T)).multiply(B)
+        A8 = (Y.dot(Y.T)).multiply(B)
+        A9 = (Y.dot(Y.T)).multiply(U)
+        A9 = A9+A9.T
+        A10  = Y.dot(Y.T)-A8-A9
+        #addition and row-normalization
+        H_s = sum([A1,A2,A3,A4,A5,A6,A7])
+        H_s = H_s.multiply(1.0/H_s.sum(axis=1).reshape(-1, 1))
+        H_j = sum([A8,A9])
+        H_j = H_j.multiply(1.0/H_j.sum(axis=1).reshape(-1, 1))
+        H_p = A10
+        H_p = H_p.multiply(H_p>1)
+        H_p = H_p.multiply(1.0/H_p.sum(axis=1).reshape(-1, 1))
+
+        return [H_s,H_j,H_p]
+
 	def load_data(self):
 		with open(self.trn_file, 'rb') as fs:
 			trn_mat = pickle.load(fs)
@@ -211,4 +244,4 @@ class DataHandlerSocial:
 
 		elif configs['model']['name'] == 'mhcn':
 			trust_mat = self._load_one_mat(self.trust_file)
-			
+			self.M_matrices = self._build_motif_induced_adjacency_matrix(trust_mat, trn_mat)
