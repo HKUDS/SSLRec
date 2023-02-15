@@ -1,0 +1,53 @@
+optimizer:
+  name: adam
+  lr: 1.e-4 # not 1e-3
+  weight_decay: 0
+
+train:
+  epoch: 50
+  batch_size: 4096
+  save_model: true
+  loss: pairwise # bpr
+  test_step: 5 # evaluate per {test_step} epochs
+  #pretrain_path: ./checkpoint/xxxx.pth
+  reproducible: ture
+  seed: 2023
+
+test:
+  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
+  k: [10, 20, 40] # top-k
+  batch_size: 1024 # How many users per batch during validation
+
+data:
+  type: hmgcr # choose in {general_cf, multi_behavior, sequential, social}
+  name: ijcai_15
+
+
+model:
+  name: hmgcr # case-insensitive
+  keep_rate: 0.5
+  layer_num: 3
+  reg_weight: 1.0e-2
+  embedding_size: 32
+  min_num_buy: 5
+  max_num_buy: 100
+  train_negative_samples: 5
+  graph_encoder: GCN
+  fusion: MLP
+  trigger: 30
+  hidden_dim: 16
+  gat_layers_num: 3
+  dropout: 0.2
+  heads_num: 3
+  wd: 1.e-6
+  t: 0.01
+  beta: 0.5
+  target: buy
+  tau: 0.5
+  beta_loss: 0.9
+
+tune:
+  enable: false # Whether to enable grid search to search for optimal hyperparameters
+  hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
+  layer_num: [1, 2, 3] # Use a list to store the search range
+  reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
