@@ -18,7 +18,7 @@ train:
   loss: pairwise # bpr
   test_step: 5 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
-  reproducible: ture
+  reproducible: true
   seed: 2023
   sampNum: 10
   meta_batch: 128

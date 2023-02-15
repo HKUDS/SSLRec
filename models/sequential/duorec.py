@@ -61,9 +61,12 @@ class DuoRec(BaseModel):
             all_index_same_id = np.where(train_last_items == item_id)[0]  # all index of a specific item id with self item
             delete_index = np.argwhere(all_index_same_id == index)
             all_index_same_id_wo_self = np.delete(all_index_same_id, delete_index)
-            sampled_same_id = np.random.choice(all_index_same_id_wo_self, 20, replace=False)
-            same_target_index[item_id] = sampled_same_id
-        same_target_index = np.array(same_target_index)
+            if len(all_index_same_id_wo_self) > 20:
+                sampled_same_id = np.random.choice(all_index_same_id_wo_self, 20, replace=False)
+            else:
+                sampled_same_id = all_index_same_id_wo_self
+            if len(sampled_same_id) > 0:
+                same_target_index[item_id] = sampled_same_id
         
         return same_target_index
 
@@ -76,7 +79,7 @@ class DuoRec(BaseModel):
                 sampled_seq_idx = np.random.choice(self.same_target_index[item])
                 sampled_pos_seqs.append(train_seqs[sampled_seq_idx])
             else:
-                sampled_pos_seqs.append(batch_seqs[i])
+                sampled_pos_seqs.append(batch_seqs[i].tolist())
         sampled_pos_seqs = torch.tensor(sampled_pos_seqs, dtype=torch.long, device=batch_seqs.device)
         return sampled_pos_seqs
 

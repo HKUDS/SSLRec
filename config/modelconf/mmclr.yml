@@ -10,7 +10,7 @@ train:
   loss: pairwise # bpr
   test_step: 5 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
-  reproducible: ture
+  reproducible: true
   seed: 2023
   device: cuda:0  #cuda:0
   use_cuda: True
