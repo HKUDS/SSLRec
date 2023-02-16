@@ -2,6 +2,7 @@ import torch
 import numpy as np
 from config.configurator import configs
 
+
 class Metric(object):
     def __init__(self):
         self.metrics = configs['test']['metrics']
@@ -19,14 +20,12 @@ class Metric(object):
         precision = np.sum(right_pred) / precis_n
         return precision
 
-
     def mrr(self, r, k):
         pred_data = r[:, :k]
         scores = np.log2(1. / np.arange(1, k + 1))
         pred_data = pred_data / scores
         pred_data = pred_data.sum(1)
         return np.sum(pred_data)
-
 
     def ndcg(self, test_data, r, k):
         assert len(r) == len(test_data)
@@ -91,17 +90,23 @@ class Metric(object):
         test_user_num = len(test_dataloader.dataset.test_users)
         for _, tem in enumerate(test_dataloader):
             # predict result
-            batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
+            batch_data = list(
+                map(lambda x: x.long().to(configs['device']), tem))
             batch_pred = model.full_predict(batch_data)
             test_user_count += batch_pred.shape[0]
             _, batch_rate = torch.topk(batch_pred, k=max(self.k))
+
+            test_user = tem[0].numpy().tolist()
+            # filter our history items
+            batch_rate = self._mask_history_pos(
+                batch_rate, test_user, test_dataloader)
             batch_ratings.append(batch_rate.cpu())
 
             # ground truth
             ground_truth = []
-            test_user = tem[0].numpy().tolist()
             for user_idx in test_user:
-                ground_truth.append(list(test_dataloader.dataset.user_pos_lists[user_idx]))
+                ground_truth.append(
+                    list(test_dataloader.dataset.user_pos_lists[user_idx]))
             ground_truths.append(ground_truth)
         assert test_user_count == test_user_num
 
@@ -116,9 +121,10 @@ class Metric(object):
 
         return result
 
-
-
-
-
-
-
+    def _mask_history_pos(self, batch_rate, test_user, test_dataloader):
+        if not hasattr(test_dataloader.dataset, 'user_history_lists'):
+            return batch_rate
+        for i, user_idx in enumerate(test_user):
+            pos_list = test_dataloader.dataset.user_history_lists[user_idx]
+            batch_rate[i, pos_list] = -np.inf
+        return batch_rate

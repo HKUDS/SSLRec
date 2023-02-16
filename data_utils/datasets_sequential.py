@@ -9,7 +9,7 @@ class SequentialDataset(data.Dataset):
     def __init__(self, user_seqs, mode='train'):
         self.max_seq_len = configs['model']['max_seq_len']
         self.uids = user_seqs["uid"]
-        self.seqs = self._pad_seqs(user_seqs["item_seq"])
+        self.padded_seqs = self._pad_seqs(user_seqs["item_seq"])
         self.last_items = user_seqs["item_id"]
         if mode == 'test':
             self.test_users = self.uids
@@ -33,4 +33,4 @@ class SequentialDataset(data.Dataset):
         return len(self.uids)
 
     def __getitem__(self, idx):
-        return self.uids[idx], torch.LongTensor(self.seqs[idx]), torch.LongTensor([self.last_items[idx]])
+        return self.uids[idx], torch.LongTensor(self.padded_seqs[idx]), torch.LongTensor([self.last_items[idx]])

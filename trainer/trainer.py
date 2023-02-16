@@ -451,4 +451,10 @@ class MMCLRTrainer(Trainer):
             loss.backward()
             self.optimizer.step()
 
-
+class ICLRecTrainer(Trainer):
+    def __init__(self, data_handler, logger):
+        super(MMCLRTrainer, self).__init__(data_handler, logger)
+    
+    def train_epoch(self, model, epoch_idx):
+        """ prepare clustering in eval mode """
+        model.eval()
