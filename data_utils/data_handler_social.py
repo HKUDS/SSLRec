@@ -55,7 +55,7 @@ class DataHandlerSocial:
 			sparse_mx = sparse_mx.tocoo().astype(np.float32)
 		indices = t.from_numpy(
 			np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
-		values = t.from_numpy(sparse_mx.data)
+		values = t.from_numpy(sparse_mx.data.astype(np.float32))
 		shape = t.Size(sparse_mx.shape)
 		return t.sparse.FloatTensor(indices, values, shape)
 
@@ -84,8 +84,6 @@ class DataHandlerSocial:
 	def _build_motif_induced_adjacency_matrix(self, trust_mat, trn_mat):
 		S = trust_mat
 		Y = trn_mat
-		self.user_adjacency = Y.tocsr()
-		self.item_adjacency = Y.T.tocsr()
 		B = S.multiply(S.T)
 		U = S - B
 		C1 = (U.dot(U)).multiply(U.T)
@@ -111,8 +109,7 @@ class DataHandlerSocial:
 		H_p = A10
 		H_p = H_p.multiply(H_p>1)
 		H_p = H_p.multiply(1.0/H_p.sum(axis=1).reshape(-1, 1))
-
-		return [H_s,H_j,H_p]
+		return [H_s, H_j, H_p]
 
 	def _build_joint_adjacency(self, trn_mat):
 		indices = t.from_numpy(
@@ -255,13 +252,15 @@ class DataHandlerSocial:
 									device=t.device('cuda'))
 
 		elif configs['model']['name'] == 'mhcn':
-			trust_mat = self._load_one_mat(self.trust_file)
+			with open(self.trust_file, 'rb') as fs:
+				trust_mat = pickle.load(fs).astype(np.float64)
+			trn_mat = trn_mat.astype(np.int64)
 			M_matrices = self._build_motif_induced_adjacency_matrix(trust_mat, trn_mat)
 			H_s = M_matrices[0]
-			H_s = self._sparse_mx_to_torch_sparse_tensor(H_s)
+			self.H_s = self._sparse_mx_to_torch_sparse_tensor(H_s).to(configs['device'])
 			H_j = M_matrices[1]
-			H_j = self._sparse_mx_to_torch_sparse_tensor(H_j)
+			self.H_j = self._sparse_mx_to_torch_sparse_tensor(H_j).to(configs['device'])
 			H_p = M_matrices[2]
-			H_p = self._sparse_mx_to_torch_sparse_tensor(H_p)
-			R = self._build_joint_adjacency(trn_mat)
+			self.H_p = self._sparse_mx_to_torch_sparse_tensor(H_p).to(configs['device'])
+			self.R = self._build_joint_adjacency(trn_mat).to(configs['device'])
 			
