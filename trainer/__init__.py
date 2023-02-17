@@ -1,1 +1,1 @@
-from trainer.trainer import Trainer, CMLTrainer, MMCLRTrainer
+from trainer.trainer import Trainer, CMLTrainer, MMCLRTrainer, ICLRecTrainer

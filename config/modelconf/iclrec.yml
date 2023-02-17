@@ -4,6 +4,7 @@ optimizer:
   weight_decay: 0
 
 train:
+  trainer: iclrec_trainer
   epoch: 200
   batch_size: 512
   save_model: true
