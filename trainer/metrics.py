@@ -89,19 +89,17 @@ class Metric(object):
         test_user_count = 0
         test_user_num = len(test_dataloader.dataset.test_users)
         for _, tem in enumerate(test_dataloader):
-            # predict result
+            test_user = tem[0].numpy().tolist()
             batch_data = list(
                 map(lambda x: x.long().to(configs['device']), tem))
+            # predict result
             batch_pred = model.full_predict(batch_data)
             test_user_count += batch_pred.shape[0]
+            # filter out history items
+            batch_pred = self._mask_history_pos(
+                batch_pred, test_user, test_dataloader)
             _, batch_rate = torch.topk(batch_pred, k=max(self.k))
-
-            test_user = tem[0].numpy().tolist()
-            # filter our history items
-            batch_rate = self._mask_history_pos(
-                batch_rate, test_user, test_dataloader)
             batch_ratings.append(batch_rate.cpu())
-
             # ground truth
             ground_truth = []
             for user_idx in test_user:
@@ -126,5 +124,5 @@ class Metric(object):
             return batch_rate
         for i, user_idx in enumerate(test_user):
             pos_list = test_dataloader.dataset.user_history_lists[user_idx]
-            batch_rate[i, pos_list] = -np.inf
+            batch_rate[i, pos_list] = -1e8
         return batch_rate

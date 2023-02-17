@@ -7,6 +7,7 @@ import torch
 
 class SequentialDataset(data.Dataset):
     def __init__(self, user_seqs, mode='train'):
+        self.mode = mode
         self.max_seq_len = configs['model']['max_seq_len']
         self.uids = user_seqs["uid"]
         self.user_history_lists = {user: seq for user, seq in zip(self.uids, user_seqs["item_seq"])}
@@ -40,7 +41,7 @@ class SequentialDataset(data.Dataset):
 
     def __getitem__(self, idx):
         seq_i = self.user_history_lists[self.uids[idx]]
-        if 'neg_samp' in configs['data'] and configs['data']['neg_samp']:
+        if self.mode == 'train' and 'neg_samp' in configs['data'] and configs['data']['neg_samp']:
             return self.uids[idx], torch.LongTensor(self._pad_seq(seq_i)), self.last_items[idx], self.negs[idx]
         else:
             return self.uids[idx], torch.LongTensor(self._pad_seq(seq_i)), self.last_items[idx]
