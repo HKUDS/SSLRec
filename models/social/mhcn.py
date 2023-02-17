@@ -33,22 +33,22 @@ class MHCN(BaseModel):
 
 	def _self_gating(self, em, channel):
 		if channel == 1:
-			gates = F.sigmoid(self.gating1(em))
+			gates = t.sigmoid(self.gating1(em))
 		elif channel == 2:
-			gates = F.sigmoid(self.gating2(em))
+			gates = t.sigmoid(self.gating2(em))
 		elif channel == 3:
-			gates = F.sigmoid(self.gating3(em))
+			gates = t.sigmoid(self.gating3(em))
 		elif channel == 4:
-			gates = F.sigmoid(self.gating4(em))
+			gates = t.sigmoid(self.gating4(em))
 		return em * gates
 
 	def _self_supervised_gating(self, em, channel):
 		if channel == 1:
-			sgates = F.sigmoid(self.sgating1(em))
+			sgates = t.sigmoid(self.sgating1(em))
 		elif channel == 2:
-			sgates = F.sigmoid(self.sgating2(em))
+			sgates = t.sigmoid(self.sgating2(em))
 		elif channel == 3:
-			sgates = F.sigmoid(self.sgating3(em))
+			sgates = t.sigmoid(self.sgating3(em))
 		return em * sgates
 
 	def _channel_attention(self, *channel_embeds):

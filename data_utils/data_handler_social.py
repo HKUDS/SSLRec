@@ -10,6 +10,8 @@ import dgl
 from dgl import DGLGraph
 import networkx as nx
 from math import sqrt
+from tqdm import tqdm
+import os
 
 class DataHandlerSocial:
 	def __init__(self):
@@ -23,16 +25,19 @@ class DataHandlerSocial:
 			predir = './datasets/social_lastfm/'
 		self.trn_file = predir + 'trn_mat.pkl'
 		self.tst_file = predir + 'tst_mat.pkl'
+		self.trust_file = predir + 'trust_mat.pkl'
+		self.category_file = predir + 'category.pkl'
 		if configs['model']['name'] == 'smin':
 			self.metapath_file = predir + 'metapath.pkl'
 			self.subgraph_file = predir + '2hop_ui_subgraph.pkl'
 		if configs['model']['name'] == 'kcgn':
+			self.trn_time_file = predir + 'trn_time.pkl'
 			self.multi_item_adj_file = predir + 'multi_item_adj.pkl'
 			self.uu_vv_graph_file = predir + 'uu_vv_graph.pkl'
 			self.uu_subgraph_file = predir + 'uu_mat_subgraph.pkl'
 			self.ii_subgraph_file = predir + 'ii_mat_subgraph.pkl'
 		if configs['model']['name'] == 'mhcn':
-			self.trust_file = predir + 'trust_mat.pkl'
+			pass
 
 	def _load_one_mat(self, file):
 		"""Load one single adjacent matrix from file
@@ -48,6 +53,15 @@ class DataHandlerSocial:
 		if type(mat) != coo_matrix:
 			mat = coo_matrix(mat)
 		return mat
+
+	def _load(self, path):
+		with open(path, 'rb') as fs:
+			data = pickle.load(fs)
+		return data
+
+	def _save(self, data, path):
+		with open(path, 'wb') as fs:
+			pickle.dump(data, fs)
 
 	def _sparse_mx_to_torch_sparse_tensor(self, sparse_mx):
 		"""Convert a scipy sparse matrix to a torch sparse tensor."""
@@ -79,7 +93,8 @@ class DataHandlerSocial:
 		node_subgraph = np.array(node_subgraph)
 		assert np.sum(node_subgraph == -1) == 0
 		adj_mat = adj_mat.tocsr()
-		return subgraph_list, node_subgraph, adj_mat, node_list
+		subgraph = (node_subgraph, adj_mat, node_list)
+		return subgraph_list, subgraph
 
 	def _build_motif_induced_adjacency_matrix(self, trust_mat, trn_mat):
 		S = trust_mat
@@ -122,11 +137,184 @@ class DataHandlerSocial:
 		norm_adj = t.sparse.FloatTensor(indices, values, shape)
 		return norm_adj
 
+	def _gen_metapath(self, trn_mat, trust_mat, category_mat, category_dict):
+		trn_mat = trn_mat.tocsr()
+		user_num, item_num = trn_mat.shape
+		
+		uu_mat = (trust_mat.T + trust_mat) + sp.eye(user_num).tocsr()
+		uu_mat = (uu_mat != 0)
+
+		uiu_mat = sp.dok_matrix((user_num, user_num))
+		for i in tqdm(range(user_num)):
+			data = trn_mat[i].toarray()
+			_, iid = np.where(data != 0)
+			uid_list, _ = np.where(np.sum(trn_mat[:, iid]!=0, axis=1) != 0)
+			uid_list = uid_list.tolist()
+			tmp = [i] * len(uid_list)
+			uiu_mat[tmp, uid_list] = 1
+		uiu_mat = uiu_mat.tocsr()
+		uiu_mat = uiu_mat + uiu_mat.T + sp.eye(user_num).tocsr()
+		uiu_mat = (uiu_mat != 0)
+
+		uitiu_mat = sp.dok_matrix((user_num, user_num))
+		for i in tqdm(range(user_num)):
+			data = trn_mat[i].toarray()
+			_, iid = np.where(data != 0)
+			typeid_list = category_mat[iid].toarray().reshape(-1)
+			typeid_set = set(typeid_list.tolist())
+			for typeid in typeid_set:
+				iid2 = category_dict[typeid]
+				uid_list, _ = np.where(np.sum(trn_mat[:, iid2]!=0, axis=1) != 0)
+				uid_list2 = np.random.choice(uid_list, size=int(uid_list.size*0.1), replace=False)
+				uid_list2 = uid_list2.tolist()
+				tmp = [i]*len(uid_list2)
+				uitiu_mat[tmp, uid_list2] = 1
+		uitiu_mat = uitiu_mat.tocsr()
+		uitiu_mat = uitiu_mat + uitiu_mat.T + sp.eye(user_num).tocsr()  
+		uitiu_mat = (uitiu_mat != 0)
+
+		iti_mat = sp.dok_matrix((item_num, item_num))
+		# itemTypeList = categoryMat.toarray().reshape(-1)
+		for i in tqdm(range(item_num)):
+			item_type = category_mat[i,0] #type id
+			item_list = category_dict[item_type]
+			item_list = np.array(item_list)
+			item_list2 = np.random.choice(item_list, size=int(item_list.size*0.01), replace=False)
+			item_list2 = item_list2.tolist()
+			tmp = [i]*len(item_list2)
+			iti_mat[tmp, item_list2] = 1
+		iti_mat = iti_mat.tocsr()
+		iti_mat = iti_mat + iti_mat.T + sp.eye(item_num).tocsr() 
+		iti_mat = (iti_mat != 0)
+
+		iui_mat = sp.dok_matrix((item_num, item_num))
+		trn_mat_T = trn_mat.T
+		for i in tqdm(range(item_num)):
+			data = trn_mat_T[i].toarray()
+			_, uid = np.where(data != 0)
+			iid_list, _ = np.where(np.sum(trn_mat_T[:, uid] != 0, axis=1) != 0)
+			iid_list2 = np.random.choice(iid_list, size=int(iid_list.size*0.1), replace=False)
+			iid_list2 = iid_list2.tolist()
+			tmp = [i]*len(iid_list2)
+			iui_mat[tmp, iid_list2] = 1
+		iui_mat = iui_mat.tocsr()
+		iui_mat = iui_mat + iui_mat.T + sp.eye(item_num).tocsr() 
+		iui_mat = (iui_mat != 0)
+
+		metapath = {}
+		metapath['UU'] = uu_mat
+		metapath['UIU'] = uiu_mat
+		metapath['UITIU'] = uitiu_mat
+		metapath['ITI'] = iti_mat
+		metapath['IUI'] = iui_mat
+
+		return metapath
+
+	def _gen_subgraph(self, trn_mat, metapath, k_hop=2):
+		uu_mat = metapath['UU']
+		iti_mat = metapath['ITI']
+		user_num, item_num = trn_mat.shape
+		ui_num = user_num + item_num
+
+		ui_subgraph = sp.dok_matrix((ui_num, ui_num))
+		u_list, v_list = trn_mat.row, trn_mat.col
+		ui_subgraph[u_list, user_num+v_list] = 1
+		ui_subgraph[user_num+v_list, u_list] = 1
+		uu_mat = uu_mat.tocoo()
+		u_list, v_list = uu_mat.row, uu_mat.col
+		ui_subgraph[u_list, v_list] = 1
+		iti_mat = iti_mat.tocoo()
+		u_list, v_list = iti_mat.row, iti_mat.col
+		u_list = np.random.choice(u_list, size=int(u_list.size*0.02),replace=False)
+		v_list = np.random.choice(v_list, size=int(v_list.size*0.02),replace=False)
+		ui_subgraph[user_num+u_list, user_num+v_list] = 1
+		ui_subgraph = ui_subgraph.tocsr()
+
+		ui_mat = ui_subgraph.copy()
+		if k_hop > 1:
+			for i in tqdm(range(ui_num)):
+				data = ui_mat[i].toarray()
+				_, id_list = np.where(data!=0)
+				tmp = k_hop - 1
+				while tmp > 0:
+					_, id_list = np.where(np.sum(ui_mat[id_list,:],axis=0) > 10)
+					ui_subgraph[i, id_list] = 1
+					tmp = tmp -1
+		ui_subgraph = (ui_subgraph !=0)
+		data = (ui_mat, ui_subgraph)
+
+		return data
+
+	def _create_category_dict(self, trn_mat, category_mat):
+		assert category_mat.shape[0] == trn_mat.shape[1]
+		category_dict = {}
+		category_data = category_mat.toarray().reshape(-1)
+		for i in range(category_data.size):
+			iid = i
+			typeid = category_data[i]
+			if typeid in category_dict:
+				category_dict[typeid].append(iid)
+			else:
+				category_dict[typeid] = [iid]
+		return category_dict
+
+	def _create_multiitem_user_adj(self, trn_mat, trn_time):
+		rating_class = np.unique(trn_mat.data).size
+		user_num, item_num = trn_mat.shape
+		multi_adj = sp.lil_matrix((rating_class*item_num, user_num), dtype=int)
+		trn_mat = trn_mat.tocoo()
+		uid_list, iid_list, r_list = trn_mat.row, trn_mat.col, trn_mat.data
+
+		for i in range(uid_list.size):
+			uid = uid_list[i]
+			iid = iid_list[i]
+			r = r_list[i]
+			multi_adj[iid*rating_class+r-1, uid] = trn_time[uid, iid]
+			assert trn_time[uid, iid] != 0
+
+		a = sp.csr_matrix((multi_adj.shape[1], multi_adj.shape[1]))
+		b = sp.csr_matrix((multi_adj.shape[0], multi_adj.shape[0]))
+		multi_adj2 = sp.vstack([sp.hstack([a, multi_adj.T]), sp.hstack([multi_adj,b])])
+		return multi_adj2.tocsr()
+
+	def _gen_uu_vv_graph(self, trn_mat, trust_mat, category_mat, category_dict):
+		user_num, item_num = trn_mat.shape
+		assert category_mat.shape[0] == trn_mat.shape[1]
+		mat = (trust_mat.T + trust_mat) + sp.eye(user_num)
+		uu_mat = (mat != 0) * 1
+
+		iti_mat = sp.dok_matrix((item_num, item_num))
+		category_mat = category_mat.toarray().reshape(-1)
+		for i in tqdm(range(category_mat.size)):
+			typeid = category_mat[i]
+			item_list = category_dict[typeid]
+			item_list = np.array(item_list)
+			if item_list.size < 100:
+				rate = 0.1
+			elif item_list.size < 1000:
+				rate = 0.01
+			else:
+				rate = 0.001
+			item_list2 = np.random.choice(item_list, size=int(item_list.size*rate/2), replace=False)
+			item_list2 = item_list2.tolist()
+			tmp = [i for _ in range(len(item_list2))]
+			iti_mat[tmp, item_list2] = 1
+		
+		iti_mat = iti_mat.tocsr()
+		iti_mat = iti_mat + iti_mat.T + sp.eye(item_num)
+		iti_mat = (iti_mat != 0)*1
+
+		uu_vv_graph = {}
+		uu_vv_graph['UU'] = uu_mat
+		uu_vv_graph['II'] = iti_mat
+		return uu_vv_graph
+
 	def load_data(self):
-		with open(self.trn_file, 'rb') as fs:
-			trn_mat = pickle.load(fs)
-		tst_mat = self._load_one_mat(self.tst_file)
-        
+		trn_mat = self._load(self.trn_file)
+		tst_mat = self._load(self.tst_file)
+		trust_mat = self._load(self.trust_file)
+		category_mat = self._load(self.category_file)
+		category_dict = self._create_category_dict(trn_mat, category_mat)
 		configs['data']['user_num'], configs['data']['item_num'] = trn_mat.shape
 		
 		if configs['train']['loss'] == 'pairwise':
@@ -138,10 +326,23 @@ class DataHandlerSocial:
 		self.train_dataloader = data.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
 
 		if configs['model']['name'] == 'smin':
-			with open(self.metapath_file, 'rb') as fs:
-				metapath = pickle.load(fs)
-			with open(self.subgraph_file, 'rb') as fs:
-				subgraph = pickle.load(fs)
+			if configs['data']['clear']:
+				if os.path.exists(self.metapath_file):
+					os.remove(self.metapath_file)
+			if os.path.exists(self.metapath_file):
+				metapath = self._load(self.metapath_file)
+			else:
+				metapath = self._gen_metapath(trn_mat, trust_mat, category_mat, category_dict)
+				self._save(metapath, self.metapath_file)
+
+			if configs['data']['clear']:
+				if os.path.exists(self.subgraph_file):
+					os.remove(self.subgraph_file)
+			if os.path.exists(self.subgraph_file):
+				subgraph = self._load(self.subgraph_file)
+			else:
+				subgraph = self._gen_subgraph(trn_mat, metapath, configs['model']['k_hop_num'])
+				self._save(subgraph, self.subgraph_file)
 
 			uu_graph = dgl.from_scipy(metapath['UU'], device=t.device('cuda'))
 			uiu_graph = dgl.from_scipy(metapath['UIU'], device=t.device('cuda'))
@@ -177,10 +378,25 @@ class DataHandlerSocial:
 			self.ui_graph = DGLGraph(self.ui_graph_adj).to(t.device('cuda'))
 		
 		elif configs['model']['name'] == 'kcgn':
-			with open(self.multi_item_adj_file, 'rb') as fs:
-				multi_adj_time = pickle.load(fs)
-			with open(self.uu_vv_graph_file, 'rb') as fs:
-				uu_vv_graph = pickle.load(fs)
+			trn_time = self._load(self.trn_time_file)
+			if configs['data']['clear']:
+				if os.path.exists(self.multi_item_adj_file):
+					os.remove(self.multi_item_adj_file)
+			if os.path.exists(self.multi_item_adj_file):
+				multi_adj_time = self._load(self.multi_item_adj_file)
+			else:
+				multi_adj_time = self._create_multiitem_user_adj(trn_mat, trn_time)
+				self._save(multi_adj_time, self.multi_item_adj_file)
+
+			if configs['data']['clear']:
+				if os.path.exists(self.uu_vv_graph_file):
+					os.remove(self.uu_vv_graph_file)
+			if os.path.exists(self.uu_vv_graph_file):
+				uu_vv_graph = self._load(self.uu_vv_graph_file)
+			else:
+				uu_vv_graph = self._gen_uu_vv_graph(trn_mat, trust_mat, category_mat, category_dict)
+				self._save(uu_vv_graph, self.uu_vv_graph_file)
+
 			uu_mat = uu_vv_graph['UU'].astype(bool)
 			ii_mat = uu_vv_graph['II'].astype(bool)
 		
@@ -196,20 +412,26 @@ class DataHandlerSocial:
 							num_nodes=ii_mat.shape[0],
 							device=t.device('cuda'))
 			
-			# _, self.uu_node_subgraph, self.uu_subgraph_adj, self.uu_dgi_node = self._build_subgraph(uu_mat, configs['model']['subnode'])
-			# save_data = (self.uu_node_subgraph, self.uu_subgraph_adj, self.uu_dgi_node)
-			# with open(self.uu_subgraph_file, 'wb') as fs:
-			# 	pickle.dump(save_data, fs)
+			if configs['data']['clear']:
+				if os.path.exists(self.uu_subgraph_file):
+					os.remove(self.uu_subgraph_file)
+			if os.path.exists(self.uu_subgraph_file):
+				uu_subgraph = self._load(self.uu_subgraph_file)
+			else:
+				_, uu_subgraph = self._build_subgraph(uu_mat, configs['model']['subnode'])
+				self._save(uu_subgraph, self.uu_subgraph_file)
 
-			# _, self.ii_node_subgraph, self.ii_subgraph_adj, self.ii_dgi_node = self._build_subgraph(ii_mat, configs['model']['subnode'])
-			# save_data = (self.ii_node_subgraph, self.ii_subgraph_adj, self.ii_dgi_node)
-			# with open(self.ii_subgraph_file, 'wb') as fs:
-			# 	pickle.dump(save_data, fs)
+			if configs['data']['clear']:
+				if os.path.exists(self.ii_subgraph_file):
+					os.remove(self.ii_subgraph_file)
+			if os.path.exists(self.ii_subgraph_file):
+				ii_subgraph = self._load(self.ii_subgraph_file)
+			else:
+				_, ii_subgraph = self._build_subgraph(ii_mat, configs['model']['subnode'])
+				self._save(ii_subgraph, self.ii_subgraph_file)
 
-			with open(self.uu_subgraph_file, 'rb') as fs:
-				self.uu_node_subgraph, self.uu_subgraph_adj, self.uu_dgi_node = pickle.load(fs)
-			with open(self.ii_subgraph_file, 'rb') as fs:
-				self.ii_node_subgraph, self.ii_subgraph_adj, self.ii_dgi_node = pickle.load(fs)
+			self.uu_node_subgraph, self.uu_subgraph_adj, self.uu_dgi_node = uu_subgraph
+			self.ii_node_subgraph, self.ii_subgraph_adj, self.ii_dgi_node = ii_subgraph
 
 			self.uu_subgraph_adj_tensor = self._sparse_mx_to_torch_sparse_tensor(self.uu_subgraph_adj).cuda()
 			self.uu_subgraph_adj_norm = t.from_numpy(np.sum(self.uu_subgraph_adj, axis=1)).float().cuda()
@@ -252,9 +474,6 @@ class DataHandlerSocial:
 									device=t.device('cuda'))
 
 		elif configs['model']['name'] == 'mhcn':
-			with open(self.trust_file, 'rb') as fs:
-				trust_mat = pickle.load(fs).astype(np.float64)
-			trn_mat = trn_mat.astype(np.int64)
 			M_matrices = self._build_motif_induced_adjacency_matrix(trust_mat, trn_mat)
 			H_s = M_matrices[0]
 			self.H_s = self._sparse_mx_to_torch_sparse_tensor(H_s).to(configs['device'])
@@ -263,4 +482,3 @@ class DataHandlerSocial:
 			H_p = M_matrices[2]
 			self.H_p = self._sparse_mx_to_torch_sparse_tensor(H_p).to(configs['device'])
 			self.R = self._build_joint_adjacency(trn_mat).to(configs['device'])
-			

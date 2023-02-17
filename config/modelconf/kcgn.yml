@@ -20,7 +20,8 @@ test:
 
 data:
   type: social # choose in {general_cf, multi_behavior, sequential, social}
-  name: epinions
+  name: yelp
+  clear: false
 
 model:
   name: kcgn # case-insensitive
