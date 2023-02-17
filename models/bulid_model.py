@@ -36,6 +36,8 @@ def build_model(data_handler):
         model = NCL(data_handler)
     elif configs['model']['name'] == 'duorec':
         model = DuoRec(data_handler)
+    elif configs['model']['name'] == 'iclrec':
+        model = ICLRec(data_handler)
     else:
         raise NotImplementedError
 

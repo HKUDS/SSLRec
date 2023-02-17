@@ -89,7 +89,7 @@ class BERT4Rec(BaseModel):
     def cal_loss(self, batch_data):
         batch_user, batch_seqs, batch_last_items = batch_data
         masked_seqs, masked_items = self._transform_train_seq(
-            batch_seqs, batch_last_items)
+            batch_seqs, batch_last_items.unsqueeze(1))
         # B, T, E
         logits = self.forward(masked_seqs)
         logits = self.out_fc(logits)

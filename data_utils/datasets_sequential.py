@@ -9,28 +9,38 @@ class SequentialDataset(data.Dataset):
     def __init__(self, user_seqs, mode='train'):
         self.max_seq_len = configs['model']['max_seq_len']
         self.uids = user_seqs["uid"]
-        self.padded_seqs = self._pad_seqs(user_seqs["item_seq"])
+        self.user_history_lists = {user: seq for user, seq in zip(self.uids, user_seqs["item_seq"])}
         self.last_items = user_seqs["item_id"]
         if mode == 'test':
             self.test_users = self.uids
             self.user_pos_lists = np.asarray(self.last_items, dtype=np.int32).reshape(-1, 1).tolist()
 
-    def _pad_seqs(self, seqs):
-        padded_seqs = []
-        for seq in seqs:
-            if len(seq) >= self.max_seq_len:
-                seq = seq[:self.max_seq_len]
-            else:
-                # pad at the head
-                seq = [0] * (self.max_seq_len - len(seq)) + seq
-            padded_seqs.append(seq)
-        return padded_seqs
+    def _pad_seq(self, seq):
+        if len(seq) >= self.max_seq_len:
+            seq = seq[:self.max_seq_len]
+        else:
+            # pad at the head
+            seq = [0] * (self.max_seq_len - len(seq)) + seq
+        return seq
 
     def sample_negs(self):
-        return None
+        self.negs = []
+        for i in range(len(self.uids)):
+            u = self.uids[i]
+            seq = self.user_history_lists[u]
+            last_item = self.last_items[i]
+            while True:
+                iNeg = np.random.randint(1, configs['data']['item_num'])
+                if iNeg not in seq and iNeg != last_item:
+                    break
+            self.negs.append(iNeg)
 
     def __len__(self):
         return len(self.uids)
 
     def __getitem__(self, idx):
-        return self.uids[idx], torch.LongTensor(self.padded_seqs[idx]), torch.LongTensor([self.last_items[idx]])
+        seq_i = self.user_history_lists[self.uids[idx]]
+        if configs['data']['neg_samp']:
+            return self.uids[idx], torch.LongTensor(self._pad_seq(seq_i)), self.last_items[idx], self.negs[idx]
+        else:
+            return self.uids[idx], torch.LongTensor(self._pad_seq(seq_i)), self.last_items[idx]

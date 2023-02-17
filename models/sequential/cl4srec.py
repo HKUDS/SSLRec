@@ -178,7 +178,7 @@ class CL4SRec(BaseModel):
 
         test_item_emb = self.emb_layer.token_emb.weight[:self.item_num + 1]
         logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
-        loss = self.loss_func(logits, batch_last_items.squeeze())
+        loss = self.loss_func(logits, batch_last_items)
 
         # NCE
         aug_seq1, aug_seq2 = self._cl4srec_aug(batch_seqs)
