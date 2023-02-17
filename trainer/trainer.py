@@ -453,7 +453,7 @@ class MMCLRTrainer(Trainer):
 
 class ICLRecTrainer(Trainer):
     def __init__(self, data_handler, logger):
-        super(MMCLRTrainer, self).__init__(data_handler, logger)
+        super(ICLRecTrainer, self).__init__(data_handler, logger)
         self. cluster_dataloader = copy.deepcopy(self.data_handler.train_dataloader)
     
     def train_epoch(self, model, epoch_idx):

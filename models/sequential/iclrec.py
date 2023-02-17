@@ -25,14 +25,13 @@ class PCLoss(nn.Module):
         """
         # instance contrast with prototypes
         mean_pcl_loss = 0
-        for intent in intents:
-            pos_one_compare_loss = self.criterion(
-                batch_sample_one, intent, intent_ids=None)
-            pos_two_compare_loss = self.criterion(
-                batch_sample_two, intent, intent_ids=None)
-            mean_pcl_loss += pos_one_compare_loss
-            mean_pcl_loss += pos_two_compare_loss
-        mean_pcl_loss /= 2 * len(intents)
+        pos_one_compare_loss = self.criterion(
+            batch_sample_one, intents, intent_ids=None)
+        pos_two_compare_loss = self.criterion(
+            batch_sample_two, intents, intent_ids=None)
+        mean_pcl_loss += pos_one_compare_loss
+        mean_pcl_loss += pos_two_compare_loss
+        mean_pcl_loss /= 2
         return mean_pcl_loss
 
 
@@ -105,13 +104,14 @@ class KMeans(object):
         clus.seed = self.seed
         clus.max_points_per_centroid = max_points_per_centroid
         clus.min_points_per_centroid = min_points_per_centroid
-
-        res = faiss.StandardGpuResources()
-        res.noTempMemory()
-        cfg = faiss.GpuIndexFlatConfig()
-        cfg.useFloat16 = False
-        cfg.device = self.gpu_id
-        index = faiss.GpuIndexFlatL2(res, hidden_size, cfg)
+        
+        index = faiss.IndexFlatL2(hidden_size)
+        # res = faiss.StandardGpuResources()
+        # res.noTempMemory()
+        # cfg = faiss.GpuIndexFlatConfig()
+        # cfg.useFloat16 = False
+        # cfg.device = self.gpu_id
+        # index = faiss.GpuIndexFlatL2(res, hidden_size, cfg)
         return clus, index
 
     def train(self, x):
@@ -195,6 +195,8 @@ class ICLRec(BaseModel):
         def item_crop(seq, length, eta=0.2):
             num_left = math.floor(length * eta)
             crop_begin = random.randint(0, length - num_left)
+            if num_left < 1:
+                return seq[crop_begin:], 0
             croped_item_seq = np.zeros_like(seq)
             if crop_begin + num_left < seq.shape[0]:
                 croped_item_seq[-num_left:] = seq[-(
@@ -325,7 +327,7 @@ class ICLRec(BaseModel):
         seq_output1_intent = self.forward(aug_seq1, return_mean=True)
         seq_output2_intent = self.forward(aug_seq2, return_mean=True)
         intent_cl_loss = self.intent_cl_weight * self.pcl_criterion(
-            seq_output1_intent, seq_output2_intent, intents=seq2intent)
+            seq_output1_intent, seq_output2_intent, intents=seq2intent.to(self.device))
 
         loss_dict = {
             'rec_loss': loss.item(),

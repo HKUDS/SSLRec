@@ -40,7 +40,7 @@ class SequentialDataset(data.Dataset):
 
     def __getitem__(self, idx):
         seq_i = self.user_history_lists[self.uids[idx]]
-        if configs['data']['neg_samp']:
+        if 'neg_samp' in configs['data'] and configs['data']['neg_samp']:
             return self.uids[idx], torch.LongTensor(self._pad_seq(seq_i)), self.last_items[idx], self.negs[idx]
         else:
             return self.uids[idx], torch.LongTensor(self._pad_seq(seq_i)), self.last_items[idx]

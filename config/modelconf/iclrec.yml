@@ -22,6 +22,7 @@ data:
   type: sequential # choose in {general_cf, multi_behavior, sequential, social}
   name: ml-20m
   seq_aug: true
+  neg_samp: true
 
 model:
   name: iclrec # case-insensitive
@@ -33,6 +34,7 @@ model:
   cl_weight: 0.1
   intent_cl_weight: 1.0
   tau: 1
+  num_intent_clusters: 256
 
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
