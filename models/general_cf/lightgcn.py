@@ -37,7 +37,7 @@ class LightGCN(BaseModel):
 		for i in range(self.layer_num):
 			embeds = self._propagate(adj, embeds_list[-1])
 			embeds_list.append(embeds)
-		embeds = sum(embeds_list) / len(embeds_list)
+		embeds = sum(embeds_list)# / len(embeds_list)
 		self.final_embeds = embeds
 		return embeds[:self.user_num], embeds[self.user_num:]
 	
@@ -48,7 +48,7 @@ class LightGCN(BaseModel):
 		anc_embeds = user_embeds[ancs]
 		pos_embeds = item_embeds[poss]
 		neg_embeds = item_embeds[negs]
-		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
+		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds) / anc_embeds.shape[0]
 		reg_loss = self.reg_weight * reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds])
 		loss = bpr_loss + reg_loss
 		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss}

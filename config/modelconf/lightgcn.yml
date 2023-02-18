@@ -20,14 +20,14 @@ test:
 
 data:
   type: general_cf # choose in {general_cf, multi_behavior, sequential, social}
-  name: yelp
+  name: gowalla
 
 
 model:
   name: lightgcn # case-insensitive
   keep_rate: 0.5
   layer_num: 2
-  reg_weight: 1.0e-2
+  reg_weight: 1.0e-7
   embedding_size: 32
 
 tune:
