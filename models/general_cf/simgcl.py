@@ -29,7 +29,7 @@ class SimGCL(LightGCN):
 			embeds = self._propagate(adj, embeds_list[-1])
 			embeds = self._perturb_embedding(embeds)
 			embeds_list.append(embeds)
-		embeds = sum(embeds_list) / len(embeds_list)
+		embeds = sum(embeds_list)# / len(embeds_list)
 		return embeds[:self.user_num], embeds[self.user_num:]
 	
 	def _pick_embeds(self, user_embeds, item_embeds, batch_data):

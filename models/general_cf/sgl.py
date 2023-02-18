@@ -33,7 +33,7 @@ class SGL(LightGCN):
 			tem_adj =  adj if not random_walk else self.edge_dropper(tem_adj, keep_rate)
 			embeds = self._propagate(adj, embeds_list[-1])
 			embeds_list.append(embeds)
-		embeds = sum(embeds_list) / len(embeds_list)
+		embeds = sum(embeds_list)# / len(embeds_list)
 		self.final_embeds = embeds
 		return embeds[:self.user_num], embeds[self.user_num:]
 	
