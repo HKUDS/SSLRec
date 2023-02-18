@@ -23,9 +23,9 @@ data:
 model:
   name: simgcl # case-insensitive
   keep_rate: 1.0
-  layer_num: 3
-  reg_weight: 1.0e-2
-  cl_weight: 1.0e-3
+  layer_num: 2
+  reg_weight: 1.0e-6
+  cl_weight: 1.0e-2
   temperature: 0.1
   embedding_size: 32
   eps: 0.2
