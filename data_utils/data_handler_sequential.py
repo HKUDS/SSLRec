@@ -12,6 +12,7 @@ class DataHandlerSequential:
     def __init__(self):
         if configs['data']['name'] == 'ml-20m':
             predir = './datasets/ml-20m_seq/'
+            configs['data']['dir'] = predir
         self.trn_file = path.join(predir, 'train.tsv')
         self.val_file = path.join(predir, 'test.tsv')
         self.tst_file = path.join(predir, 'test.tsv')
@@ -49,7 +50,7 @@ class DataHandlerSequential:
             user_seqs_aug["uid"].append(uid)
             user_seqs_aug["item_seq"].append(seq)
             user_seqs_aug["item_id"].append(last_item)
-            for i in range(1, len(seq)):
+            for i in range(1, len(seq)-1):
                 user_seqs_aug["uid"].append(uid)
                 user_seqs_aug["item_seq"].append(seq[:i])
                 user_seqs_aug["item_id"].append(seq[i])
@@ -62,9 +63,10 @@ class DataHandlerSequential:
 
         # seqeuntial augmentation: [1, 2, 3,] -> [1,2], [3]
         if 'seq_aug' in configs['data'] and configs['data']['seq_aug']:
-            user_seqs_train = self._seq_aug(user_seqs_train)
-
-        trn_data = SequentialDataset(user_seqs_train)
+            user_seqs_aug = self._seq_aug(user_seqs_train)
+            trn_data = SequentialDataset(user_seqs_train, user_seqs_aug=user_seqs_aug)
+        else:
+            trn_data = SequentialDataset(user_seqs_train)
         tst_data = SequentialDataset(user_seqs_test, mode='test')
         self.test_dataloader = data.DataLoader(
             tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)

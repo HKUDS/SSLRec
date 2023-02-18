@@ -265,7 +265,7 @@ class DCRec(BaseModel):
         agreement = torch.sigmoid(agreement)
         agreement = (agreement - agreement.min()) / \
             (agreement.max() - agreement.min())
-        agreement = (self.config["weight_mean"] / agreement.mean()) * agreement
+        agreement = (self.weight_mean / agreement.mean()) * agreement
         return agreement
 
     def _init_weights(self, module):
@@ -356,7 +356,12 @@ class DCRec(BaseModel):
         logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
         loss = self.loss_fct(logits, batch_pos_items)
 
-        return loss, cl_loss, kl_loss
+        loss_dict = {
+            "loss": loss.item(),
+            "cl_loss": cl_loss.item(),
+            "kl_loss": kl_loss.item(),
+        }
+        return loss + cl_loss + kl_loss, loss_dict
 
     def full_predict(self, batch_data):
         batch_user, batch_seqs, _ = batch_data
@@ -364,8 +369,8 @@ class DCRec(BaseModel):
         last_items = batch_seqs[:, -1].view(-1)
 
         # graph view
-        adj_graph = self.data_handler.test_dataloader.dataset.adj_graph
-        sim_graph = self.data_handler.test_dataloader.dataset.sim_graph
+        adj_graph = self.data_handler.test_dataloader.dataset.adj_graph.to(self.device)
+        sim_graph = self.data_handler.test_dataloader.dataset.sim_graph.to(self.device)
         iadj_graph_output_raw = self.gcn_forward(adj_graph)
         iadj_graph_output_seq = iadj_graph_output_raw[last_items]
         isim_graph_output_seq = self.gcn_forward(sim_graph)[last_items]
@@ -378,7 +383,6 @@ class DCRec(BaseModel):
         score = F.softmax(weights, dim=0).unsqueeze(-1)
         seq_output = (mixed_x*score).sum(0)
 
-        test_item_emb = self.emb_layer.token_emb.weight  # [B, num, H]
-        scores = torch.matmul(seq_output.unsqueeze(
-            1), test_item_emb.transpose(1, 2)).squeeze()
+        test_item_emb = self.emb_layer.token_emb.weight  # [num, H]
+        scores = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
         return scores
