@@ -496,4 +496,3 @@ class ICLRecTrainer(Trainer):
         # log
         self.logger.log_loss(epoch_idx, loss_log_dict)
 
-
