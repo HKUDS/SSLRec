@@ -3,7 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 from config.configurator import configs
 from models.general_cf.lightgcn import LightGCN
-from models.loss_utils import cal_bpr_loss, reg_pick_embeds, cal_infonce_loss
+from models.loss_utils import cal_bpr_loss, reg_params, cal_infonce_loss
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -34,7 +34,7 @@ class NCL(LightGCN):
 				embeds = self._propagate(adj, embeds_list[-1])
 				embeds_list.append(embeds)
 		self.final_embeds_list = embeds_list
-		embeds = sum(embeds_list[:self.layer_num + 1]) / (self.layer_num + 1)
+		embeds = sum(embeds_list[:self.layer_num + 1])# / (self.layer_num + 1)
 		return embeds, embeds_list
 	
 	def _pick_embeds(self, embeds, ancs, poss, negs):
@@ -51,7 +51,7 @@ class NCL(LightGCN):
 		pck_user_embeds2 = user_embeds2[ancs]
 		pck_item_embeds1 = item_embeds1[poss]
 		pck_item_embeds2 = item_embeds2[poss]
-		return cal_infonce_loss(pck_user_embeds1, pck_user_embeds2, user_embeds2, self.temperature) + cal_infonce_loss(pck_item_embeds1, pck_item_embeds2, item_embeds2, self.temperature)
+		return (cal_infonce_loss(pck_user_embeds1, pck_user_embeds2, user_embeds2, self.temperature) + cal_infonce_loss(pck_item_embeds1, pck_item_embeds2, item_embeds2, self.temperature)) / pck_user_embeds1.shape[0]
 	
 	def _cal_proto_loss(self, ego_embeds, ancs, poss):
 		user_embeds, item_embeds = ego_embeds[:self.user_num], ego_embeds[self.user_num:]
@@ -61,7 +61,7 @@ class NCL(LightGCN):
 		pck_user_embeds2 = self.user_centroids[user_clusters]
 		pck_item_embeds1 = item_embeds[poss]
 		pck_item_embeds2 = self.item_centroids[item_clusters]
-		return cal_infonce_loss(pck_user_embeds1, pck_user_embeds2, self.user_centroids, self.temperature) + cal_infonce_loss(pck_item_embeds1, pck_item_embeds2, self.item_centroids, self.temperature)
+		return (cal_infonce_loss(pck_user_embeds1, pck_user_embeds2, self.user_centroids, self.temperature) + cal_infonce_loss(pck_item_embeds1, pck_item_embeds2, self.item_centroids, self.temperature)) / pck_user_embeds1.shape[0]
 	
 	def cal_loss(self, batch_data):
 		self.is_training = True
@@ -75,8 +75,8 @@ class NCL(LightGCN):
 
 		struct_loss = self._cal_struct_loss(context_embeds, ego_embeds, ancs, poss) * self.struct_weight
 		proto_loss = self._cal_proto_loss(ego_embeds, ancs, poss) * self.proto_weight
-		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
-		reg_loss = reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds]) * self.reg_weight
+		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds) / anc_embeds.shape[0]
+		reg_loss = reg_params(self) * self.reg_weight
 		loss = bpr_loss + struct_loss + proto_loss + reg_loss
 		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'struct_loss': struct_loss, 'proto_loss': proto_loss}
 		return loss, losses
