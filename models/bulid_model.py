@@ -38,6 +38,8 @@ def build_model(data_handler):
         model = DuoRec(data_handler)
     elif configs['model']['name'] == 'iclrec':
         model = ICLRec(data_handler)
+    elif configs['model']['name'] == 'dcrec_seq':
+        model = DCRec_seq(data_handler)
     else:
         raise NotImplementedError
 

@@ -29,8 +29,11 @@ model:
   embedding_size: 64
   n_heads: 2
   max_seq_len: 50
-  lmd: 0.1
-  tau: 1
+  lmd: 1.0e-4
+  cl_temp: 0.8
+  weight_mean: 0.4
+  sim_group_k: 4
+  kl_weight: 1.0e-2
 
 tune:
   enable: true # Whether to enable grid search to search for optimal hyperparameters

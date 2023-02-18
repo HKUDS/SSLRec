@@ -7,3 +7,5 @@ checkpoint/
 .idea/
 *.pyc
 *.log
+*.zip
+*.bin
