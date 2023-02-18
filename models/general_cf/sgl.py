@@ -3,7 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 from config.configurator import configs
 from models.general_cf.lightgcn import LightGCN
-from models.loss_utils import cal_bpr_loss, reg_pick_embeds, cal_infonce_loss
+from models.loss_utils import cal_bpr_loss, reg_params, cal_infonce_loss
 from models.model_utils import NodeDrop
 
 init = nn.init.xavier_uniform_
@@ -58,7 +58,7 @@ class SGL(LightGCN):
 		bpr_loss = cal_bpr_loss(anc_embeds3, pos_embeds3, neg_embeds3) / anc_embeds3.shape[0]
 		cl_loss = cal_infonce_loss(anc_embeds1, anc_embeds2, user_embeds2, self.temperature) + cal_infonce_loss(pos_embeds1, pos_embeds2, item_embeds2, self.temperature) + cal_infonce_loss(neg_embeds1, neg_embeds2, item_embeds2, self.temperature)
 		cl_loss /= anc_embeds1.shape[0]
-		reg_loss = self.reg_weight * reg_pick_embeds([anc_embeds3, pos_embeds3, neg_embeds3])
+		reg_loss = self.reg_weight * reg_params(self)
 		cl_loss *= self.cl_weight
 		loss = bpr_loss + reg_loss + cl_loss
 		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'cl_loss': cl_loss}

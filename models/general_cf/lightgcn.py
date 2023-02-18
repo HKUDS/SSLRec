@@ -2,7 +2,7 @@ import torch as t
 from torch import nn
 import torch.nn.functional as F
 from config.configurator import configs
-from models.loss_utils import cal_bpr_loss, reg_pick_embeds
+from models.loss_utils import cal_bpr_loss, reg_params
 from models.base_model import BaseModel
 from models.model_utils import SpAdjEdgeDrop
 
@@ -49,7 +49,7 @@ class LightGCN(BaseModel):
 		pos_embeds = item_embeds[poss]
 		neg_embeds = item_embeds[negs]
 		bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds) / anc_embeds.shape[0]
-		reg_loss = self.reg_weight * reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds])
+		reg_loss = self.reg_weight * reg_params(self)
 		loss = bpr_loss + reg_loss
 		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss}
 		return loss, losses
