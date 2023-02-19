@@ -4,6 +4,9 @@ import datetime
 
 from config.configurator import configs
 
+def get_local_time():
+    return datetime.datetime.now().strftime('%b-%d-%Y_%H-%M-%S')
+
 class Logger(object):
     def __init__(self, log_configs=True):
         model_name = configs['model']['name']
@@ -14,9 +17,9 @@ class Logger(object):
         self.logger.setLevel(logging.INFO)
         dataset_name = configs['data']['name']
         if not configs['tune']['enable']:
-            log_file = logging.FileHandler('{}/{}.log'.format(log_dir_path, dataset_name), 'a', encoding='utf-8')
+            log_file = logging.FileHandler('{}/{}_{}.log'.format(log_dir_path, dataset_name, get_local_time()), 'a', encoding='utf-8')
         else:
-            log_file = logging.FileHandler('{}/{}-tune.log'.format(log_dir_path, dataset_name), 'a', encoding='utf-8')
+            log_file = logging.FileHandler('{}/{}-tune_{}.log'.format(log_dir_path, dataset_name, get_local_time()), 'a', encoding='utf-8')
         formatter = logging.Formatter('%(asctime)s - %(message)s')
         log_file.setFormatter(formatter)
         self.logger.addHandler(log_file)

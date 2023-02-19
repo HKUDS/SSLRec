@@ -190,10 +190,10 @@ class GCN(nn.Module):
         return final_emb
 
 
-class DCRec(BaseModel):
+class DCRec_seq(BaseModel):
 
     def __init__(self, data_handler):
-        super(DCRec, self).__init__(data_handler)
+        super(DCRec_seq, self).__init__(data_handler)
         self.data_handler = data_handler
         self.device = configs['device']
         self.item_num = configs['data']['item_num']
