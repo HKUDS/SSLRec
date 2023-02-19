@@ -57,17 +57,21 @@ class DuoRec(BaseModel):
     def _semantic_augmentation(self, data_handler):
         same_target_index = {}
         train_last_items = np.asarray(data_handler.train_dataloader.dataset.last_items, dtype=np.int32)
-        for index, item_id in enumerate(train_last_items):
-            all_index_same_id = np.where(train_last_items == item_id)[0]  # all index of a specific item id with self item
-            delete_index = np.argwhere(all_index_same_id == index)
-            all_index_same_id_wo_self = np.delete(all_index_same_id, delete_index)
-            if len(all_index_same_id_wo_self) > 20:
-                sampled_same_id = np.random.choice(all_index_same_id_wo_self, 20, replace=False)
-            else:
-                sampled_same_id = all_index_same_id_wo_self
-            if len(sampled_same_id) > 0:
-                same_target_index[item_id] = sampled_same_id
-        
+        soted_indices = np.argsort(train_last_items)
+        train_last_items = train_last_items[soted_indices]
+        pre_item_id = train_last_items[0]
+        pre_idx = 0
+        for idx, item_id in enumerate(train_last_items):
+            if item_id != pre_item_id:
+                last_group_indices = soted_indices[pre_idx:idx]
+                if len(last_group_indices) > 20:
+                    sampled_same_id = np.random.choice(last_group_indices, 20, replace=False)
+                else:
+                    sampled_same_id = last_group_indices
+                if len(sampled_same_id) > 0:
+                    same_target_index[pre_item_id] = sampled_same_id
+                pre_item_id = item_id
+                pre_idx = idx
         return same_target_index
 
     def _duorec_aug(self, batch_seqs):
@@ -80,6 +84,8 @@ class DuoRec(BaseModel):
                 sampled_pos_seqs.append(train_seqs[sampled_seq_idx])
             else:
                 sampled_pos_seqs.append(batch_seqs[i].tolist())
+        # padding 0 at the left
+        sampled_pos_seqs = [[0] * (self.max_len - len(seq)) + seq for seq in sampled_pos_seqs]
         sampled_pos_seqs = torch.tensor(sampled_pos_seqs, dtype=torch.long, device=batch_seqs.device)
         return sampled_pos_seqs
 

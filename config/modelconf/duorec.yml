@@ -33,7 +33,7 @@ model:
   tau: 1
 
 tune:
-  enable: false # Whether to enable grid search to search for optimal hyperparameters
-  hyperparameters: [] # The name of the hyperparameter
-  layer_num: [] # Use a list to store the search range
-  reg_weight: []
+  enable: true # Whether to enable grid search to search for optimal hyperparameters
+  hyperparameters: [lmd_sem, tau] # The name of the hyperparameter
+  lmd_sem: [0.1, 0.05, 0.01] # Use a list to store the search range
+  tau: [1, 0.8, 0.6]
