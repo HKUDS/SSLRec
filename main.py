@@ -1,9 +1,10 @@
-from trainer.trainer import *
-from models.bulid_model import *
-from trainer.logger import *
-from data_utils.build_data_handler import *
-from trainer.build_trainer import *
-from trainer.tuner import *
+from config.configurator import configs
+from trainer.trainer import init_seed
+from models.bulid_model import build_model
+from trainer.logger import Logger
+from data_utils.build_data_handler import build_data_handler
+from trainer.build_trainer import build_trainer
+from trainer.tuner import Tuner
 
 def main():
     # First Step: Create data_handler

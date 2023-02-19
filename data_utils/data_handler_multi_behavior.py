@@ -11,7 +11,6 @@ import scipy.io
 import dgl
 from tqdm import tqdm
 import scipy.sparse as sp
-from scipy.sparse import *
 import torch
 import torch.utils.data as dataloader
 

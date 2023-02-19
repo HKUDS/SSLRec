@@ -6,13 +6,13 @@ def build_data_handler():
         data_handler = DataHandlerGeneralCF()
     elif configs['data']['type'] == 'sequential':
         data_handler = DataHandlerSequential()
-    elif configs['data']['type'] == 'cml':
+    elif configs['model']['name'] == 'cml':
         data_handler = DataHandlerCML()
     elif configs['data']['type'] == 'social':
         data_handler = DataHandlerSocial()
-    elif configs['data']['type'] == 'mmclr':
+    elif configs['model']['name'] == 'mmclr':
         data_handler = DataHandlerMMCLR()
-    elif configs['data']['type'] == 'hmgcr' or 'smbrec':
+    elif configs['model']['name'] == 'hmgcr' or 'smbrec':
         data_handler = DataHandlerHMGCRSMBRec()
     else:
         raise NotImplementedError

@@ -19,8 +19,6 @@ import torch.nn.functional as F
 from torch.nn import init
 import gc
 from trainer.metrics import Metric
-from trainer import *
-from models import *
 from config.configurator import configs
 
 
@@ -117,6 +115,7 @@ class Trainer(object):
 
 class CMLTrainer(Trainer):
     def __init__(self, data_handler, logger):
+        from models.multi_behavior.cml import MetaWeightNet
         super(CMLTrainer, self).__init__(data_handler, logger)
         self.meta_weight_net = MetaWeightNet(len(self.data_handler.behaviors)).cuda()
 
@@ -132,6 +131,7 @@ class CMLTrainer(Trainer):
         self.meta_scheduler = torch.optim.lr_scheduler.CyclicLR(self.meta_opt, configs['optimizer']['meta_opt_base_lr'], configs['optimizer']['meta_opt_max_lr'], step_size_up=2, step_size_down=3, mode='triangular', gamma=0.98, scale_fn=None, scale_mode='cycle', cycle_momentum=False, base_momentum=0.9, max_momentum=0.99, last_epoch=-1)
 
     def train_epoch(self, model, epoch_idx):
+        from models.multi_behavior.cml import CML
         train_loader = self.data_handler.train_dataloader        
         time = datetime.datetime.now()
         print("start_ng_samp:  ", time)
