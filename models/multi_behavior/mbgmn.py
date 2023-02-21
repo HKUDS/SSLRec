@@ -15,8 +15,6 @@ from models.loss_utils import cal_bpr_loss, reg_pick_embeds
 from models.base_model import BaseModel
 from models.model_utils import SpAdjEdgeDrop
 
-# init = nn.init.xavier_uniform_
-# uniformInit = nn.init.uniform
 
 class MBGMN(BaseModel):
     def __init__(self, data_handler):
@@ -55,13 +53,10 @@ class MBGMN(BaseModel):
         self.Q = nn.Parameter(torch.Tensor(configs['model']['embedding_size'], configs['model']['embedding_size']))
         nn.init.xavier_uniform_(self.Q)
 
-    # def forword(self, lats, adj, lats2):
     def forward(self):
       for beh in range(len(self.data_handler.behaviors)):
         params = self.metaForSpecialize(self.uEmbed0, self.iEmbed0, self.behEmbeds[beh], [self.data_handler.behavior_mats[beh]['A']], [self.data_handler.behavior_mats[beh]['AT']])
         behUEmbed0, behIEmbed0 = self.specialize(self.uEmbed0, self.iEmbed0, params)
-        # behUEmbed0 = uEmbed0
-        # behIEmbed0 = iEmbed0
         ulats = [behUEmbed0]
         ilats = [behIEmbed0]
         for i in range(configs['model']['layer_num']):
@@ -97,9 +92,7 @@ class MBGMN(BaseModel):
       return self.act(torch.spmm(adj, lats))
 
     def metaForSpecialize(self, uEmbed, iEmbed, behEmbed, adjs=None, tpAdjs=None):
-      # self.embedding_dim = self.embedding_dim // 2
       rank = configs['model']['rank']
-      # assert len(adjs) == len(tpAdjs)
       uNeighbor = iNeighbor = 0
       if adjs!=None:
         for i in range(len(adjs)):
@@ -137,17 +130,13 @@ class MBGMN(BaseModel):
       q = torch.reshape(tem, (-1, number, 1, numHeads, inpDim//numHeads))
       k = torch.reshape(tem, (-1, 1, number, numHeads, inpDim//numHeads))
       v = torch.reshape(rspReps, (-1, 1, number, numHeads, inpDim//numHeads))
-      # att = tf.nn.softmax(tf.reduce_sum(q * k, axis=-1, keepdims=True) * tf.sqrt(inpDim/numHeads), axis=2)
       att = F.softmax(torch.sum(q * k, axis=-1, keepdims=True) / torch.sqrt(torch.tensor(inpDim/numHeads)), dim=2)
       attval = torch.reshape(torch.sum(att * v, dim=2), (-1, number, inpDim))
       rets = [None] * number
-      # paramId = 'dfltP%d' % getParamId()
       for i in range(number):
-        # tem1 = torch.reshape(tf.slice(attval, [0, i, 0], [-1, 1, -1]), (-1, inpDim))  #todo
-        tem1 = torch.reshape(attval[:,i], (-1, inpDim))  #todo
-        # tem2 = FC(tem1, inpDim, useBias=True, name=paramId+'_1', reg=True, activation='relu', reuse=True) + localReps[i]
+        tem1 = torch.reshape(attval[:,i], (-1, inpDim))  
         rets[i] = tem1 + localReps[i]
-      return rets#, tf.squeeze(att)
+      return rets
 
 
 
@@ -187,21 +176,12 @@ class MBGMN(BaseModel):
         self.uids, self.iids = uids, iids 
         self.is_training = True
         user_embeds, item_embeds = self.forward()
-        # ancs, poss, negs = batch_data
-        # anc_embeds = user_embeds[ancs]
-        # pos_embeds = item_embeds[poss]
-        # neg_embeds = item_embeds[negs]
-        # bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
-        # reg_loss = reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds])
-        # loss = bpr_loss + self.reg_weight * reg_loss
-        # losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss}
-        # return loss, losses
+      
         self.preLoss = 0
         for src in range(len(self.data_handler.behaviors) + 1):
           for tgt in range(len(self.data_handler.behaviors)):
             preds = self.predict(src, tgt)
             sampNum = len(self.uids[tgt]) // 2
-            # posPred = torch.slice(preds, [0], [sampNum])
             posPred = preds[:sampNum]
             negPred = preds[sampNum:]   
             self.preLoss += torch.mean(torch.maximum(torch.tensor(0.0).clone().detach(),  torch.tensor(1.0 - (posPred - negPred)).clone().detach()) )
@@ -232,7 +212,7 @@ class MBGMN(BaseModel):
 
 
 
-    def full_predict(self, batch_data):  # todo co-current matrix version
+    def full_predict(self, batch_data):  
         user_embeds, item_embeds = self.forward()
         self.is_training = False
         pck_users, train_mask = batch_data

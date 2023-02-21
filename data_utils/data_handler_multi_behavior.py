@@ -171,21 +171,7 @@ class DataHandlerMultiBehavior():
                 trn_data = PairwiseTrnData(self.train_mat.tocoo())
             elif configs['train']['loss'] == 'pairwise_with_epoch_flag':
                 trn_data = PairwiseWEpochFlagTrnData(self.train_mat)
-            # elif configs['train']['loss'] == 'pointwise':
-            # 	trn_data = PointwiseTrnData(trn_mat)
         self.train_dataloader = dataloader.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -358,10 +344,6 @@ class DataHandlerMF(DataHandlerMultiBehavior):
 #         test_data = AllRankTestData(self.test_mat, self.train_mat)
 #         self.test_dataloader = dataloader.DataLoader(test_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
 #         self.train_dataloader = dataloader.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
-
-
-
-
 
 
 

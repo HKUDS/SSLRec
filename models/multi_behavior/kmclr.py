@@ -15,7 +15,6 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from config.configurator import configs
-# from models.loss_utils import cal_bpr_loss, reg_pick_embeds
 from models.base_model import BaseModel
 
 torch.backends.cudnn.benchmark = True

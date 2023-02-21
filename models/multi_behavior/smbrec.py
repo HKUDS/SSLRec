@@ -35,19 +35,17 @@ class SMBRec(BaseModel):
     def _sim(self, z1, z2, tau=None):
         z1 = F.normalize(z1)  
         z2 = F.normalize(z2)
-        # z1 = z1/((z1**2).sum(-1) + 1e-8)
-        # z2 = z2/((z2**2).sum(-1) + 1e-8)
+
         return -(torch.exp(torch.mm(z1, z2.t())/tau)+1e-8).log()
 
     def _batched_contrastive_loss(self, embed, sample_mat=None, batch_size=128):
         device = embed.device
         num_nodes = embed.size(0)
         num_batches = (num_nodes - 1) // batch_size + 1
-        # f = lambda x: torch.exp(x / configs['model']['tau'])      
         indices = torch.arange(0, num_nodes).to(device)
 
         losses = 0
-        x_index, y_index = sample_mat.nonzero()  # torch.where(adj_re!=0)[0], torch.where(adj_re!=0)[1] 
+        x_index, y_index = sample_mat.nonzero()  
         dgl_g_pos = dgl.graph((x_index, y_index)).to('cuda:0')
         dgl_g_neg = dgl.graph((torch.arange(num_nodes), torch.arange(num_nodes))).to('cuda:0')
 
@@ -57,9 +55,9 @@ class SMBRec(BaseModel):
             losses += (self._sim(embed[pos_row_list], embed[pos_col_list], tau=configs['model']['tau']) - self._sim(embed[neg_row_list], embed[neg_col_list], tau=configs['model']['tau']) ).sum()  # todo move 
         return losses
     
-    def _dgl_sample(self, g_pos, g_neg, samp_num, samp_num_neg, anchor_id):  #, node_type, edge_type): #    
-        sub_g_pos = dgl.sampling.sample_neighbors(g_pos, anchor_id, samp_num, replace=True) #
-        sub_g_neg = dgl.sampling.sample_neighbors(g_neg, anchor_id, samp_num_neg, replace=True) #
+    def _dgl_sample(self, g_pos, g_neg, samp_num, samp_num_neg, anchor_id):     
+        sub_g_pos = dgl.sampling.sample_neighbors(g_pos, anchor_id, samp_num, replace=True) 
+        sub_g_neg = dgl.sampling.sample_neighbors(g_neg, anchor_id, samp_num_neg, replace=True) 
         row_pos, col_pos = sub_g_pos.edges()
         row_neg, col_neg = sub_g_neg.edges()
         return row_pos, col_pos, row_neg, col_neg
@@ -85,9 +83,7 @@ class SMBRec(BaseModel):
         neg_embeds = item_embeds[negs]
         bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
         reg_loss = reg_pick_embeds([anc_embeds, pos_embeds, neg_embeds])
-        # contractive loss
         cl_loss = 0
-        # self.embed_list_user, self.embed_list_item 
         co_user = self.data_handler.trainLabel*self.data_handler.trainLabel.T
         co_item = self.data_handler.trainLabel.T*self.data_handler.trainLabel
         for i in range(len(self.data_handler.behaviors)):     
@@ -96,7 +92,7 @@ class SMBRec(BaseModel):
         losses = {'bpr_loss': bpr_loss, 'cl_loss': cl_loss}
         return loss, losses
 
-    def full_predict(self, batch_data):  # todo co-current matrix version
+    def full_predict(self, batch_data):  
         user_embeds, item_embeds = self.forward()
         self.is_training = False
         pck_users, train_mask = batch_data

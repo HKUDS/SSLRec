@@ -500,37 +500,22 @@ class ICLRecTrainer(Trainer):
 class KMCLRTrainer(Trainer):
     def __init__(self, data_handler, logger):
         super(KMCLRTrainer, self).__init__(data_handler, logger)
-    # def run(self, Kg_model, contrast_model, optimizer, bpr):
-        # self.Kg_model = Kg_model
-        # self.contrast_model = contrast_model
-        # self.optimizer = optimizer
-        # self.bpr = bpr
-
-        # Kg_model = KGModel(self.data_handler.raw_kg_dataset, self.data_handler.kg_dataset) 
         self.Kg_model = self.data_handler.Kg_model
-        # self.contrast_model = Contrast(self.Kg_model, configs['model']['kgc_temp']).to(configs['device'])
         self.contrast_model = self.data_handler.contrast_model
-        # self.kg_optimizer = optim.Adam(self.Kg_model.parameters(), lr= configs['model']['kg_lr'])
         self.kg_optimizer = self.data_handler.kg_optimizer
-        # self.bpr = BPRLoss(self.Kg_model, self.kg_optimizer)
         self.bpr = self.data_handler.bpr
-        # self._prepareModel()
 
     def train_epoch(self, model, epoch_idx):
         model.kg_init_transR(self.Kg_model.kg_dataset, self.Kg_model, self.kg_optimizer, index=0)
         model.kg_init_TATEC(self.Kg_model.kg_dataset, self.Kg_model, self.kg_optimizer, index=1)
-
         contrast_views = self.contrast_model.get_ui_kg_view()
-        # log("Drop done")
         model.BPR_train_contrast(self.Kg_model.dataset, self.Kg_model, self.bpr, self.contrast_model, contrast_views, self.optimizer, neg_k=1)
-
         train_loader = self.data_handler.train_loader
         time = datetime.datetime.now()
         print("start_ng_samp:  ", time)
         train_loader.dataset.ng_sample()
         time = datetime.datetime.now()
         print("end_ng_samp:  ", time)
-
         epoch_loss = 0
 
         self.behavior_loss_list = [None] * len(self.data_handler.behaviors)
@@ -545,88 +530,57 @@ class KMCLRTrainer(Trainer):
 
             user = user.long().cuda()
             self.user_step_index = user
-
             mul_behavior_loss_list = [None] * len(self.data_handler.behaviors)
             mul_user_index_list = [None] * len(self.data_handler.behaviors)
-
-            # mul_model = GNN.myModel(self.user_num, self.item_num, self.data_handler.behaviors, self.behavior_mats).cuda()
-            # mul_opt = t.optim.AdamW(mul_model.parameters(), lr=configs['optimizer']['lr'], weight_decay=configs['optimizer']['opt_weight_decay'])
-            # mul_model.load_state_dict(self.model.state_dict())
-
             mul_user_embed, mul_item_embed, mul_user_embeds, mul_item_embeds = model()
-
             for index in range(len(self.data_handler.behaviors)):
                 not_zero_index = np.where(item_i[index].cpu().numpy() != -1)[0]
-
                 self.user_id_list[index] = user[not_zero_index].long().cuda()
-
                 mul_user_index_list[index] = self.user_id_list[index]
                 self.item_id_pos_list[index] = item_i[index][not_zero_index].long().cuda()
                 self.item_id_neg_list[index] = item_j[index][not_zero_index].long().cuda()
-
                 mul_userEmbed = mul_user_embed[self.user_id_list[index]]
                 mul_posEmbed = mul_item_embed[self.item_id_pos_list[index]]
                 mul_negEmbed = mul_item_embed[self.item_id_neg_list[index]]
-
                 mul_pred_i, mul_pred_j = self.innerProduct(mul_userEmbed, mul_posEmbed, mul_negEmbed)
-
                 mul_behavior_loss_list[index] = - (mul_pred_i.view(-1) - mul_pred_j.view(-1)).sigmoid().log()
-
             mul_infoNCELoss_list, SSL_user_step_index = self.SSL(mul_user_embeds, self.user_step_index)
-
             for i in range(len(self.data_handler.behaviors)):
                 mul_infoNCELoss_list[i] = (mul_infoNCELoss_list[i]).sum()
                 mul_behavior_loss_list[i] = (mul_behavior_loss_list[i]).sum()
-
             mul_bprloss = sum(mul_behavior_loss_list) / len(mul_behavior_loss_list)
             mul_infoNCELoss = sum(mul_infoNCELoss_list) / len(mul_infoNCELoss_list)
             mul_regLoss = (torch.norm(mul_userEmbed) ** 2 + torch.norm(mul_posEmbed) ** 2 + torch.norm(mul_negEmbed) ** 2)
-
             mul_model_loss = (mul_bprloss + configs['optimizer']['weight_decay'] * mul_regLoss + configs['model']['beta'] * mul_infoNCELoss) / configs['train']['batch_size']
-
             epoch_loss = epoch_loss + mul_model_loss.item()
-
             self.optimizer.zero_grad(set_to_none=True)
             mul_model_loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), max_norm=20, norm_type=2)
             self.optimizer.step()
-
             user_embed, item_embed, user_embeds, item_embeds = model()
-
             with torch.no_grad():
                 user_embed1, item_embed1 = self.Kg_model.getAll()
-
             user_embed = 0.9*user_embed + 0.1*user_embed1
-            item_embed = item_embed #+ 0.1*item_embed1
+            item_embed = item_embed 
 
             for index in range(len(self.data_handler.behaviors)):
                 userEmbed = user_embed[self.user_id_list[index]]
                 posEmbed = item_embed[self.item_id_pos_list[index]]
                 negEmbed = item_embed[self.item_id_neg_list[index]]
-
                 pred_i, pred_j = self.innerProduct(userEmbed, posEmbed, negEmbed)
-
                 self.behavior_loss_list[index] = - (pred_i.view(-1) - pred_j.view(-1)).sigmoid().log()
-
             infoNCELoss_list, SSL_user_step_index = self.SSL(user_embeds, self.user_step_index)
-
             for i in range(len(self.data_handler.behaviors)):
                 infoNCELoss_list[i] = (infoNCELoss_list[i]).sum()
                 self.behavior_loss_list[i] = (self.behavior_loss_list[i]).sum()
-
             bprloss = sum(self.behavior_loss_list) / len(self.behavior_loss_list)
             infoNCELoss = sum(infoNCELoss_list) / len(infoNCELoss_list)
             regLoss = (torch.norm(userEmbed) ** 2 + torch.norm(posEmbed) ** 2 + torch.norm(negEmbed) ** 2)
-
             loss = (bprloss + configs['optimizer']['weight_decay'] * regLoss + configs['model']['beta'] * infoNCELoss) / configs['train']['batch_size']
-
             epoch_loss = epoch_loss + loss.item()
-
             self.optimizer.zero_grad(set_to_none=True)
             loss.backward()
-            # nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=20, norm_type=2)
             self.optimizer.step()
-
 
     def innerProduct(self, u, i, j):
         pred_i = torch.sum(torch.mul(u, i), dim=1) * configs['model']['inner_product_mult']
@@ -668,44 +622,32 @@ class KMCLRTrainer(Trainer):
         def single_infoNCE_loss_one_by_one(embedding1, embedding2, step_index):
             N = step_index.shape[0]
             D = embedding1.shape[1]
-
             pos_score = compute(embedding1[step_index], embedding2[step_index]).squeeze()
             neg_score = torch.zeros((N,), dtype=torch.float64).cuda()
-
 
             steps = int(np.ceil(N / configs['train']['SSL_batch']))
             for i in range(steps):
                 st = i * configs['train']['SSL_batch']
                 ed = min((i + 1) * configs['train']['SSL_batch'], N)
                 batch_index = step_index[st: ed]
-
                 neg_score_pre = multi_neg_sample_pair_index(batch_index, step_index, embedding1, embedding2)
                 if i == 0:
                     neg_score = neg_score_pre
                 else:
                     neg_score = torch.cat((neg_score, neg_score_pre), 0)
 
-
             con_loss = -torch.log(1e-8 + torch.div(pos_score, neg_score + 1e-8))
-
             assert not torch.any(torch.isnan(con_loss))
             assert not torch.any(torch.isinf(con_loss))
-
             return torch.where(torch.isnan(con_loss), torch.full_like(con_loss, 0 + 1e-8), con_loss)
-
         user_con_loss_list = []
-
         SSL_len = int(user_step_index.shape[0] / 10)
         user_step_index = torch.as_tensor(
             np.random.choice(user_step_index.cpu(), size=SSL_len, replace=False, p=None)).cuda()
-
         for i in range(len(self.data_handler.behaviors)):
             user_con_loss_list.append(
                 single_infoNCE_loss_one_by_one(user_embeddings[-1], user_embeddings[i], user_step_index))
-
         return user_con_loss_list, user_step_index
-
-
 
     def negSamp(self, temLabel, sampSize, nodeNum):
             negset = [None] * sampSize
@@ -718,21 +660,16 @@ class KMCLRTrainer(Trainer):
             return negset
 
 
-
-
-
 class MBGMNTrainer(Trainer):
     def __init__(self, data_handler, logger):
         super(MBGMNTrainer, self).__init__(data_handler, logger)
 
     def train_epoch(self, model, epoch_idx):
-
         model.train()
         num = configs['data']['user_num']
         sfIds = np.random.permutation(num)[:configs['model']['trnNum']]
         epochLoss, epochPreLoss = [0] * 2
         uids, iids = [0]*len(self.data_handler.behaviors), [0]*len(self.data_handler.behaviors)
-
         num = len(sfIds)
         steps = int(np.ceil(num / configs['train']['batch_size']))
         for i in range(steps):
@@ -747,17 +684,6 @@ class MBGMNTrainer(Trainer):
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-
-        # for input_nodes,pos_graph,neg_graph,blocks,block_src_nodes,seq_tensors,neg_user_ids in tqdm(self.data_handler.train_dataloader):
-        #     if block_src_nodes is not None:
-        #         block_src_nodes=[{k:v.to(configs['device'])   for k,v in nodes.items()} for nodes in block_src_nodes ]
-        #         input_nodes={k:v.to(configs['device']) for k,v in input_nodes.items()}
-        #         pos_graph=pos_graph.to(configs['device'])
-        #         neg_graph=neg_graph.to(configs['device'])
-        #         blocks=[block.to(configs['device']) for block in blocks]
-        #     seq_tensors=[seq.to(configs['device']) for seq in seq_tensors]
-        #     graph_data=(input_nodes,pos_graph,neg_graph,blocks,block_src_nodes)
-        #     loss,link_loss,seq_cl_loss,graph_cl_loss,cross_constra_loss,graph_inner_loss,seq_inner_loss=model(graph_data,seq_tensors,is_eval=False)
 
     def _negSamp(self, temLabel, sampSize, nodeNum):
         negset = [None] * sampSize
