@@ -1,9 +1,9 @@
 optimizer:
   name: adam
-  lr: 3.e-4 # not 1e-3
+  lr: 3.e-3 # not 1e-3
   weight_decay: 0
   opt_base_lr: 1.e-3
-  opt_max_lr: 2.e-3
+  opt_max_lr: 5.e-3
   opt_weight_decay: 1.e-4
   meta_opt_base_lr: 1.e-4
   meta_opt_max_lr: 1.e-3
@@ -12,7 +12,7 @@ optimizer:
   decay: 0.96
 
 train:
-  epoch: 1  # 300
+  epoch: 100  # 300
   batch_size: 8192
   save_model: true
   loss: pairwise # bpr
@@ -34,7 +34,7 @@ test:
   batch_size: 1024 # How many users per batch during validation
 
 data:
-  type: cml # choose in {general_cf, multi_behavior, sequential, social}
+  type: multi_behavior # choose in {general_cf, multi_behavior, sequential, social}
   name: retail_rocket  ## choose in {tmall, ijcai_15, retail_rocket}
 
 model:
@@ -52,11 +52,13 @@ model:
   head_num: 4
   inner_product_mult: 1
 
+device: cuda:1
 
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
-  hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
-  layer_num: [1, 2, 3] # Use a list to store the search range
+  hyperparameters: [layer_num, reg_weight, embedding_size] # The name of the hyperparameter
+  layer_num: [2, 3, 4] # Use a list to store the search range
   reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
+  embedding_size: [16, 32, 64]
 
 
