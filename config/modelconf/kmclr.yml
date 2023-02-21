@@ -1,0 +1,89 @@
+optimizer:
+  name: adam
+  lr: 3.e-4 # not 1e-3
+  weight_decay: 1.e-3
+  opt_base_lr: 1.e-3
+  opt_max_lr: 5.e-3
+  opt_weight_decay: 1.e-4
+
+train:
+  epoch: 1000
+  batch_size: 8192
+  save_model: true
+  loss: pairwise # bpr
+  test_step: 5 # evaluate per {test_step} epochs
+  #pretrain_path: ./checkpoint/xxxx.pth
+  reproducible: true
+  seed: 2023
+  SSL_batch: 18
+  trainer: kmclr_trainer
+
+test:
+  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
+  k: [10, 20, 40] # top-k
+  batch_size: 1024 # How many users per batch during validation
+
+data:
+  type: multi_behavior # choose in {general_cf, multi_behavior, sequential, social}
+  name: retail_rocket
+
+
+model:
+  name: kmclr # case-insensitive
+  keep_rate: 0.5
+  layer_num: 3
+  reg_weight: 1.0e-2
+  embedding_size: 32
+  beta: 0.005
+  shoot: 10
+  inner_product_mult: 1
+  drop_rate: 0.8
+  slope: 0.1
+  patience: 100
+  target: buy
+  #kg
+  bpr_batch: 2048
+  recdim: 32
+  layer: 3
+  kg_lr: 1.e-3
+  decay: 1.e-4
+  dropout: 1
+  keepprob: 0.7
+  a_fold: 100
+  testbatch: 4096
+  topks: [20]
+  tensorboard: 0
+  comment: lgn
+  multicore: 0
+  pretrain: 0
+  test_file: test.txt
+  #config
+  bpr_batch_size: 2048
+  latent_dim_rec: 32
+  lightGCN_n_layers: 3
+  dropout: 0.7
+  keep_prob: 0.7
+  A_n_fold: 100
+  test_u_batch_size: 4096
+  A_split: False
+  entity_num_per_item: 10
+  kgc_temp: 0.2
+  kg_p_drop: 0.5
+  path: /home/weiw/Code/KMCLR/KMCLR/KMCLR/datasets/
+  isJustTest: False
+  device: cuda:0
+
+device: cuda:1
+
+tune:
+  enable: false # Whether to enable grid search to search for optimal hyperparameters
+  hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
+  layer_num: [1, 2, 3] # Use a list to store the search range
+  reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
+
+# configs['model']['layer_num']
+# configs['train']['epoch']
+# configs['optimizer']['weight_decay']
+
+
+

@@ -4,7 +4,7 @@ optimizer:
   weight_decay: 0
 
 train:
-  epoch: 100
+  epoch: 80
   batch_size: 4096
   save_model: true
   loss: pairwise # bpr
@@ -19,8 +19,8 @@ test:
   batch_size: 1024 # How many users per batch during validation
 
 data:
-  type: smbrec # choose in {general_cf, multi_behavior, sequential, social}
-  name: ijcai_15
+  type: multi_behavior # choose in {general_cf, multi_behavior, sequential, social}
+  name: retail_rocket
 
 
 model:
@@ -36,10 +36,13 @@ model:
   sample_num_neg: 5
   tau: 0.5
 
+device: cuda:1
+
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
-  hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
-  layer_num: [1, 2, 3] # Use a list to store the search range
+  hyperparameters: [layer_num, lr, reg_weight] # The name of the hyperparameter
+  layer_num: [2, 3, 4] # Use a list to store the search range
+  lr: [ 0.0001, 0.001, 0.01, 0.1, 0.03, 0.005, 0.007 ]
   reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
 
 

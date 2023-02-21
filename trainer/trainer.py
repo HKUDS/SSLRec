@@ -496,7 +496,6 @@ class ICLRecTrainer(Trainer):
         # log
         self.logger.log_loss(epoch_idx, loss_log_dict)
         
-        
 
 class KMCLRTrainer(Trainer):
     def __init__(self, data_handler, logger):
@@ -507,13 +506,15 @@ class KMCLRTrainer(Trainer):
         # self.optimizer = optimizer
         # self.bpr = bpr
 
-        Kg_model = KGModel(self.data_handler.raw_kg_dataset, self.data_handler.kg_dataset) 
-        self.Kg_model = Kg_model.to( configs['device'] )
-        self.contrast_model = Contrast(self.Kg_model, configs['model']['kgc_temp']).to(configs['device'])
-        self.kg_optimizer = optim.Adam(Kg_model.parameters(), lr= configs['model']['kg_lr'])
-        self.bpr = BPRLoss(self.Kg_model, self.kg_optimizer)
+        # Kg_model = KGModel(self.data_handler.raw_kg_dataset, self.data_handler.kg_dataset) 
+        self.Kg_model = self.data_handler.Kg_model
+        # self.contrast_model = Contrast(self.Kg_model, configs['model']['kgc_temp']).to(configs['device'])
+        self.contrast_model = self.data_handler.contrast_model
+        # self.kg_optimizer = optim.Adam(self.Kg_model.parameters(), lr= configs['model']['kg_lr'])
+        self.kg_optimizer = self.data_handler.kg_optimizer
+        # self.bpr = BPRLoss(self.Kg_model, self.kg_optimizer)
+        self.bpr = self.data_handler.bpr
         # self._prepareModel()
-
 
     def train_epoch(self, model, epoch_idx):
         model.kg_init_transR(self.Kg_model.kg_dataset, self.Kg_model, self.kg_optimizer, index=0)

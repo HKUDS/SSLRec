@@ -1,0 +1,78 @@
+optimizer:
+  name: adam
+  lr: 4.e-3 # not 1e-3
+  weight_decay: 1.e-4
+  opt_base_lr: 1.e-3
+  opt_max_lr: 2.e-3
+  opt_weight_decay: 1.e-4
+  meta_opt_base_lr: 1.e-4
+  meta_opt_max_lr: 1.e-3
+  meta_opt_weight_decay: 1.e-4
+  meta_lr: 1.e-3
+  decay: 0.96
+
+train:
+  epoch: 300  # 300
+  batch_size: 256
+  save_model: true
+  loss: pairwise # bpr
+  test_step: 5 # evaluate per {test_step} epochs
+  #pretrain_path: ./checkpoint/xxxx.pth
+  reproducible: true
+  seed: 2023
+  sampNum: 10
+  meta_batch: 128
+  SSL_batch: 30
+  reg: 1.e-2
+  beta: 0.005
+  importance: 1
+  patience: 100  #early stop
+  trainer: mbgmn_trainer
+
+test:
+  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
+  k: [10, 20, 40] # top-k, i.e., shoot
+  batch_size: 1024 # How many users per batch during validation
+
+data:
+  type: multi_behavior # choose in {general_cf, multi_behavior, sequential, social}
+  name: retail_rocket  ## choose in {tmall, ijcai_15, retail_rocket}
+
+model:
+  name: mbgmn # case-insensitive
+  keep_rate: 0.5
+  layer_num: 2
+  reg_weight: 1.0e-2
+  embedding_size: 32
+  # hidden_dim: 16
+  gnn_layer: 
+  drop_rate: 0.8
+  drop_rate1: 0.5
+  slope: 0.1
+  target: 'buy'
+  head_num: 4
+  inner_product_mult: 1
+  rank: 4
+  memosize: 2
+  sampNum: 40
+  att_head: 2
+  trnNum: 100
+  target: buy
+  deep_layer: 0
+  mult: 100
+  keepRate: 0.7
+  slot: 5
+  graphSampleN: 15000
+  divSize: 10000
+  subUsrSize: 10
+  subUsrDcy: 0.9
+
+device: cuda:1
+
+tune:
+  enable: false # Whether to enable grid search to search for optimal hyperparameters
+  hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
+  layer_num: [2, 3, 4] # Use a list to store the search range
+  reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
+  # embedding_size: [16, 32, 64]
+
