@@ -3,7 +3,7 @@ optimizer:
   lr: 3.e-3 # not 1e-3
   weight_decay: 0
   opt_base_lr: 1.e-3
-  opt_max_lr: 5.e-3
+  opt_max_lr: 3.e-3
   opt_weight_decay: 1.e-4
   meta_opt_base_lr: 1.e-4
   meta_opt_max_lr: 1.e-3
@@ -13,7 +13,7 @@ optimizer:
 
 train:
   epoch: 100  # 300
-  batch_size: 8192
+  batch_size: 4096
   save_model: true
   loss: pairwise # bpr
   test_step: 5 # evaluate per {test_step} epochs
