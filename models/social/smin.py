@@ -55,7 +55,7 @@ class SMIN(BaseModel):
 		self.semantic_item_attn = SemanticAttention(self.in_size)
 
 		informax_graph_act = nn.Sigmoid()
-		self.ui_informax = Informax(data_handler.ui_graph, self.out_dim, self.out_dim, nn.PReLU(), informax_graph_act, data_handler.ui_graph_adj).cuda()
+		self.ui_informax = Informax(data_handler.ui_graph, self.out_dim, self.out_dim, nn.PReLU(), informax_graph_act, data_handler.ui_graph_adj).to(configs['device'])
 	
 	def forward(self, norm=1):
 		if not self.is_training:
@@ -125,7 +125,7 @@ class SMIN(BaseModel):
 		
 		all_embeds = t.cat([user_embeds, item_embeds], dim=0)
 		res = self.ui_informax(all_embeds, self.data_handler.ui_subgraph_adj, self.data_handler.ui_subgraph_adj_tensor, self.data_handler.ui_subgraph_adj_norm)
-		mask = t.zeros((self.user_num + self.item_num)).cuda()
+		mask = t.zeros((self.user_num + self.item_num)).to(configs['device'])
 		mask[ancs] = 1
 		mask[self.user_num + poss] = 1
 		mask[self.user_num + negs] = 1

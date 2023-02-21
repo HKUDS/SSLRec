@@ -8,6 +8,7 @@
 # from models.social.smin import SMIN
 # from models.social.kcgn import KCGN
 # from models.social.mhcn import MHCN
+# from models.social.dcrec import DcRec
 # from models.sequential.bert4rec import BERT4Rec
 # from models.sequential.cl4srec import CL4SRec
 # from models.multi_behavior.hmgcr import HMGCR

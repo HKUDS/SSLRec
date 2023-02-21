@@ -17,10 +17,12 @@ import torch.nn as nn
 import torch.utils.data as dataloader
 import torch.nn.functional as F
 from torch.nn import init
+from torch.utils.tensorboard import SummaryWriter
 import gc
 from trainer.metrics import Metric
 from config.configurator import configs
 
+writer = SummaryWriter(log_dir='runs')
 
 def init_seed():
     if 'reproducible' in configs['train']:
@@ -52,13 +54,15 @@ class Trainer(object):
 
         # for recording loss
         loss_log_dict = {}
-
+        ep_loss = 0
+        steps = len(train_dataloader.dataset) // configs['train']['batch_size']
         # start this epoch
         model.train()
         for _, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
             self.optimizer.zero_grad()
             batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
             loss, loss_dict = model.cal_loss(batch_data)
+            ep_loss += loss.item()
             loss.backward()
             self.optimizer.step()
 
@@ -67,7 +71,7 @@ class Trainer(object):
                 _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
                 if loss_name not in loss_log_dict: loss_log_dict[loss_name] = _loss_val
                 else: loss_log_dict[loss_name] += _loss_val
-
+        writer.add_scalar('Loss/train', ep_loss / steps, epoch_idx)
         # log
         self.logger.log_loss(epoch_idx, loss_log_dict)
 
@@ -79,12 +83,14 @@ class Trainer(object):
             self.train_epoch(model, epoch_idx)
             # evaluate
             if epoch_idx % train_config['test_step'] == 0:
-                self.evaluate(model)
+                self.evaluate(model, epoch_idx)
         self.save_model(model)
 
-    def evaluate(self, model):
+    def evaluate(self, model, epoch_idx=configs['train']['epoch']):
         model.eval()
         eval_result = self.metric.eval(model, self.data_handler.test_dataloader)
+        writer.add_scalar('HR/test', eval_result['recall'][1], epoch_idx)
+        writer.add_scalar('NDCG/test', eval_result['ndcg'][1], epoch_idx)
         self.logger.log_eval(eval_result, configs['test']['k'])
 
     def save_model(self, model):

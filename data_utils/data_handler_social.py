@@ -71,7 +71,7 @@ class DataHandlerSocial:
 			np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
 		values = t.from_numpy(sparse_mx.data.astype(np.float32))
 		shape = t.Size(sparse_mx.shape)
-		return t.sparse.FloatTensor(indices, values, shape)
+		return t.sparse.FloatTensor(indices, values, shape).to(configs['device'])
 
 	def _build_subgraph(self, mat, subnode):
 		node_num = mat.shape[0]
@@ -309,6 +309,28 @@ class DataHandlerSocial:
 		uu_vv_graph['II'] = iti_mat
 		return uu_vv_graph
 
+	def _make_torch_adj(self, mat):
+		"""Transform uni-directional adjacent matrix in coo_matrix into bi-directional adjacent matrix in torch.sparse.FloatTensor
+
+		Args:
+			mat (coo_matrix): the uni-directional adjacent matrix
+
+		Returns:
+			torch.sparse.FloatTensor: the bi-directional matrix
+		"""
+		a = csr_matrix((configs['data']['user_num'], configs['data']['user_num']))
+		b = csr_matrix((configs['data']['item_num'], configs['data']['item_num']))
+		mat = sp.vstack([sp.hstack([a, mat]), sp.hstack([mat.transpose(), b])])
+		mat = (mat != 0) * 1.0
+		# mat = (mat + sp.eye(mat.shape[0])) * 1.0# MARK
+		mat = self._normalize_adj(mat)
+
+		# make torch tensor
+		idxs = t.from_numpy(np.vstack([mat.row, mat.col]).astype(np.int64))
+		vals = t.from_numpy(mat.data.astype(np.float32))
+		shape = t.Size(mat.shape)
+		return t.sparse.FloatTensor(idxs, vals, shape).to(configs['device'])
+
 	def load_data(self):
 		trn_mat = self._load(self.trn_file)
 		tst_mat = self._load(self.tst_file)
@@ -344,12 +366,12 @@ class DataHandlerSocial:
 				subgraph = self._gen_subgraph(trn_mat, metapath, configs['model']['k_hop_num'])
 				self._save(subgraph, self.subgraph_file)
 
-			uu_graph = dgl.from_scipy(metapath['UU'], device=t.device('cuda'))
-			uiu_graph = dgl.from_scipy(metapath['UIU'], device=t.device('cuda'))
-			uitiu_graph = dgl.from_scipy(metapath['UITIU'], device=t.device('cuda'))
+			uu_graph = dgl.from_scipy(metapath['UU'], device=configs['device'])
+			uiu_graph = dgl.from_scipy(metapath['UIU'], device=configs['device'])
+			uitiu_graph = dgl.from_scipy(metapath['UITIU'], device=configs['device'])
 
-			iti_graph = dgl.from_scipy(metapath['ITI'], device=t.device('cuda'))
-			iui_graph = dgl.from_scipy(metapath['IUI'], device=t.device('cuda'))
+			iti_graph = dgl.from_scipy(metapath['ITI'], device=configs['device'])
+			iui_graph = dgl.from_scipy(metapath['IUI'], device=configs['device'])
 
 			graph_dict={}
 			graph_dict['uu'] = uu_graph
@@ -373,9 +395,9 @@ class DataHandlerSocial:
 			del graph_dict, uu_graph, uiu_graph, uitiu_graph, iui_graph, iti_graph
 
 			(self.ui_graph_adj, self.ui_subgraph_adj) = subgraph
-			self.ui_subgraph_adj_tensor = self._sparse_mx_to_torch_sparse_tensor(self.ui_subgraph_adj).cuda()
-			self.ui_subgraph_adj_norm =t.from_numpy(np.sum(self.ui_subgraph_adj,axis=1)).float().cuda()
-			self.ui_graph = DGLGraph(self.ui_graph_adj).to(t.device('cuda'))
+			self.ui_subgraph_adj_tensor = self._sparse_mx_to_torch_sparse_tensor(self.ui_subgraph_adj)
+			self.ui_subgraph_adj_norm =t.from_numpy(np.sum(self.ui_subgraph_adj,axis=1)).float().to(configs['device'])
+			self.ui_graph = DGLGraph(self.ui_graph_adj).to(configs['device'])
 		
 		elif configs['model']['name'] == 'kcgn':
 			trn_time = self._load(self.trn_time_file)
@@ -404,13 +426,13 @@ class DataHandlerSocial:
 			self.uu_graph = dgl.graph(data=(uu_mat_edge_src, uu_mat_edge_dst),
 							idtype=t.int32,
 							num_nodes=uu_mat.shape[0],
-							device=t.device('cuda'))
+							device=configs['device'])
 
 			ii_mat_edge_src, ii_mat_edge_dst = ii_mat.nonzero()
 			self.ii_graph = dgl.graph(data=(ii_mat_edge_src, ii_mat_edge_dst),
 							idtype=t.int32,
 							num_nodes=ii_mat.shape[0],
-							device=t.device('cuda'))
+							device=configs['device'])
 			
 			if configs['data']['clear']:
 				if os.path.exists(self.uu_subgraph_file):
@@ -433,19 +455,19 @@ class DataHandlerSocial:
 			self.uu_node_subgraph, self.uu_subgraph_adj, self.uu_dgi_node = uu_subgraph
 			self.ii_node_subgraph, self.ii_subgraph_adj, self.ii_dgi_node = ii_subgraph
 
-			self.uu_subgraph_adj_tensor = self._sparse_mx_to_torch_sparse_tensor(self.uu_subgraph_adj).cuda()
-			self.uu_subgraph_adj_norm = t.from_numpy(np.sum(self.uu_subgraph_adj, axis=1)).float().cuda()
+			self.uu_subgraph_adj_tensor = self._sparse_mx_to_torch_sparse_tensor(self.uu_subgraph_adj)
+			self.uu_subgraph_adj_norm = t.from_numpy(np.sum(self.uu_subgraph_adj, axis=1)).float().to(configs['device'])
 
-			self.ii_subgraph_adj_tensor = self._sparse_mx_to_torch_sparse_tensor(self.ii_subgraph_adj).cuda()
-			self.ii_subgraph_adj_norm = t.from_numpy(np.sum(self.ii_subgraph_adj, axis=1)).float().cuda()
+			self.ii_subgraph_adj_tensor = self._sparse_mx_to_torch_sparse_tensor(self.ii_subgraph_adj)
+			self.ii_subgraph_adj_norm = t.from_numpy(np.sum(self.ii_subgraph_adj, axis=1)).float().to(configs['device'])
 
 			self.uu_dgi_node_mask = np.zeros(configs['data']['user_num'])
 			self.uu_dgi_node_mask[self.uu_dgi_node] = 1
-			self.uu_dgi_node_mask = t.from_numpy(self.uu_dgi_node_mask).float().cuda()
+			self.uu_dgi_node_mask = t.from_numpy(self.uu_dgi_node_mask).float().to(configs['device'])
 
 			self.ii_dgi_node_mask = np.zeros(configs['data']['item_num'])
 			self.ii_dgi_node_mask[self.ii_dgi_node] = 1
-			self.ii_dgi_node_mask = t.from_numpy(self.ii_dgi_node_mask).float().cuda()
+			self.ii_dgi_node_mask = t.from_numpy(self.ii_dgi_node_mask).float().to(configs['device'])
 
 			print('time process')
 			print('time step = %.1f hour' % (configs['model']['time_step']))
@@ -464,21 +486,25 @@ class DataHandlerSocial:
 
 			edge_src, edge_dst = multi_adj_time_norm.nonzero()
 			time_seq = multi_adj_time_norm.tocoo().data
-			self.time_seq_tensor = t.from_numpy(time_seq.astype(float)).long().cuda()
+			self.time_seq_tensor = t.from_numpy(time_seq.astype(float)).long().to(configs['device'])
 
 			self.rating_class = np.unique(trn_mat.data).size
 
 			self.uv_g = dgl.graph(data=(edge_src, edge_dst),
 									idtype=t.int32,
 									num_nodes=multi_adj_time_norm.shape[0],
-									device=t.device('cuda'))
+									device=configs['device'])
 
 		elif configs['model']['name'] == 'mhcn':
 			M_matrices = self._build_motif_induced_adjacency_matrix(trust_mat, trn_mat)
 			H_s = M_matrices[0]
-			self.H_s = self._sparse_mx_to_torch_sparse_tensor(H_s).to(configs['device'])
+			self.H_s = self._sparse_mx_to_torch_sparse_tensor(H_s)
 			H_j = M_matrices[1]
-			self.H_j = self._sparse_mx_to_torch_sparse_tensor(H_j).to(configs['device'])
+			self.H_j = self._sparse_mx_to_torch_sparse_tensor(H_j)
 			H_p = M_matrices[2]
-			self.H_p = self._sparse_mx_to_torch_sparse_tensor(H_p).to(configs['device'])
+			self.H_p = self._sparse_mx_to_torch_sparse_tensor(H_p)
 			self.R = self._build_joint_adjacency(trn_mat).to(configs['device'])
+
+		elif configs['model']['name'] == 'dcrec':
+			self.torch_adj = self._make_torch_adj(trn_mat)
+			

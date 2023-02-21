@@ -37,8 +37,8 @@ class KCGN(BaseModel):
 		dgi_graph_act = nn.Sigmoid()
 		self.out_dim = self.embedding_size * self.layer_num
 
-		self.uu_dgi = DGI(data_handler.uu_graph, self.out_dim, self.out_dim, nn.PReLU(), dgi_graph_act).cuda()
-		self.ii_dgi = DGI(data_handler.ii_graph, self.out_dim, self.out_dim, nn.PReLU(), dgi_graph_act).cuda()
+		self.uu_dgi = DGI(data_handler.uu_graph, self.out_dim, self.out_dim, nn.PReLU(), dgi_graph_act).to(configs['device'])
+		self.ii_dgi = DGI(data_handler.ii_graph, self.out_dim, self.out_dim, nn.PReLU(), dgi_graph_act).to(configs['device'])
 
 		self.is_training = True
 	
@@ -90,14 +90,14 @@ class KCGN(BaseModel):
 		
 		uu_dgi_pos_loss, uu_dgi_neg_loss = self.uu_dgi(user_embeds, self.data_handler.uu_subgraph_adj_tensor, \
 			self.data_handler.uu_subgraph_adj_norm, self.data_handler.uu_node_subgraph, self.data_handler.uu_dgi_node)
-		user_mask = t.zeros(self.user_num).cuda()
+		user_mask = t.zeros(self.user_num).to(configs['device'])
 		user_mask[ancs] = 1
 		user_mask = user_mask * self.data_handler.uu_dgi_node_mask
 		uu_dgi_loss = self.lam[0] * ((uu_dgi_pos_loss * user_mask).sum() + (uu_dgi_neg_loss * user_mask).sum())/t.sum(user_mask)
 
 		ii_dgi_pos_loss, ii_dgi_neg_loss = self.ii_dgi(item_embeds, self.data_handler.ii_subgraph_adj_tensor, \
             self.data_handler.ii_subgraph_adj_norm, self.data_handler.ii_node_subgraph, self.data_handler.ii_dgi_node)
-		ii_mask = t.zeros(self.item_num).cuda()
+		ii_mask = t.zeros(self.item_num).to(configs['device'])
 		ii_mask[poss] = 1
 		ii_mask[negs] = 1
 		ii_mask = ii_mask * self.data_handler.ii_dgi_node_mask

@@ -1,11 +1,11 @@
 optimizer:
   name: adam
-  lr: 1.0e-4 # not 1e-3
+  lr: 5.0e-6
   weight_decay: 0.98
 
 train:
   epoch: 120
-  batch_size: 2000
+  batch_size: 1024
   save_model: true
   loss: pairwise # bpr
   test_step: 5 # evaluate per {test_step} epochs
@@ -25,8 +25,8 @@ data:
 model:
   name: mhcn # case-insensitive
   layer_num: 2
-  reg_weight: 1.0e-1
-  embedding_size: 50
+  reg_weight: 5.0e-2
+  embedding_size: 64
   ss_rate: 1.0e-4
 
 tune:

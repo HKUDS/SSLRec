@@ -1,6 +1,6 @@
 optimizer:
   name: adam
-  lr: 5.0e-2 # not 1e-3
+  lr: 1.0e-5
   weight_decay: 0.97
 
 train:
@@ -25,9 +25,9 @@ data:
 
 model:
   name: smin # case-insensitive
-  layer_num: 2
+  layer_num: 3
   reg_weight: 5.0e-2
-  embedding_size: 16
+  embedding_size: 64
   user_graph_indx: uu_uiu_uitiu
   item_graph_indx: iui_iti
   gcn_act: prelu
@@ -38,6 +38,8 @@ model:
 
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
-  hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
+  hyperparameters: [layer_num, reg_weight, lambda1, lambda2] # The name of the hyperparameter
   layer_num: [1, 2, 3] # Use a list to store the search range
   reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
+  lambda1: [0.01, 0.06, 0.1]
+  lambda2: [0.0005, 0.002, 0.01]
