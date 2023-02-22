@@ -10,6 +10,8 @@ def build_data_handler():
         data_handler = DataHandlerMultiBehavior()
     elif configs['data']['type'] == 'social':
         data_handler = DataHandlerSocial()
+    elif configs['data']['type'] == 'kg':
+        data_handler = DataHandlerKG()
     else:
         raise NotImplementedError
 
