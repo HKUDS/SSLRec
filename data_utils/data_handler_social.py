@@ -309,6 +309,21 @@ class DataHandlerSocial:
 		uu_vv_graph['II'] = iti_mat
 		return uu_vv_graph
 
+	def _normalize_adj(self, mat):
+		"""Laplacian normalization for mat in coo_matrix
+
+		Args:
+			mat (scipy.sparse.coo_matrix): the un-normalized adjacent matrix
+
+		Returns:
+			scipy.sparse.coo_matrix: normalized adjacent matrix
+		"""
+		degree = np.array(mat.sum(axis=-1))
+		d_inv_sqrt = np.reshape(np.power(degree, -0.5), [-1])
+		d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.0
+		d_inv_sqrt_mat = sp.diags(d_inv_sqrt)
+		return mat.dot(d_inv_sqrt_mat).transpose().dot(d_inv_sqrt_mat).tocoo()
+
 	def _make_torch_adj(self, mat):
 		"""Transform uni-directional adjacent matrix in coo_matrix into bi-directional adjacent matrix in torch.sparse.FloatTensor
 
@@ -326,6 +341,17 @@ class DataHandlerSocial:
 		mat = self._normalize_adj(mat)
 
 		# make torch tensor
+		idxs = t.from_numpy(np.vstack([mat.row, mat.col]).astype(np.int64))
+		vals = t.from_numpy(mat.data.astype(np.float32))
+		shape = t.Size(mat.shape)
+		return t.sparse.FloatTensor(idxs, vals, shape).to(configs['device'])
+
+	def _make_torch_uu_adj(self, mat):
+		mat = (mat != 0) * 1.0
+		# mat = (mat+ sp.eye(mat.shape[0])) * 1.0
+		mat = self._normalize_adj(mat)
+		
+		# make cuda tensor
 		idxs = t.from_numpy(np.vstack([mat.row, mat.col]).astype(np.int64))
 		vals = t.from_numpy(mat.data.astype(np.float32))
 		shape = t.Size(mat.shape)
@@ -507,4 +533,5 @@ class DataHandlerSocial:
 
 		elif configs['model']['name'] == 'dcrec':
 			self.torch_adj = self._make_torch_adj(trn_mat)
+			self.torch_uu_adj = self._make_torch_uu_adj(trust_mat)
 			

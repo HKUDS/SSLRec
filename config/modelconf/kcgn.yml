@@ -1,11 +1,11 @@
 optimizer:
   name: adam
-  lr: 1.0e-6 # not 1e-3
+  lr: 5.0e-6 # 5e-6 too big, 1e-6 too small
   weight_decay: 0.98
 
 train:
   epoch: 180
-  batch_size: 2048
+  batch_size: 512
   save_model: true
   loss: pairwise # bpr
   test_step: 5 # evaluate per {test_step} epochs
@@ -26,12 +26,12 @@ data:
 model:
   name: kcgn # case-insensitive
   layer_num: 2
-  reg_weight: 5.0e-2
+  reg_weight: 1.0e-1
   embedding_size: 64
   slope: 0.4
   fuse: mean
   dgi_graph_act: sigmoid
-  lam: [0.1,0.001]
+  lam: [0.1,0.01]
   subnode: 10
   time_step: 360
 

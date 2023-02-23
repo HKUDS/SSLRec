@@ -27,7 +27,7 @@ model:
   keep_rate: 0.5
   layer_num: 2
   reg_weight: 1.0e-2
-  embedding_size: 32
+  embedding_size: 64
   
 
 tune:
