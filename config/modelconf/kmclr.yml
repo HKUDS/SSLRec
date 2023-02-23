@@ -10,6 +10,7 @@ train:
   epoch: 1000
   batch_size: 8192
   save_model: true
+  tensorboard: 0
   loss: pairwise # bpr
   test_step: 5 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
@@ -52,7 +53,6 @@ model:
   a_fold: 100
   testbatch: 4096
   topks: [20]
-  tensorboard: 0
   comment: lgn
   multicore: 0
   pretrain: 0

@@ -6,10 +6,11 @@ from config.configurator import configs
 from os import path
 from collections import defaultdict
 from tqdm import tqdm
+from .datasets_kg import KGTrainDataset, KGTestDataset
 
 class DataHandlerKG:
     def __init__(self) -> None:
-        if configs['data']['name']:
+        if configs['data']['name'] == 'mind':
             predir = './datasets/mind_kg/'
             configs['data']['dir'] = predir
         self.trn_file = path.join(predir, 'train.txt')
@@ -78,7 +79,7 @@ class DataHandlerKG:
         for u_id, i_id in tqdm(train_data, ascii=True):
             ui_edges.append([u_id, i_id])
 
-        print("\nBegin to load knowledge graph triples ...")
+        print("Begin to load knowledge graph triples ...")
         for h_id, r_id, t_id in tqdm(triplets, ascii=True):
             kg_edges.append([h_id, t_id, r_id])
             kg_dict[h_id].append((r_id, t_id))
@@ -104,6 +105,8 @@ class DataHandlerKG:
         vals = [1.] * len(cf_mat)
         adj = sp.coo_matrix((vals, (cf_mat[:, 0], cf_mat[:, 1])), shape=(n_nodes, n_nodes))
         norm_adj = _si_norm_lap(adj)
+        # interaction: user->item, [n_users, n_entities]
+        norm_adj = norm_adj.tocsr()[:n_users, n_users:].tocoo()
         return norm_adj
     
     def load_data(self):
@@ -111,5 +114,15 @@ class DataHandlerKG:
         test_cf = self._read_cf(self.tst_file)
         self._collect_ui_dict(train_cf, test_cf)
         kg_triplets = self._read_triplets(self.kg_file)
-        kg_edges, ui_edges, kg_dict = self._build_graphs(train_cf, kg_triplets)
-        ui_norm_adj = self._build_norm_adj(ui_edges)
+        self.kg_edges, ui_edges, kg_dict = self._build_graphs(train_cf, kg_triplets)
+        self.ui_norm_adj = self._build_norm_adj(ui_edges)
+
+        test_data = KGTestDataset(self.test_user_dict)
+        self.test_dataloader = data.DataLoader(test_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
+        train_data = KGTrainDataset(train_cf, self.train_user_dict)
+        self.train_dataloader = data.DataLoader(train_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
+
+        if 'train_trans' in configs['model'] and configs['model']['train_trans']:
+            triplet_data = KGTrainDataset(kg_triplets, kg_dict)
+            # no shuffle because of randomness
+            self.triplet_dataloader = data.DataLoader(triplet_data, batch_size=configs['train']['kg_batch_size'], shuffle=False, num_workers=0)

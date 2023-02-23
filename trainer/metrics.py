@@ -89,6 +89,8 @@ class Metric(object):
         test_user_count = 0
         test_user_num = len(test_dataloader.dataset.test_users)
         for _, tem in enumerate(test_dataloader):
+            if not isinstance(tem, list):
+                tem = [tem]
             test_user = tem[0].numpy().tolist()
             batch_data = list(
                 map(lambda x: x.long().to(configs['device']), tem))

@@ -9,3 +9,4 @@ checkpoint/
 *.log
 *.zip
 *.bin
+runs/
