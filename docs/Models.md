@@ -19,11 +19,13 @@
 | ----- | ---------- | ----- |
 |KGCL|SIGIR'22|[Knowledge Graph Contrastive Learning for Recommendation](https://arxiv.org/pdf/2205.00976.pdf)|
 
-### Social Recommendation
+
+### Multi-Behavior Recommendation
 | Model | Conference | Paper |
 | ----- | ---------- | ----- |
-|MHCN|WWW'21|[Self-Supervised Multi-Channel Hypergraph Convolutional Network for Social Recommendation](https://arxiv.org/pdf/2101.06448.pdf)|
-|KCGN|AAAI'21|[Knowledge-aware Coupled Graph Neural Network for Social Recommendation](https://par.nsf.gov/servlets/purl/10220297)|
-|SMIN|CIKM'21|[Social Recommendation with Self-Supervised Metagraph Informax Network](https://arxiv.org/pdf/2110.03958.pdf)|
-|SDCRec|SIGIR'22|[Socially-aware Dual Contrastive Learning for Cold-Start Recommendation](https://web.archive.org/web/20220712110150id_/https://dl.acm.org/doi/pdf/10.1145/3477495.3531780)|
-|DCRec|CIKM'22|[Disentangled Contrastive Learning for Social Recommendation](https://arxiv.org/pdf/2208.08723.pdf)|
+|CML|WSDM'2022|[Contrastive Meta Learning with Behavior Multiplicity for Recommendation](https://arxiv.org/pdf/2202.08523.pdf）)|
+|KMCLR|WSDM'23|[Knowledge Enhancement for Contrastive Multi-Behavior Recommendation](Knowledge Enhancement for Contrastive Multi-Behavior Recommendation)|
+|MBGMN|SIGIR'2021|[Graph meta network for multi-behavior recommendation](https://arxiv.org/pdf/2110.03969.pdf)|
+|S-MBRec|IJCAI'22|[Self-supervised Graph Neural Networks for Multi-behavior Recommendation](http://www.shichuan.org/doc/134.pdf)|
+|HMG-CR|ICDM'21|[Hyper Meta-Path Contrastive Learning for Multi-Behavior Recommendation](https://arxiv.org/pdf/2109.02859.pdf)|
+
