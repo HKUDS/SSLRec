@@ -54,6 +54,7 @@ class KGTripletDataset(data.Dataset):
         return neg_t
 
     def __getitem__(self, idx):
-        h, r, t = np.random.choice(self.kg_triplets)
+        random_idx = np.random.randint(len(self.kg_triplets))
+        h, r, t = self.kg_triplets[random_idx]
         neg_t = self._neg_sample_kg(h, r)
         return h, r, t, neg_t

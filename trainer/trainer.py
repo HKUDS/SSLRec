@@ -862,15 +862,14 @@ class KGTrainer(Trainer):
             ), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
 
     def train_epoch(self, model, epoch_idx):
-        model.train()
         """ train in train mode """
         model.train()
+        """ train Rec """
         train_dataloader = self.data_handler.train_dataloader
         train_dataloader.dataset.sample_negs()
         # for recording loss
         loss_log_dict = {}
         # start this epoch
-        model.train()
         for _, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
             self.optimizer.zero_grad()
             batch_data = list(

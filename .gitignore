@@ -10,3 +10,5 @@ checkpoint/
 *.zip
 *.bin
 runs/
+amazon-book_kg/
+last-fm_kg/

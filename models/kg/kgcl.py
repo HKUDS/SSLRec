@@ -158,11 +158,12 @@ class KGCL(nn.Module):
 
     @torch.no_grad()
     def get_aug_views(self):
+        edge_index, edge_type = _edge_sampling(self.edge_index, self.edge_type, 0.01)
         entity_emb = self.all_embed[self.n_users:, :]
         kg_view_1 = _edge_sampling(
-            self.edge_index, self.edge_type, self.node_dropout_rate)
+            edge_index, edge_type, self.node_dropout_rate)
         kg_view_2 = _edge_sampling(
-            self.edge_index, self.edge_type, self.node_dropout_rate)
+            edge_index, edge_type, self.node_dropout_rate)
         kg_v1_ro = self.rgat(entity_emb, self.relation_embed, kg_view_1, False)[
             :self.n_items, :]
         kg_v2_ro = self.rgat(entity_emb, self.relation_embed, kg_view_2, False)[
@@ -253,13 +254,14 @@ class KGCL(nn.Module):
             return None
         return loss, reg_loss
 
-    def cal_kg_loss(self, h, r, pos_t, neg_t):
+    def cal_kg_loss(self, batch_data):
         """
         h:      (kg_batch_size)
         r:      (kg_batch_size)
         pos_t:  (kg_batch_size)
         neg_t:  (kg_batch_size)
         """
+        h, r, pos_t, neg_t = batch_data
         entity_emb = self.all_embed[self.n_users:, :]
         # (kg_batch_size, relation_dim)
         r_embed = self.relation_embed[r]

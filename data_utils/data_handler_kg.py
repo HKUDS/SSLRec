@@ -6,13 +6,17 @@ from config.configurator import configs
 from os import path
 from collections import defaultdict
 from tqdm import tqdm
-from .datasets_kg import KGTrainDataset, KGTestDataset
+from .datasets_kg import KGTrainDataset, KGTestDataset, KGTripletDataset
 
 class DataHandlerKG:
     def __init__(self) -> None:
         if configs['data']['name'] == 'mind':
             predir = './datasets/mind_kg/'
-            configs['data']['dir'] = predir
+        elif configs['data']['name'] == 'amazon-book':
+            predir = './datasets/amazon-book_kg/'
+        elif configs['data']['name'] == 'last-fm':
+            predir = './datasets/last-fm_kg/'
+        configs['data']['dir'] = predir
         self.trn_file = path.join(predir, 'train.txt')
         self.val_file = path.join(predir, 'test.txt')
         self.tst_file = path.join(predir, 'test.txt') 
@@ -123,6 +127,6 @@ class DataHandlerKG:
         self.train_dataloader = data.DataLoader(train_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
 
         if 'train_trans' in configs['model'] and configs['model']['train_trans']:
-            triplet_data = KGTrainDataset(kg_triplets, kg_dict)
+            triplet_data = KGTripletDataset(kg_triplets, kg_dict)
             # no shuffle because of randomness
             self.triplet_dataloader = data.DataLoader(triplet_data, batch_size=configs['train']['kg_batch_size'], shuffle=False, num_workers=0)

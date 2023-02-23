@@ -5,6 +5,7 @@ import argparse
 def parse_configure():
     parser = argparse.ArgumentParser(description='SSLRec')
     parser.add_argument('--model', type=str, help='Model name')
+    parser.add_argument('--dataset', type=str, default=None, help='Dataset name')
     parser.add_argument('--device', type=str, default='cuda', help='cpu or cuda')
     parser.add_argument('--cuda', type=str, default='0', help='Device number')
     args = parser.parse_args()
@@ -25,6 +26,8 @@ def parse_configure():
         if 'tune' not in configs:
             configs['tune'] = {'enable': False}
         configs['device'] = args.device
+        if args.dataset is not None:
+            configs['data']['name'] = args.dataset
         return configs
 
 configs = parse_configure()

@@ -4,8 +4,10 @@ optimizer:
   weight_decay: 0
 
 train:
+  # trainer: kg_trainer
   epoch: 100
   batch_size: 1024
+  kg_batch_size: 4096
   save_model: true
   loss: pairwise # bpr
   test_step: 1 # evaluate per {test_step} epochs
@@ -24,6 +26,7 @@ data:
 
 model:
   name: kgcl # case-insensitive
+  train_trans: false
   layer_num: 2
   decay_weight: 1.0e-5
   embedding_size: 64
