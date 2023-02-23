@@ -4,12 +4,13 @@
 It contains commonly-used datasets, code scripts for data processing, training, testing, evaluation, 
 and state-of-the-art research models.
 
-Our library includes 21 self-supervised learning recommendation algorithms, covering four major categories:
+Our library includes 22 self-supervised learning recommendation algorithms, covering five major categories:
 
 + General Collaborative Filtering
 + Sequential Recommendation
 + Multi-behavior Recommendation
 + Social Recommendation
++ Knowledge-aware Recommendation
 
 We provide a unified training, verification and testing process for each category, 
 as well as a unified data preprocessing process with public datasets, 
