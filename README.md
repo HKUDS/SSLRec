@@ -35,7 +35,7 @@ python main.py --model LightGCN
 This script will run the LightGCN model on the yelp datasets. 
 
 The training configuration of the LightGCN model is stored in [lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml), 
-and you can modify the values in it to obtain different training effects. You can also replace LightGCN with other implemented models listed in [Models]().
+and you can modify the values in it to obtain different training effects. You can also replace LightGCN with other implemented models listed in [Models](./docs/Models.md).
 
 For acquainted users who wish to learn more, read the [User Guide](https://github.com/HKUDS/SSLRec/blob/main/docs/User%20Guide.md), which explains the concepts and usage of SSLRec in much more details, including:
 + Architecture design of SSLRec framework
