@@ -24,7 +24,7 @@
 | Model | Conference | Paper |
 | ----- | ---------- | ----- |
 |CML|WSDM'2022|[Contrastive Meta Learning with Behavior Multiplicity for Recommendation](https://arxiv.org/pdf/2202.08523.pdf）)|
-|KMCLR|WSDM'23|[Knowledge Enhancement for Contrastive Multi-Behavior Recommendation](Knowledge Enhancement for Contrastive Multi-Behavior Recommendation)|
+|KMCLR|WSDM'23|[Knowledge Enhancement for Contrastive Multi-Behavior Recommendation](https://arxiv.org/pdf/2301.05403.pdf）)|
 |MBGMN|SIGIR'2021|[Graph meta network for multi-behavior recommendation](https://arxiv.org/pdf/2110.03969.pdf)|
 |S-MBRec|IJCAI'22|[Self-supervised Graph Neural Networks for Multi-behavior Recommendation](http://www.shichuan.org/doc/134.pdf)|
 |HMG-CR|ICDM'21|[Hyper Meta-Path Contrastive Learning for Multi-Behavior Recommendation](https://arxiv.org/pdf/2109.02859.pdf)|
