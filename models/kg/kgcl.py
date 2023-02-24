@@ -6,6 +6,7 @@ from torch_scatter import scatter_sum, scatter_softmax
 from logging import getLogger
 from config.configurator import configs
 import random
+import scipy.sparse as sp
 
 def _L2_loss_mean(x):
     return torch.mean(torch.sum(torch.pow(x, 2), dim=1, keepdim=False) / 2.)
@@ -104,11 +105,13 @@ class KGCL(nn.Module):
         self.mess_dropout_rate = configs['model']['mess_dropout_rate']
         self.device = configs['device']
 
-        self.adj_mat = self._convert_sp_mat_to_sp_tensor(
-            data_handler.ui_norm_adj).to(self.device)
-        self.edge_index, self.edge_type = self._get_edges(
-            data_handler.kg_edges)
+        self.ui_mat = data_handler.ui_mat
+        self.norm_adj = self._get_norm_adj_mat(data_handler.ui_mat).to(self.device)
         self.kg_dict = data_handler.kg_dict
+        # self.edge_index, self.edge_type = self._get_edges(
+        #     data_handler.kg_edges)
+        self.edge_index, self.edge_type = self._samp_edge_from_dict(
+            self.kg_dict, triplet_num=10)
 
         self.all_embed = nn.init.normal_(
             torch.empty(self.n_nodes, self.emb_size), std=0.1)
@@ -130,6 +133,52 @@ class KGCL(nn.Module):
         i = torch.LongTensor([coo.row, coo.col])
         v = torch.from_numpy(coo.data).float()
         return torch.sparse.FloatTensor(i, v, coo.shape)
+
+    def _get_norm_adj_mat(self, ui_mat):
+        r"""Get the normalized interaction matrix of users and items.
+
+        Construct the square matrix from the training data and normalize it
+        using the laplace matrix.
+
+        .. math::
+            A_{hat} = D^{-0.5} \times A \times D^{-0.5}
+
+        Returns:
+            Sparse tensor of the normalized interaction matrix.
+        """
+        # build adj matrix
+        A = sp.dok_matrix(
+            (self.n_users + self.n_items, self.n_users + self.n_items), dtype=np.float32
+        )
+        inter_M = ui_mat
+        inter_M_t = ui_mat.transpose()
+        data_dict = dict(
+            zip(zip(inter_M.row, inter_M.col + self.n_users), [1] * inter_M.nnz)
+        )
+        data_dict.update(
+            dict(
+                zip(
+                    zip(inter_M_t.row + self.n_users, inter_M_t.col),
+                    [1] * inter_M_t.nnz,
+                )
+            )
+        )
+        A._update(data_dict)
+        # norm adj matrix
+        sumArr = (A > 0).sum(axis=1)
+        # add epsilon to avoid divide by zero Warning
+        diag = np.array(sumArr.flatten())[0] + 1e-7
+        diag = np.power(diag, -0.5)
+        D = sp.diags(diag)
+        L = D * A * D
+        # covert norm_adj matrix to tensor
+        L = sp.coo_matrix(L)
+        row = L.row
+        col = L.col
+        i = torch.LongTensor(np.array([row, col]))
+        data = torch.FloatTensor(L.data)
+        SparseL = torch.sparse.FloatTensor(i, data, torch.Size(L.shape))
+        return SparseL.to(self.device)
 
     def _samp_edge_from_dict(self, kg_dict, triplet_num=15):
         samp_edges = []
@@ -156,26 +205,28 @@ class KGCL(nn.Module):
         weights = weights.where(
             weights < 0.95, torch.ones_like(weights) * 0.95)
 
-        items_in_edges = self.adj_mat._indices()[1, :]
+        items_in_edges = self.ui_mat.col
         edge_weights = weights[items_in_edges]
-        edge_mask = torch.bernoulli(edge_weights).to(torch.bool)
+        edge_mask = torch.bernoulli(edge_weights).bool().cpu()
         keep_rate = edge_mask.sum().item() / edge_mask.size()[0]
         print(f"u-i edge keep ratio: {keep_rate:.2f}")
         # drop
-        i = self.adj_mat._indices()
-        v = self.adj_mat._values()
+        col = self.ui_mat.col
+        row = self.ui_mat.row
+        v = self.ui_mat.data
 
-        i = i[:, edge_mask]
+        col = col[edge_mask]
+        row = row[edge_mask]
         v = v[edge_mask]
-
-        out = torch.sparse.FloatTensor(
-            i, v, self.adj_mat.shape).to(self.adj_mat.device)
-        return out * (1. / keep_rate)
+        
+        masked_ui_mat = sp.coo_matrix((v, (row, col)), shape=(self.n_users, self.n_items))
+        return self._get_norm_adj_mat(masked_ui_mat)
 
     @torch.no_grad()
     def get_aug_views(self):
-        edge_index, edge_type = self._samp_edge_from_dict(self.kg_dict)
-        # edge_index, edge_type = _edge_sampling(self.edge_index, self.edge_type, 0.01)
+        edge_index, edge_type = self.edge_index, self.edge_type
+        # edge_index, edge_type = self._samp_edge_from_dict(self.kg_dict)
+        # edge_index, edge_type = _edge_sampling(self.edge_index, self.edge_type, 0.5)
         entity_emb = self.all_embed[self.n_users:, :]
         kg_view_1 = _edge_sampling(
             edge_index, edge_type, self.node_dropout_rate)
@@ -192,15 +243,15 @@ class KGCL(nn.Module):
 
     def cal_loss(self, batch_data):
         user, pos_item, neg_item = batch_data[:3]
-        kg_view_1, kg_view_2, ui_view_1, ui_view_2 = self.get_aug_views()
-        # kg_view_1, kg_view_2, ui_view_1, ui_view_2 = batch_data[3:7]
+        # kg_view_1, kg_view_2, ui_view_1, ui_view_2 = self.get_aug_views()
+        kg_view_1, kg_view_2, ui_view_1, ui_view_2 = batch_data[3:7]
 
         if self.node_dropout:
-            g_droped = _sparse_dropout(self.adj_mat, 1-self.ui_dropout_rate)
+            g_droped = _sparse_dropout(self.norm_adj, 1-self.ui_dropout_rate)
             edge_index, edge_type = _edge_sampling(
                 self.edge_index, self.edge_type, self.node_dropout_rate)
         else:
-            g_droped = self.adj_mat
+            g_droped = self.norm_adj
             edge_index, edge_type = self.edge_index, self.edge_type
 
         user_emb, item_emb = self.forward(edge_index, edge_type, g_droped)
@@ -234,24 +285,20 @@ class KGCL(nn.Module):
         entity_emb = self.rgat(entity_emb, self.relation_embed, [
                                edge_index, edge_type], self.mess_dropout & self.training)
 
-        user_embs = [user_emb]
-        entity_embs = [entity_emb]
+        all_emb = torch.cat([user_emb, entity_emb[:self.n_items, :]], dim=0)
+        emb_list = [all_emb]
         for layer in range(self.layer_num):
-            item_emb_l = torch.sparse.mm(g.t(), user_embs[-1])
-            user_emb_l = torch.sparse.mm(g, entity_embs[-1])
-            user_embs.append(user_emb_l)
-            entity_embs.append(item_emb_l)
-        user_embs = torch.stack(user_embs, dim=1)
-        entity_embs = torch.stack(entity_embs, dim=1)
-        # print(embs.size())
-        users = torch.mean(user_embs, dim=1)
-        items = torch.mean(entity_embs, dim=1)
-        return users, items
+            all_emb = torch.sparse.mm(g, all_emb)
+            emb_list.append(all_emb)
+        all_emb = torch.stack(emb_list, dim=1)
+        all_emb = torch.mean(all_emb, dim=1)
+        user_emb, item_emb = torch.split(all_emb, [self.n_users, self.n_items])
+        return user_emb, item_emb
 
     def full_predict(self, batch_data):
         users = batch_data[0]
         user_emb, item_emb = self.forward(
-            self.edge_index, self.edge_type, self.adj_mat)
+            self.edge_index, self.edge_type, self.norm_adj)
         return torch.matmul(user_emb[users], item_emb.t())
 
     def _bpr_loss(self, users_emb, pos_emb, neg_emb):
@@ -331,6 +378,6 @@ class KGCL(nn.Module):
         self.logger.info("mess_dropout: %d", self.mess_dropout)
         self.logger.info("mess_dropout_rate: %.1f", self.mess_dropout_rate)
         self.logger.info('all_embed: {}'.format(self.all_embed.shape))
-        self.logger.info('interact_mat: {}'.format(self.adj_mat.shape))
+        self.logger.info('interact_mat: {}'.format(self.norm_adj.shape))
         self.logger.info('edge_index: {}'.format(self.edge_index.shape))
         self.logger.info('edge_type: {}'.format(self.edge_type.shape))

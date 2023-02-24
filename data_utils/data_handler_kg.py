@@ -90,28 +90,13 @@ class DataHandlerKG:
 
         return kg_edges, ui_edges, kg_dict
 
-    def _build_norm_adj(self, ui_edges):
-        def _si_norm_lap(adj):
-            # D^{-1}A
-            rowsum = np.array(adj.sum(1))
-
-            d_inv = np.power(rowsum, -1).flatten()
-            d_inv[np.isinf(d_inv)] = 0.
-            d_mat_inv = sp.diags(d_inv)
-
-            norm_adj = d_mat_inv.dot(adj)
-            return norm_adj.tocoo()
-
+    def _build_ui_mat(self, ui_edges):
         n_users = configs['data']['user_num']
-        n_nodes = configs['data']['node_num']
-        cf_mat = np.array(ui_edges)
-        cf_mat[:, 1] = cf_mat[:, 1] + n_users  # [0, n_items) -> [n_users, n_users+n_items)
-        vals = [1.] * len(cf_mat)
-        adj = sp.coo_matrix((vals, (cf_mat[:, 0], cf_mat[:, 1])), shape=(n_nodes, n_nodes))
-        norm_adj = _si_norm_lap(adj)
-        # interaction: user->item, [n_users, n_entities]
-        norm_adj = norm_adj.tocsr()[:n_users, n_users:].tocoo()
-        return norm_adj
+        n_items = configs['data']['item_num']
+        cf_edges = np.array(ui_edges)
+        vals = [1.] * len(cf_edges)
+        mat = sp.coo_matrix((vals, (cf_edges[:, 0], cf_edges[:, 1])), shape=(n_users, n_items))
+        return mat
     
     def load_data(self):
         train_cf = self._read_cf(self.trn_file)
@@ -119,7 +104,7 @@ class DataHandlerKG:
         self._collect_ui_dict(train_cf, test_cf)
         kg_triplets = self._read_triplets(self.kg_file)
         self.kg_edges, ui_edges, self.kg_dict = self._build_graphs(train_cf, kg_triplets)
-        self.ui_norm_adj = self._build_norm_adj(ui_edges)
+        self.ui_mat = self._build_ui_mat(ui_edges)
 
         test_data = KGTestDataset(self.test_user_dict)
         self.test_dataloader = data.DataLoader(test_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
