@@ -875,12 +875,12 @@ class KGTrainer(Trainer):
         # for recording loss
         loss_log_dict = {}
         # start this epoch
-        kg_view_1, kg_view_2, ui_view_1, ui_view_2 = model.get_aug_views()
+        # kg_view_1, kg_view_2, ui_view_1, ui_view_2 = model.get_aug_views()
         for _, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
             self.optimizer.zero_grad()
             batch_data = list(
                 map(lambda x: x.long().to(configs['device']), tem))
-            batch_data.extend([kg_view_1, kg_view_2, ui_view_1, ui_view_2])
+            # batch_data.extend([kg_view_1, kg_view_2, ui_view_1, ui_view_2])
             loss, loss_dict = model.cal_loss(batch_data)
             loss.backward()
             self.optimizer.step()

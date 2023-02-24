@@ -14,6 +14,6 @@ def log_exceptions(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            logger.info(e)
+            logger.exception(e)
             raise e
     return wrapper

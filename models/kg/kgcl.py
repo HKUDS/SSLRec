@@ -192,8 +192,8 @@ class KGCL(nn.Module):
 
     def cal_loss(self, batch_data):
         user, pos_item, neg_item = batch_data[:3]
-        # kg_view_1, kg_view_2, ui_view_1, ui_view_2 = self.get_aug_views()
-        kg_view_1, kg_view_2, ui_view_1, ui_view_2 = batch_data[3:7]
+        kg_view_1, kg_view_2, ui_view_1, ui_view_2 = self.get_aug_views()
+        # kg_view_1, kg_view_2, ui_view_1, ui_view_2 = batch_data[3:7]
 
         if self.node_dropout:
             g_droped = _sparse_dropout(self.adj_mat, 1-self.ui_dropout_rate)
