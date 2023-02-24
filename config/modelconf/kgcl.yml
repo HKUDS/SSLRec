@@ -1,10 +1,10 @@
 optimizer:
   name: adam
-  lr: 1.0e-4 # not 1e-3
+  lr: 1.0e-3 # not 1e-3
   weight_decay: 0
 
 train:
-  # trainer: kg_trainer
+  trainer: kg_trainer
   epoch: 100
   batch_size: 1024
   kg_batch_size: 4096
@@ -27,11 +27,13 @@ data:
 model:
   name: kgcl # case-insensitive
   train_trans: false
-  layer_num: 2
-  decay_weight: 1.0e-5
+  layer_num: 3
+  layer_num_kg: 2
+  decay_weight: 1.0e-4
   embedding_size: 64
   node_dropout: true
   node_dropout_rate: 0.5
+  node_dropout_rate_ui: 0.8
   mess_dropout: true
   mess_dropout_rate: 0.1
 

@@ -21,7 +21,7 @@ from torch.utils.tensorboard import SummaryWriter
 import gc
 from trainer.metrics import Metric
 from config.configurator import configs
-from .utils import DisabledSummaryWriter
+from .utils import DisabledSummaryWriter, log_exceptions
 
 if 'tensorboard' in configs['train'] and configs['train']['tensorboard']:
     writer = SummaryWriter(log_dir='runs')
@@ -84,7 +84,9 @@ class Trainer(object):
         # log
         self.logger.log_loss(epoch_idx, loss_log_dict)
 
+    @log_exceptions
     def train(self, model):
+        self.evaluate(model, 0)
         self.create_optimizer(model)
         train_config = configs['train']
         for epoch_idx in range(train_config['epoch']):
@@ -95,6 +97,7 @@ class Trainer(object):
                 self.evaluate(model, epoch_idx)
         self.save_model(model)
 
+    @log_exceptions
     def evaluate(self, model, epoch_idx=configs['train']['epoch']):
         model.eval()
         eval_result = self.metric.eval(
@@ -851,7 +854,9 @@ class MBGMNTrainer(Trainer):
 class KGTrainer(Trainer):
     def __init__(self, data_handler, logger):
         super(KGTrainer, self).__init__(data_handler, logger)
-        self.triplet_dataloader = data_handler.triplet_dataloader
+        self.train_trans = configs['model']['train_trans']
+        if self.train_trans:
+            self.triplet_dataloader = data_handler.triplet_dataloader
 
     def create_optimizer(self, model):
         optim_config = configs['optimizer']
@@ -870,10 +875,12 @@ class KGTrainer(Trainer):
         # for recording loss
         loss_log_dict = {}
         # start this epoch
+        kg_view_1, kg_view_2, ui_view_1, ui_view_2 = model.get_aug_views()
         for _, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
             self.optimizer.zero_grad()
             batch_data = list(
                 map(lambda x: x.long().to(configs['device']), tem))
+            batch_data.extend([kg_view_1, kg_view_2, ui_view_1, ui_view_2])
             loss, loss_dict = model.cal_loss(batch_data)
             loss.backward()
             self.optimizer.step()
@@ -886,21 +893,22 @@ class KGTrainer(Trainer):
                 else:
                     loss_log_dict[loss_name] += _loss_val
 
-        """ train KG trans """
-        triplet_dataloader = self.triplet_dataloader
-        for _, tem in tqdm(enumerate(triplet_dataloader), desc='Training KG Trans', total=len(triplet_dataloader)):
-            self.kg_optimizer.zero_grad()
-            batch_data = list(
-                map(lambda x: x.long().to(configs['device']), tem))
-            # feed batch_seqs into model.forward()
-            kg_loss = model.cal_kg_loss(batch_data)
-            kg_loss.backward()
-            self.kg_optimizer.step()
+        if self.train_trans:
+            """ train KG trans """
+            triplet_dataloader = self.triplet_dataloader
+            for _, tem in tqdm(enumerate(triplet_dataloader), desc='Training KG Trans', total=len(triplet_dataloader)):
+                self.kg_optimizer.zero_grad()
+                batch_data = list(
+                    map(lambda x: x.long().to(configs['device']), tem))
+                # feed batch_seqs into model.forward()
+                kg_loss = model.cal_kg_loss(batch_data)
+                kg_loss.backward()
+                self.kg_optimizer.step()
 
-            if 'kg_loss' not in loss_log_dict:
-                loss_log_dict['kg_loss'] = float(kg_loss) / len(triplet_dataloader)
-            else:
-                loss_log_dict['kg_loss'] += float(kg_loss) / len(triplet_dataloader)
+                if 'kg_loss' not in loss_log_dict:
+                    loss_log_dict['kg_loss'] = float(kg_loss) / len(triplet_dataloader)
+                else:
+                    loss_log_dict['kg_loss'] += float(kg_loss) / len(triplet_dataloader)
 
         # log
         self.logger.log_loss(epoch_idx, loss_log_dict)

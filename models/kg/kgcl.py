@@ -5,7 +5,7 @@ import numpy as np
 from torch_scatter import scatter_sum, scatter_softmax
 from logging import getLogger
 from config.configurator import configs
-
+import random
 
 def _L2_loss_mean(x):
     return torch.mean(torch.sum(torch.pow(x, 2), dim=1, keepdim=False) / 2.)
@@ -95,9 +95,11 @@ class KGCL(nn.Module):
 
         self.decay = configs['model']['decay_weight']
         self.emb_size = configs['model']['embedding_size']
-        self.context_hops = configs['model']['layer_num']
+        self.context_hops = configs['model']['layer_num_kg']
+        self.layer_num = configs['model']['layer_num']
         self.node_dropout = configs['model']['node_dropout']
         self.node_dropout_rate = configs['model']['node_dropout_rate']
+        self.ui_dropout_rate = configs['model']['node_dropout_rate_ui']
         self.mess_dropout = configs['model']['mess_dropout']
         self.mess_dropout_rate = configs['model']['mess_dropout_rate']
         self.device = configs['device']
@@ -106,6 +108,7 @@ class KGCL(nn.Module):
             data_handler.ui_norm_adj).to(self.device)
         self.edge_index, self.edge_type = self._get_edges(
             data_handler.kg_edges)
+        self.kg_dict = data_handler.kg_dict
 
         self.all_embed = nn.init.normal_(
             torch.empty(self.n_nodes, self.emb_size), std=0.1)
@@ -127,6 +130,19 @@ class KGCL(nn.Module):
         i = torch.LongTensor([coo.row, coo.col])
         v = torch.from_numpy(coo.data).float()
         return torch.sparse.FloatTensor(i, v, coo.shape)
+
+    def _samp_edge_from_dict(self, kg_dict, triplet_num=15):
+        samp_edges = []
+        for h in kg_dict:
+            t_list = kg_dict[h]
+            if len(t_list) > triplet_num:
+                samp_edges_i = random.sample(
+                    t_list, triplet_num)
+            else:
+                samp_edges_i = t_list
+            for r, t in samp_edges_i:
+                samp_edges.append([h, t, r])
+        return self._get_edges(samp_edges)
 
     def _get_ui_aug_views(self, kg_stability, mu):
         kg_stability = torch.exp(kg_stability)
@@ -158,7 +174,8 @@ class KGCL(nn.Module):
 
     @torch.no_grad()
     def get_aug_views(self):
-        edge_index, edge_type = _edge_sampling(self.edge_index, self.edge_type, 0.01)
+        edge_index, edge_type = self._samp_edge_from_dict(self.kg_dict)
+        # edge_index, edge_type = _edge_sampling(self.edge_index, self.edge_type, 0.01)
         entity_emb = self.all_embed[self.n_users:, :]
         kg_view_1 = _edge_sampling(
             edge_index, edge_type, self.node_dropout_rate)
@@ -175,11 +192,11 @@ class KGCL(nn.Module):
 
     def cal_loss(self, batch_data):
         user, pos_item, neg_item = batch_data[:3]
-        kg_view_1, kg_view_2, ui_view_1, ui_view_2 = self.get_aug_views()
-        # kg_view_1, kg_view_2, ui_view_1, ui_view_2 = batch_data['aug_views']
+        # kg_view_1, kg_view_2, ui_view_1, ui_view_2 = self.get_aug_views()
+        kg_view_1, kg_view_2, ui_view_1, ui_view_2 = batch_data[3:7]
 
         if self.node_dropout:
-            g_droped = _sparse_dropout(self.adj_mat, self.node_dropout_rate)
+            g_droped = _sparse_dropout(self.adj_mat, 1-self.ui_dropout_rate)
             edge_index, edge_type = _edge_sampling(
                 self.edge_index, self.edge_type, self.node_dropout_rate)
         else:
@@ -219,7 +236,7 @@ class KGCL(nn.Module):
 
         user_embs = [user_emb]
         entity_embs = [entity_emb]
-        for layer in range(self.context_hops):
+        for layer in range(self.layer_num):
             item_emb_l = torch.sparse.mm(g.t(), user_embs[-1])
             user_emb_l = torch.sparse.mm(g, entity_embs[-1])
             user_embs.append(user_emb_l)

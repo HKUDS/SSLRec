@@ -95,7 +95,8 @@ class Metric(object):
             batch_data = list(
                 map(lambda x: x.long().to(configs['device']), tem))
             # predict result
-            batch_pred = model.full_predict(batch_data)
+            with torch.no_grad():
+                batch_pred = model.full_predict(batch_data)
             test_user_count += batch_pred.shape[0]
             # filter out history items
             batch_pred = self._mask_history_pos(

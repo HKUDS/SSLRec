@@ -118,7 +118,7 @@ class DataHandlerKG:
         test_cf = self._read_cf(self.tst_file)
         self._collect_ui_dict(train_cf, test_cf)
         kg_triplets = self._read_triplets(self.kg_file)
-        self.kg_edges, ui_edges, kg_dict = self._build_graphs(train_cf, kg_triplets)
+        self.kg_edges, ui_edges, self.kg_dict = self._build_graphs(train_cf, kg_triplets)
         self.ui_norm_adj = self._build_norm_adj(ui_edges)
 
         test_data = KGTestDataset(self.test_user_dict)
@@ -127,6 +127,6 @@ class DataHandlerKG:
         self.train_dataloader = data.DataLoader(train_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
 
         if 'train_trans' in configs['model'] and configs['model']['train_trans']:
-            triplet_data = KGTripletDataset(kg_triplets, kg_dict)
+            triplet_data = KGTripletDataset(kg_triplets, self.kg_dict)
             # no shuffle because of randomness
             self.triplet_dataloader = data.DataLoader(triplet_data, batch_size=configs['train']['kg_batch_size'], shuffle=False, num_workers=0)
