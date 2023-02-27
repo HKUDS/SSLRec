@@ -66,7 +66,7 @@ class NCL(LightGCN):
 	def cal_loss(self, batch_data):
 		self.is_training = True
 		ancs, poss, negs, kmeans_flags = batch_data
-		if t.sum(kmeans_flags) != 0:
+		if t.sum(kmeans_flags) != 0 or hasattr(self,'user2cluster')==False:
 			self._cluster()
 		embeds, embeds_list = self.forward(self.adj)
 		ego_embeds = embeds_list[0]
