@@ -6,7 +6,7 @@ import numpy as np
 from config.configurator import configs
 from models.loss_utils import cal_bpr_loss, reg_pick_embeds
 from models.base_model import BaseModel
-from models.model_utils import GCN, Encoder, Discriminator
+from models.model_utils import GCN, DGIEncoder, DGIDiscriminator
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -163,8 +163,8 @@ class SemanticAttention(nn.Module):
 class Informax(nn.Module):
 	def __init__(self, g, n_in, n_h, gcn_act, graph_act, graph_adj):
 		super(Informax, self).__init__()
-		self.encoder = Encoder(g, n_in, n_h, gcn_act)
-		self.discriminator = Discriminator(n_h)
+		self.encoder = DGIEncoder(g, n_in, n_h, gcn_act)
+		self.discriminator = DGIDiscriminator(n_h)
 		self.graph_act = graph_act
 		graph_adj_coo = graph_adj.tocoo()
 		graph_adj_u, graph_adj_v, graph_adj_r = graph_adj_coo.row, graph_adj_coo.col, graph_adj_coo.data

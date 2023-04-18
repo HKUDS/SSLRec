@@ -267,9 +267,9 @@ class TransformerEmbedding(nn.Module):
         x = self.token_emb(batch_seqs) + pos_emb
         return self.dropout(x)
 
-class Encoder(nn.Module):
+class DGIEncoder(nn.Module):
     def __init__(self, g, in_feats, n_hidden, activation):
-        super(Encoder, self).__init__()
+        super(DGIEncoder, self).__init__()
         self.g = g
         self.conv = GCN(g, in_feats, n_hidden, activation)
 
@@ -280,9 +280,9 @@ class Encoder(nn.Module):
         features = self.conv(features)
         return features
 
-class Discriminator(nn.Module):
+class DGIDiscriminator(nn.Module):
     def __init__(self, n_hidden):
-        super(Discriminator, self).__init__()
+        super(DGIDiscriminator, self).__init__()
         self.weight = nn.Parameter(nn.init.xavier_uniform_(t.empty(n_hidden, n_hidden)))
         self.loss = nn.BCEWithLogitsLoss(reduction='none') # combines a Sigmoid layer and the BCELoss
 

@@ -5,7 +5,7 @@ import math
 from config.configurator import configs
 from models.loss_utils import cal_bpr_loss, reg_pick_embeds
 from models.base_model import BaseModel
-from models.model_utils import GCNLayer, GCN, Encoder, Discriminator
+from models.model_utils import GCNLayer, GCN, DGIEncoder, DGIDiscriminator
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -137,8 +137,8 @@ class TimeEncoding(nn.Module):
 class DGI(nn.Module):
 	def __init__(self, g, in_feats, n_hidden, gcn_act, graph_act):
 		super(DGI, self).__init__()
-		self.encoder = Encoder(g, in_feats, n_hidden, gcn_act)
-		self.discriminator = Discriminator(n_hidden)
+		self.encoder = DGIEncoder(g, in_feats, n_hidden, gcn_act)
+		self.discriminator = DGIDiscriminator(n_hidden)
 		self.graph_act = graph_act
 	
 	def forward(self, features, subgraph_adj, subgraph_norm, node_subgraph, node_list):
