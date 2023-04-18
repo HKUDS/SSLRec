@@ -5,7 +5,7 @@ import math
 from config.configurator import configs
 from models.loss_utils import cal_bpr_loss, reg_pick_embeds
 from models.base_model import BaseModel
-from models.model_utils import GCNLayer, GCN
+from models.model_utils import GCNLayer, GCN, Encoder, Discriminator
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -134,34 +134,11 @@ class TimeEncoding(nn.Module):
 	def forward(self, time):
 		return self.lin(self.emb(time))
 
-class Encoder(nn.Module):
-    def __init__(self, g, in_feats, n_hidden, activation):
-        super(Encoder, self).__init__()
-        self.g = g
-        self.conv = GCN(g, in_feats, n_hidden, activation)
-
-    def forward(self, features, corrupt=False):
-        if corrupt:
-            perm = t.randperm(self.g.number_of_nodes())
-            features = features[perm]
-        features = self.conv(features)
-        return features
-
-class Discriminator(nn.Module):
-    def __init__(self, n_hidden):
-        super(Discriminator, self).__init__()
-        self.weight = nn.Parameter(init(t.empty(n_hidden, n_hidden)))
-
-    def forward(self, node_embed, graph_embed):
-        res = t.sum(node_embed * graph_embed, dim=1)
-        return res
-
 class DGI(nn.Module):
 	def __init__(self, g, in_feats, n_hidden, gcn_act, graph_act):
 		super(DGI, self).__init__()
 		self.encoder = Encoder(g, in_feats, n_hidden, gcn_act)
 		self.discriminator = Discriminator(n_hidden)
-		self.loss = nn.BCEWithLogitsLoss(reduction='none')
 		self.graph_act = graph_act
 	
 	def forward(self, features, subgraph_adj, subgraph_norm, node_subgraph, node_list):
@@ -171,8 +148,6 @@ class DGI(nn.Module):
 		graph_embeds = t.sparse.mm(subgraph_adj, positive) / subgraph_norm
 		graph_embeds = self.graph_act(graph_embeds)
 		summary = graph_embeds[node_subgraph]
-		positive_score = self.discriminator(positive, summary)
-		negative_score = self.discriminator(negative, summary)
-		pos_loss = self.loss(positive_score, t.ones_like(positive_score))
-		neg_loss = self.loss(negative_score, t.zeros_like(negative_score))
+		pos_loss = self.discriminator(positive, summary, corrupt=False)
+		neg_loss = self.discriminator(negative, summary, corrupt=True)
 		return pos_loss, neg_loss

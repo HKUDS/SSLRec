@@ -6,7 +6,7 @@ import numpy as np
 from config.configurator import configs
 from models.loss_utils import cal_bpr_loss, reg_pick_embeds
 from models.base_model import BaseModel
-from models.model_utils import GCN
+from models.model_utils import GCN, Encoder, Discriminator
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -159,34 +159,6 @@ class SemanticAttention(nn.Module):
         beta = t.softmax(w, dim=0)
         beta = beta.expand((z.shape[0],)+beta.shape) 
         return (beta*z).sum(1)
-
-class Encoder(nn.Module):
-    def __init__(self, g, in_feats, n_hidden, activation):
-        super(Encoder, self).__init__()
-        self.g = g
-        self.conv = GCN(g, in_feats, n_hidden, activation)
-
-    def forward(self, features, corrupt=False):
-        if corrupt:
-            perm = t.randperm(self.g.number_of_nodes())
-            features = features[perm]
-        features = self.conv(features)
-        return features
-
-class Discriminator(nn.Module):
-    def __init__(self, n_hidden):
-        super(Discriminator, self).__init__()
-        self.weight = nn.Parameter(nn.init.xavier_uniform_(t.empty(n_hidden, n_hidden)))
-        self.loss = nn.BCEWithLogitsLoss(reduction='none') # combines a Sigmoid layer and the BCELoss
-
-    def forward(self,node_embedding,graph_embedding, corrupt=False):
-        score = t.sum(node_embedding*graph_embedding,dim=1) 
-        
-        if corrupt:
-            res = self.loss(score,t.zeros_like(score))
-        else:
-            res = self.loss(score,t.ones_like(score))
-        return res
 
 class Informax(nn.Module):
 	def __init__(self, g, n_in, n_h, gcn_act, graph_act, graph_adj):
