@@ -33,7 +33,8 @@ class LightGCN(BaseModel):
 			return self.final_embeds[:self.user_num], self.final_embeds[self.user_num:]
 		embeds = t.concat([self.user_embeds, self.item_embeds], axis=0)
 		embeds_list = [embeds]
-		adj = self.edge_dropper(adj, keep_rate)
+		if self.is_training:
+			adj = self.edge_dropper(adj, keep_rate)
 		for i in range(self.layer_num):
 			embeds = self._propagate(adj, embeds_list[-1])
 			embeds_list.append(embeds)
