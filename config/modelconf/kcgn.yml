@@ -1,22 +1,23 @@
 optimizer:
   name: adam
-  lr: 5.0e-6 # 5e-6 too big, 1e-6 too small
-  weight_decay: 0.98
+  lr: 1.0e-3 # 5e-6 too big, 1e-6 too small
+  weight_decay: 0
 
 train:
-  epoch: 180
-  batch_size: 512
+  epoch: 400
+  batch_size: 8192
   save_model: true
   loss: pairwise # bpr
-  test_step: 5 # evaluate per {test_step} epochs
+  test_step: 1 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
   reproducible: true
   seed: 2023
+  tensorboard: false
 
 test:
   metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
   k: [10, 20, 40] # top-k
-  batch_size: 512 # How many users per batch during validation
+  batch_size: 2048 # How many users per batch during validation
 
 data:
   type: social # choose in {general_cf, multi_behavior, sequential, social}

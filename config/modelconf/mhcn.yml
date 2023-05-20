@@ -1,17 +1,18 @@
 optimizer:
   name: adam
-  lr: 5.0e-6
-  weight_decay: 0.98
+  lr: 1.0e-3
+  weight_decay: 0
 
 train:
   epoch: 120
-  batch_size: 1024
+  batch_size: 2000
   save_model: true
   loss: pairwise # bpr
-  test_step: 5 # evaluate per {test_step} epochs
+  test_step: 1 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
   reproducible: true
   seed: 2023
+  tensorboard: true
 
 test:
   metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
@@ -25,9 +26,9 @@ data:
 model:
   name: mhcn # case-insensitive
   layer_num: 2
-  reg_weight: 5.0e-2
+  reg_weight: 1.0e-3
   embedding_size: 64
-  ss_rate: 1.0e-4
+  ss_rate: 1.0e-2
 
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
