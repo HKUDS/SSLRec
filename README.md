@@ -6,7 +6,7 @@
 
 [User Guide]: https://github.com/HKUDS/SSLRec/blob/main/docs/User%20Guide.md
 [Models]: https://github.com/HKUDS/SSLRec/blob/main/docs/Models.md
-[Datasets]: https://rxubin.com
+[Datasets]: https://github.com/HKUDS/SSLRec/blob/main/docs/Models.md
 
 **SSLRec** is a PyTorch-based deep learning framework for recommender systems enhanced by self-supervised learning techniques. 
 It's user-friendly and contains commonly-used datasets, code scripts for data processing, training, testing, evaluation, and state-of-the-art research models. 
