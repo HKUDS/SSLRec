@@ -16,7 +16,7 @@ It's user-friendly and contains commonly-used datasets, code scripts for data pr
 <img src="sslrec.png" alt="SSLRec" />
 </p>
 
-Our library includes 22 self-supervised learning recommendation algorithms, covering five major categories:
+Our library includes various self-supervised learning recommendation algorithms, covering five major categories:
 
 + General Collaborative Filtering
 + Sequential Recommendation
