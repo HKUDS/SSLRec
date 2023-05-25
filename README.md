@@ -1,4 +1,4 @@
-# SSLRec: A Self-Supervised Learning Framework for Recommendation 🚀
+# SSLRec: A Self-Supervised Learning Library for Recommendation 🚀
 
 
 
