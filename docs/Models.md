@@ -28,7 +28,7 @@
 |SDCRec|SIGIR'22|[Socially-aware Dual Contrastive Learning for Cold-Start Recommendation](https://web.archive.org/web/20220712110150id_/https://dl.acm.org/doi/pdf/10.1145/3477495.3531780)|
 |DCRec|CIKM'22|[Disentangled Contrastive Learning for Social Recommendation](https://arxiv.org/pdf/2208.08723.pdf)|
 
-### Knowledge-aware Recommendation
+### Knowledge Graph-enhanced Recommendation
 | Model | Conference | Paper |
 | ----- | ---------- | ----- |
 |KGCL|SIGIR'22|[Knowledge Graph Contrastive Learning for Recommendation](https://arxiv.org/pdf/2205.00976.pdf)|
