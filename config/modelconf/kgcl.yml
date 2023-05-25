@@ -6,14 +6,14 @@ optimizer:
 train:
   trainer: kg_trainer
   epoch: 100
-  batch_size: 1024
+  batch_size: 2048
   kg_batch_size: 4096
   save_model: true
   loss: pairwise # bpr
   test_step: 1 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
   reproducible: true
-  seed: 2023
+  seed: 2020
 
 test:
   metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
@@ -32,8 +32,8 @@ model:
   decay_weight: 1.0e-4
   embedding_size: 64
   node_dropout: true
-  node_dropout_rate: 0.5
-  node_dropout_rate_ui: 0.8
+  node_dropout_rate: 0
+  node_dropout_rate_ui: 0.2
   mess_dropout: true
   mess_dropout_rate: 0.1
 

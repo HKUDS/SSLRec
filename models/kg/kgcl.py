@@ -7,6 +7,8 @@ from logging import getLogger
 from config.configurator import configs
 import random
 import scipy.sparse as sp
+from loss_utils import cal_bpr_loss
+
 
 def _L2_loss_mean(x):
     return torch.mean(torch.sum(torch.pow(x, 2), dim=1, keepdim=False) / 2.)
@@ -65,7 +67,7 @@ class RGAT(nn.Module):
         agg_emb = entity_emb[tail] * e.view(-1, 1)
         agg_emb = scatter_sum(agg_emb, head, dim=0,
                               dim_size=entity_emb.shape[0])
-        agg_emb = agg_emb + entity_emb
+        # agg_emb = agg_emb + entity_emb
         return agg_emb
 
     def forward(self, entity_emb, relation_emb, kg, mess_dropout=True):
@@ -92,7 +94,7 @@ class KGCL(nn.Module):
 
         self.tau = 0.2
         self.cl_weight = 0.1
-        self.mu = 0.9
+        self.mu = 0.95
 
         self.decay = configs['model']['decay_weight']
         self.emb_size = configs['model']['embedding_size']
@@ -106,12 +108,13 @@ class KGCL(nn.Module):
         self.device = configs['device']
 
         self.ui_mat = data_handler.ui_mat
-        self.norm_adj = self._get_norm_adj_mat(data_handler.ui_mat).to(self.device)
+        self.norm_adj = self._get_norm_adj_mat(
+            data_handler.ui_mat).to(self.device)
         self.kg_dict = data_handler.kg_dict
         # self.edge_index, self.edge_type = self._get_edges(
         #     data_handler.kg_edges)
         self.edge_index, self.edge_type = self._samp_edge_from_dict(
-            self.kg_dict, triplet_num=10)
+            self.kg_dict, triplet_num=15)
 
         self.all_embed = nn.init.normal_(
             torch.empty(self.n_nodes, self.emb_size), std=0.1)
@@ -153,7 +156,8 @@ class KGCL(nn.Module):
         inter_M = ui_mat
         inter_M_t = ui_mat.transpose()
         data_dict = dict(
-            zip(zip(inter_M.row, inter_M.col + self.n_users), [1] * inter_M.nnz)
+            zip(zip(inter_M.row, inter_M.col +
+                self.n_users), [1] * inter_M.nnz)
         )
         data_dict.update(
             dict(
@@ -218,8 +222,9 @@ class KGCL(nn.Module):
         col = col[edge_mask]
         row = row[edge_mask]
         v = v[edge_mask]
-        
-        masked_ui_mat = sp.coo_matrix((v, (row, col)), shape=(self.n_users, self.n_items))
+
+        masked_ui_mat = sp.coo_matrix(
+            (v, (row, col)), shape=(self.n_users, self.n_items))
         return self._get_norm_adj_mat(masked_ui_mat)
 
     @torch.no_grad()
@@ -229,9 +234,9 @@ class KGCL(nn.Module):
         # edge_index, edge_type = _edge_sampling(self.edge_index, self.edge_type, 0.5)
         entity_emb = self.all_embed[self.n_users:, :]
         kg_view_1 = _edge_sampling(
-            edge_index, edge_type, self.node_dropout_rate)
+            edge_index, edge_type, 0.5)
         kg_view_2 = _edge_sampling(
-            edge_index, edge_type, self.node_dropout_rate)
+            edge_index, edge_type, 0.5)
         kg_v1_ro = self.rgat(entity_emb, self.relation_embed, kg_view_1, False)[
             :self.n_items, :]
         kg_v2_ro = self.rgat(entity_emb, self.relation_embed, kg_view_2, False)[
@@ -247,9 +252,9 @@ class KGCL(nn.Module):
         kg_view_1, kg_view_2, ui_view_1, ui_view_2 = batch_data[3:7]
 
         if self.node_dropout:
-            g_droped = _sparse_dropout(self.norm_adj, 1-self.ui_dropout_rate)
+            g_droped = _sparse_dropout(self.norm_adj, self.ui_dropout_rate)
             edge_index, edge_type = _edge_sampling(
-                self.edge_index, self.edge_type, self.node_dropout_rate)
+                self.edge_index, self.edge_type, 1-self.node_dropout_rate)
         else:
             g_droped = self.norm_adj
             edge_index, edge_type = self.edge_index, self.edge_type
@@ -305,17 +310,7 @@ class KGCL(nn.Module):
         reg_loss = (1/2)*(users_emb.norm(2).pow(2) +
                           pos_emb.norm(2).pow(2) +
                           neg_emb.norm(2).pow(2))/float(users_emb.shape[0])
-        pos_scores = torch.mul(users_emb, pos_emb)
-        pos_scores = torch.sum(pos_scores, dim=1)
-        neg_scores = torch.mul(users_emb, neg_emb)
-        neg_scores = torch.sum(neg_scores, dim=1)
-
-        # mean or sum
-        loss = torch.sum(
-            torch.nn.functional.softplus(-(pos_scores - neg_scores)))
-        if (torch.isnan(loss).any().tolist()):
-            print("nan loss")
-            return None
+        loss = cal_bpr_loss(users_emb, pos_emb, neg_emb)
         return loss, reg_loss
 
     def cal_kg_loss(self, batch_data):

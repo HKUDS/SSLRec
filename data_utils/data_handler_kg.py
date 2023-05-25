@@ -20,7 +20,7 @@ class DataHandlerKG:
         self.trn_file = path.join(predir, 'train.txt')
         self.val_file = path.join(predir, 'test.txt')
         self.tst_file = path.join(predir, 'test.txt') 
-        self.kg_file = path.join(predir, 'kg_final.txt')   
+        self.kg_file = path.join(predir, 'kg_final_kgcl.txt')   
         self.train_user_dict = defaultdict(list)
         self.test_user_dict = defaultdict(list)
 
