@@ -4,7 +4,7 @@ optimizer:
   weight_decay: 1.0e-6
 
 train:
-  epoch: 30
+  epoch: 100
   batch_size: 4096
   save_model: false
   loss: pairwise # bpr
