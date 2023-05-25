@@ -8,9 +8,9 @@
 [Models]: https://github.com/HKUDS/SSLRec/blob/main/docs/Models.md
 [Datasets]: https://rxubin.com
 
-**SSLRec** is an easy-to-use PyTorch-based deep learning framework for recommender systems enhanced by self-supervised learning techniques.
-It contains commonly-used datasets, code scripts for data processing, training, testing, evaluation, 
-and state-of-the-art research models. **SSLRec** offers a rich collection of utility functions and an easy-to-use interface to simplify the process of evaluating and developing recommendation models.
+**SSLRec** is a PyTorch-based deep learning framework for recommender systems enhanced by self-supervised learning techniques. 
+It's user-friendly and contains commonly-used datasets, code scripts for data processing, training, testing, evaluation, and state-of-the-art research models. 
+**SSLRec** offers a vast array of utility functions and an easy-to-use interface that simplifies the development and evaluation of recommendation models.
 
 <p align="center">
 <img src="sslrec.png" alt="SSLRec" />
@@ -24,9 +24,8 @@ Our library includes 22 self-supervised learning recommendation algorithms, cove
 + Social Recommendation
 + Knowledge-aware Recommendation
 
-We provide a unified training, verification and testing process for each category, 
-as well as a unified data preprocessing process with public datasets, 
-so as to quickly reproduce different models and compare different methods fairly.
+We offer a unified training, validation, and testing process for each category, along with a standardized data preprocessing method using publicly available datasets. 
+This enables the quick reproduction of various models and the fair comparison of different methods.
 
 ## Highlighted Features
 
@@ -56,16 +55,16 @@ SSLRec is implemented under the following development environment:
 + torch==1.11.0
 + scipy==1.7.3
 
-You can easily use the following script to train LightGCN using our framework:
+You can easily train LightGCN using our framework by running the following script:
 ```
 python main.py --model LightGCN
 ```
 This script will run the LightGCN model on the yelp datasets. 
 
-The training configuration of the LightGCN model is stored in [lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml), 
-and you can modify the values in it to obtain different training effects. You can also replace LightGCN with other implemented models listed in [Models](./docs/Models.md).
+The training configuration for LightGCN is saved in [lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml), 
+and you can modify the values to achieve different training effects. Additionally, you can replace LightGCN with other implemented models listed under [Models](./docs/Models.md).
 
-For acquainted users who wish to learn more, read the [User Guide](https://github.com/HKUDS/SSLRec/blob/main/docs/User%20Guide.md), which explains the concepts and usage of SSLRec in much more details, including:
+For users who want to learn more, we recommend reading the [User Guide](https://github.com/HKUDS/SSLRec/blob/main/docs/User%20Guide.md), which provides detailed explanations of SSLRec concepts and usage, including:
 + SSLRec framework architecture design
 + Implementing your own model in SSLRec
 + Deploying your own datasets in SSLRec
