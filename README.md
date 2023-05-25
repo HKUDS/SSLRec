@@ -20,9 +20,9 @@ Our library includes various self-supervised learning recommendation algorithms,
 
 + General Collaborative Filtering
 + Sequential Recommendation
-+ Multi-behavior Recommendation
++ Multi-Behavior Recommendation
 + Social Recommendation
-+ Knowledge-aware Recommendation
++ Knowledge Graph-enhanced Recommendation
 
 We offer a unified training, validation, and testing process for each category, along with a standardized data preprocessing method using publicly available datasets. 
 This enables the quick reproduction of various models and the fair comparison of different methods.
