@@ -74,4 +74,6 @@ For users who want to learn more, we recommend reading the [User Guide](https://
 and so on.
 
 ## Improve Our Framework Together🤝
-If you encounter a bug or have any suggestions, please let us know by [filing an issue](https://github.com/HKUDS/SSLRec/issues). We welcome all contributions, from bug fixes to new features and extensions 🙌.
+If you encounter a bug or have any suggestions, please let us know by [filing an issue](https://github.com/HKUDS/SSLRec/issues). 
+
+We welcome all contributions, from bug fixes to new features and extensions 🙌.
