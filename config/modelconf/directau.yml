@@ -4,7 +4,7 @@ optimizer:
   weight_decay: 1.0e-6
 
 train:
-  epoch: 100
+  epoch: 30
   batch_size: 4096
   save_model: false
   loss: pairwise # bpr
@@ -20,7 +20,7 @@ test:
 
 data:
   type: general_cf # choose in {general_cf, multi_behavior, sequential, social}
-  name: yelp
+  name: amazon
 
 model:
   name: directau # case-insensitive
@@ -31,5 +31,5 @@ model:
 tune:
   enable: true # Whether to enable grid search to search for optimal hyperparameters
   hyperparameters: [layer_num, gamma] # The name of the hyperparameter
-  layer_num: [1, 2, 3] # Use a list to store the search range
-  gamma: [0.5, 1, 2, 5]
+  layer_num: [2, 3] # Use a list to store the search range
+  gamma: [2]

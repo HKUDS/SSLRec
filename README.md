@@ -1,12 +1,20 @@
 # SSLRec
 
-<p align="center">
-<img src="sslrec.png" alt="SSLRec" />
-</p>
+
+
+[User Guide] | [Datasets] | [Models]
+
+[User Guide]: https://github.com/HKUDS/SSLRec/blob/main/docs/User%20Guide.md
+[Models]: https://github.com/HKUDS/SSLRec/blob/main/docs/Models.md
+[Datasets]: https://rxubin.com
 
 **SSLRec** is an easy-to-use PyTorch-based deep learning framework for recommender systems enhanced by self-supervised learning techniques.
 It contains commonly-used datasets, code scripts for data processing, training, testing, evaluation, 
 and state-of-the-art research models. **SSLRec** offers a rich collection of utility functions and an easy-to-use interface to simplify the process of evaluating and developing recommendation models.
+
+<p align="center">
+<img src="sslrec.png" alt="SSLRec" />
+</p>
 
 Our library includes 22 self-supervised learning recommendation algorithms, covering five major categories:
 
@@ -58,11 +66,11 @@ The training configuration of the LightGCN model is stored in [lightgcn.yml](htt
 and you can modify the values in it to obtain different training effects. You can also replace LightGCN with other implemented models listed in [Models](./docs/Models.md).
 
 For acquainted users who wish to learn more, read the [User Guide](https://github.com/HKUDS/SSLRec/blob/main/docs/User%20Guide.md), which explains the concepts and usage of SSLRec in much more details, including:
-+ Architecture design of SSLRec framework
-+ How to implement your own model using SSLRec
-+ How to deploy your own datasets in SSLRec
-+ How to implement your own training process in SSLRec
-+ How to tune hyper-parameters automatically in SSLRec
++ SSLRec framework architecture design
++ Implementing your own model in SSLRec
++ Deploying your own datasets in SSLRec
++ Implementing your own training process in SSLRec
++ Automatic hyper-parameter tuning in SSLRec
 
 and so on.
 
