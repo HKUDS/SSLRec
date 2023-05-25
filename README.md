@@ -53,11 +53,21 @@ Here, we list the implemented models in abbrevation. For more detailed informati
 
 **General Collaborative Filtering**
 
-+ [LightGCN]((https://arxiv.org/pdf/2002.02126.pdf)) (SIGIR'20), [SGL](https://arxiv.org/pdf/2010.10783.pdf) (SIGIR'21), [HCCF](https://arxiv.org/pdf/2204.12200.pdf) (SIGIR'22), [SimGCL](https://www.researchgate.net/profile/Junliang-Yu/publication/359788233_Are_Graph_Augmentations_Necessary_Simple_Graph_Contrastive_Learning_for_Recommendation/links/624e802ad726197cfd426f81/Are-Graph-Augmentations-Necessary-Simple-Graph-Contrastive-Learning-for-Recommendation.pdf?ref=https://githubhelp.com) (SIGIR'22), [NCL](https://arxiv.org/pdf/2202.06200.pdf) (WWW'22), [DirectAU](https://dl.acm.org/doi/pdf/10.1145/3534678.3539253) (KDD'22), [LightGCL](https://arxiv.org/pdf/2302.08191.pdf) (ICLR'23)
++ [LightGCN](https://arxiv.org/pdf/2002.02126.pdf) (SIGIR'20), [SGL](https://arxiv.org/pdf/2010.10783.pdf) (SIGIR'21), [HCCF](https://arxiv.org/pdf/2204.12200.pdf) (SIGIR'22), [SimGCL](https://www.researchgate.net/profile/Junliang-Yu/publication/359788233_Are_Graph_Augmentations_Necessary_Simple_Graph_Contrastive_Learning_for_Recommendation/links/624e802ad726197cfd426f81/Are-Graph-Augmentations-Necessary-Simple-Graph-Contrastive-Learning-for-Recommendation.pdf?ref=https://githubhelp.com) (SIGIR'22), [NCL](https://arxiv.org/pdf/2202.06200.pdf) (WWW'22), [DirectAU](https://dl.acm.org/doi/pdf/10.1145/3534678.3539253) (KDD'22), [LightGCL](https://arxiv.org/pdf/2302.08191.pdf) (ICLR'23)
 
 **Sequential Recommendation**
 
-+ 
++ [BERT4Rec](https://arxiv.org/pdf/1904.06690.pdf) (CIKM'19), [CL4SRec](https://arxiv.org/pdf/2010.14395.pdf) (ICDE'22), [DuoRec](https://arxiv.org/pdf/2110.05730.pdf) (WSDM'22), [ICLRec](https://arxiv.org/pdf/2202.02519.pdf) (WWW'22), [DCRec](https://arxiv.org/pdf/2303.11780.pdf) (WWW'23)
+
+**Social Recommendation**
+
++ [MHCN](https://arxiv.org/pdf/2101.06448.pdf) (WWW'21), [KCGN](https://par.nsf.gov/servlets/purl/10220297) (AAAI'21), [SMIN](https://arxiv.org/pdf/2110.03958.pdf) (CIKM'21), [SDCRec](https://web.archive.org/web/20220712110150id_/https://dl.acm.org/doi/pdf/10.1145/3477495.3531780) (SIGIR'22), [DcRec](https://arxiv.org/pdf/2208.08723.pdf) (CIKM'22)
+
+**Knowledge Graph-enhanced Recommendation**
++ [KGCL](https://arxiv.org/pdf/2205.00976.pdf) (SIGIR'22)
+
+**Multi-Behavior Recommendation**
++ [MBGNN](https://arxiv.org/pdf/2110.03969.pdf) (SIGIR'21), [HMG-CR](https://arxiv.org/pdf/2109.02859.pdf) (ICDM'21), [S-MBRec](http://www.shichuan.org/doc/134.pdf) (IJCAI'22), [CML](https://arxiv.org/pdf/2202.08523.pdf) (WSDM'2022), [KMCLR](https://arxiv.org/pdf/2301.05403.pdf) (WSDM'23), 
 
 ## Get Started
 
