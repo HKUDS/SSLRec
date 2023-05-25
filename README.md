@@ -46,6 +46,21 @@ This enables the quick reproduction of various models and the fair comparison of
 
 + 🤖**Easy-to-Use Interface.** We offer a user-friendly interface that streamlines the training and evaluation of recommendation models, allowing researchers and practitioners to experiment with various models and configurations with ease and efficiency.
 
+## Implemented Models
+
+We are continuously adding new self-supervised models to the SSLRec framework. Stay tuned for updates! 🔍
+
+Here, we list the implemented models in abbrevation. For more detailed information, please refer to [Models](./docs/Models.md).
+
+**General Collaborative Filtering**
+
++ [LightGCN]((https://arxiv.org/pdf/2002.02126.pdf)) (SIGIR'20), [SGL](https://arxiv.org/pdf/2010.10783.pdf) (SIGIR'21), [HCCF](https://arxiv.org/pdf/2204.12200.pdf) (SIGIR'22), [SimGCL](https://www.researchgate.net/profile/Junliang-Yu/publication/359788233_Are_Graph_Augmentations_Necessary_Simple_Graph_Contrastive_Learning_for_Recommendation/links/624e802ad726197cfd426f81/Are-Graph-Augmentations-Necessary-Simple-Graph-Contrastive-Learning-for-Recommendation.pdf?ref=https://githubhelp.com) (SIGIR'22), [NCL](https://arxiv.org/pdf/2202.06200.pdf) (WWW'22), [DirectAU](https://dl.acm.org/doi/pdf/10.1145/3534678.3539253) (KDD'22), [LightGCL](https://arxiv.org/pdf/2302.08191.pdf) (ICLR'23)
+
+**Sequential Recommendation**
+
++ 
+
+
 ## Get Started
 
 SSLRec is implemented under the following development environment:
@@ -76,4 +91,4 @@ and so on.
 ## Improve Our Framework Together🤝
 If you encounter a bug or have any suggestions, please let us know by [filing an issue](https://github.com/HKUDS/SSLRec/issues). 
 
-We welcome all contributions, from bug fixes to new features and extensions 🙌.
+We welcome all contributions, from bug fixes to new features and extensions. 🙌
