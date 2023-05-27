@@ -24,30 +24,29 @@ Our library includes various self-supervised learning recommendation algorithms,
 + Social Recommendation
 + Knowledge Graph-enhanced Recommendation
 
-We offer a unified training, validation, and testing process for each category, along with a standardized data preprocessing method using publicly available datasets. 
-This enables the quick reproduction of various models and the fair comparison of different methods.
+Our framework offers a unified training, validation, and testing process for each category, along with a standardized data preprocessing method using publicly available datasets. This makes it easy to reproduce various models and enables fair comparisons between different methods.
 
 ## Highlighted Features
 
-+ 🧩**Flexible Modular Architecture.** SSLRec framework features a modular architecture enabling effortless customization and combination of modules to create personalized recommendation models.
++ 🧩**Flexible Modular Architecture.** The SSLRec library features a modular architecture that allows for effortless customization and combination of modules. This enables users to create personalized recommendation models that fit their specific needs and requirements.
 
 
-+ 🌟**Diverse Recommendation Scenarios.** The SSLRec library is a versatile tool for researchers and practitioners building effective recommendation models across diverse recommender system research lines.
++ 🌟**Diverse Recommendation Scenarios.** The SSLRec library is a versatile tool for researchers and practitioners who are interested in building effective recommendation models across diverse recommender system research lines.
 
 
-+ 💡**Comprehensive State-of-the-Art Models.** We offer a wide range of SSL-enhanced recommendation models for various scenarios, enabling researchers to evaluate them using advanced techniques, driving innovation in the field.
++ 💡**Comprehensive State-of-the-Art Models.** Our SSLRec framework offers a wide range of SSL-enhanced recommendation models for various scenarios. Researchers can evaluate these models using advanced techniques and use them as a foundation for driving innovation in the field of recommender systems.
 
 
-+ 📊**Unified Data Feeder and Standard Evaluation Protocols.** The SSLRec framework features a unified data feeder and standard evaluation protocols, enabling easy loading and preprocessing of data from various sources and formats, while ensuring objective and fair evaluation of recommendation models.
++ 📊**Unified Data Feeder and Standard Evaluation Protocols.** The SSLRec framework features a unified data feeder and standard evaluation protocols that enable easy loading and preprocessing of data from various sources and formats, while ensuring objective and fair evaluation of recommendation models.
 
 
-+ 🛠️**Rich Utility Functions.** The SSLRec library provides a vast array of utility functions that simplify the development and evaluation of recommendation models, incorporating common functionalities of recommender systems and self-supervised learning for graph operations, network architectures, and loss functions.
++ 🛠️**Rich Utility Functions.** The SSLRec library provides a vast array of utility functions that simplify the development and evaluation of recommendation models. These functions incorporate common functionalities of recommender systems and self-supervised learning for graph operations, network architectures, and loss functions.
 
 
-+ 🤖**Easy-to-Use Interface.** We offer a user-friendly interface that streamlines the training and evaluation of recommendation models, allowing researchers and practitioners to experiment with various models and configurations with ease and efficiency.
++ 🤖**Easy-to-Use Interface.** We offer a user-friendly interface that streamlines the training and evaluation of recommendation models. This allows researchers and practitioners to experiment with various models and configurations with ease and efficiency.
 
 ## Implemented Models
-We are continuously adding new self-supervised models to the SSLRec framework. Stay tuned for updates! 🔍
+We are committed to continuously adding new self-supervised models to the SSLRec framework to keep up with the latest developments in the field of recommender systems. Stay tuned for updates! 🔍
 
 Here, we list the implemented models in abbrevation. For more detailed information, please refer to [Models](./docs/Models.md).
 
@@ -84,19 +83,18 @@ python main.py --model LightGCN
 ```
 This script will run the LightGCN model on the yelp datasets. 
 
-The training configuration for LightGCN is saved in [lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml), 
-and you can modify the values to achieve different training effects. Additionally, you can replace LightGCN with other implemented models listed under [Models](./docs/Models.md).
+The training configuration for LightGCN is saved in [lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml). You can modify the values in this file to achieve different training effects. Furthermore, if you're interested in trying out other implemented models, you can find a list of them under [Models](./docs/Models.md), and easily replace LightGCN with your model of choice.
 
-For users who want to learn more, we recommend reading the [User Guide](https://github.com/HKUDS/SSLRec/blob/main/docs/User%20Guide.md), which provides detailed explanations of SSLRec concepts and usage, including:
+For users who wish to gain a deeper understanding, we recommend reading our [User Guide](https://github.com/HKUDS/SSLRec/blob/main/docs/User%20Guide.md). This guide provides comprehensive explanations of SSLRec's concepts and usage, including:
 + SSLRec framework architecture design
 + Implementing your own model in SSLRec
 + Deploying your own datasets in SSLRec
 + Implementing your own training process in SSLRec
-+ Automatic hyper-parameter tuning in SSLRec
++ Automatic hyperparameter tuning in SSLRec
 
 and so on.
 
 ## Improve Our Framework Together🤝
-If you encounter a bug or have any suggestions, please let us know by [filing an issue](https://github.com/HKUDS/SSLRec/issues). 
+If you come across any bugs or have suggestions for improvement, please feel free to let us know by [filing an issue](https://github.com/HKUDS/SSLRec/issues). 
 
-We welcome all contributions, from bug fixes to new features and extensions. 🙌
+We warmly welcome contributions of all kinds, from bug fixes to new features and extensions. 🙌
