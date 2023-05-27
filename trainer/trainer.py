@@ -110,13 +110,14 @@ class Trainer(object):
         if configs['train']['save_model']:
             model_state_dict = model.state_dict()
             model_name = configs['model']['name']
+            data_name = configs['data']['name']
             if not configs['tune']['enable']:
                 save_dir_path = './checkpoint/{}'.format(model_name)
                 if not os.path.exists(save_dir_path):
                     os.makedirs(save_dir_path)
                 timestamp = int(time.time())
                 torch.save(
-                    model_state_dict, '{}/{}-{}.pth'.format(save_dir_path, model_name, timestamp))
+                    model_state_dict, '{}/{}-{}-{}.pth'.format(save_dir_path, model_name, data_name, timestamp))
                 self.logger.log("Save model parameters to {}".format(
                     '{}/{}-{}.pth'.format(save_dir_path, model_name, timestamp)))
             else:
@@ -125,7 +126,7 @@ class Trainer(object):
                     os.makedirs(save_dir_path)
                 now_para_str = configs['tune']['now_para_str']
                 torch.save(
-                    model_state_dict, '{}/{}-{}.pth'.format(save_dir_path, model_name, now_para_str))
+                    model_state_dict, '{}/{}-{}-{}.pth'.format(save_dir_path, model_name, data_name, now_para_str))
                 self.logger.log("Save model parameters to {}".format(
                     '{}/{}-{}.pth'.format(save_dir_path, model_name, now_para_str)))
 
