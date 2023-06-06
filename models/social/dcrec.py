@@ -19,6 +19,7 @@ class DcRec(BaseModel):
         self.layer_num = configs['model']['layer_num']
         self.reg_weight = configs['model']['reg_weight']
         self.keep_rate = configs['model']['keep_rate']
+        self.tau = configs['model']['tau']
         
         self.ui_user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
         self.uu_user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
@@ -80,7 +81,12 @@ class DcRec(BaseModel):
         self.final_user_embeds = ui_user_embeds
         self.final_item_embeds = ui_item_embeds
         return ui_user_embeds, ui_item_embeds, ui_user_embeds1, ui_item_embeds1, ui_user_embeds2, ui_item_embeds2, uu_user_embeds1, uu_user_embeds2
-        
+
+    def sim(self, z1, z2):
+        z1 = F.normalize(z1)
+        z2 = F.normalize(z2)
+        return t.mm(z1, z2.t())
+
     def semi_loss(self, z1, z2, batch_size):
         num_nodes = z1.size(0)
         num_batches = (num_nodes - 1) // batch_size + 1
@@ -93,7 +99,7 @@ class DcRec(BaseModel):
             refl_sim = f(self.sim(z1[mask], z1))
             between_sim = f(self.sim(z1[mask], z2))
 
-            losses.append(-t.log(between_sim[: i*batch_size: (i+1) * batch_size].diag()
+            losses.append(-t.log(between_sim[:, i*batch_size: (i+1) * batch_size].diag()
                                 / (refl_sim.sum(1) + between_sim.sum(1)
                                     - refl_sim[:, i * batch_size: (i+1) *batch_size].diag())))
         return t.cat(losses)

@@ -5,7 +5,7 @@ optimizer:
 
 train:
   epoch: 120
-  batch_size: 2048
+  batch_size: 64
   save_model: true
   loss: pairwise # bpr
   test_step: 5 # evaluate per {test_step} epochs
@@ -28,7 +28,7 @@ model:
   layer_num: 2
   reg_weight: 1.0e-2
   embedding_size: 64
-  
+  tau: 0.5
 
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
