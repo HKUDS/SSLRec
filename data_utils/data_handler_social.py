@@ -3,7 +3,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 import scipy.sparse as sp
 from config.configurator import configs
-from data_utils.datasets_social import PairwiseTrnData, AllRankTstData
+from data_utils.datasets_social import PairwiseTrnData, AllRankTstData, SocialPairwiseTrnData, DSLTrnData
 import torch as t
 import torch.utils.data as data
 import dgl
@@ -370,8 +370,9 @@ class DataHandlerSocial:
 		# elif configs['train']['loss'] == 'pointwise':
 		# 	trn_data = PointwiseTrnData(trn_mat)
 		tst_data = AllRankTstData(tst_mat, trn_mat)
-		self.test_dataloader = data.DataLoader(tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
+
 		self.train_dataloader = data.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
+		self.test_dataloader = data.DataLoader(tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
 
 		if configs['model']['name'] == 'smin':
 			if configs['data']['clear']:
@@ -534,4 +535,11 @@ class DataHandlerSocial:
 		elif configs['model']['name'] == 'dcrec':
 			self.torch_adj = self._make_torch_adj(trn_mat)
 			self.torch_uu_adj = self._make_torch_uu_adj(trust_mat)
-			
+		
+		elif configs['model']['name'] == 'dsl':
+			self.torch_adj = self._make_torch_adj(trn_mat)
+			self.torch_uu_adj = self._make_torch_uu_adj(trust_mat)
+			trust_mat = trust_mat.tocoo()
+			social_trn_data = SocialPairwiseTrnData(trust_mat)
+			dsl_trn_data = DSLTrnData(trn_data, social_trn_data)
+			self.train_dataloader = data.DataLoader(dsl_trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
