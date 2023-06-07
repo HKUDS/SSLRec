@@ -27,6 +27,7 @@
 |SMIN|CIKM'21|[Social Recommendation with Self-Supervised Metagraph Informax Network](https://arxiv.org/pdf/2110.03958.pdf)|
 |SDCRec|SIGIR'22|[Socially-aware Dual Contrastive Learning for Cold-Start Recommendation](https://web.archive.org/web/20220712110150id_/https://dl.acm.org/doi/pdf/10.1145/3477495.3531780)|
 |DcRec|CIKM'22|[Disentangled Contrastive Learning for Social Recommendation](https://arxiv.org/pdf/2208.08723.pdf)|
+|DSL|IJCAI'23|[Denoised Self-Augmented Learning for Social Recommendation](https://arxiv.org/pdf/2305.12685.pdf)|
 
 ### Knowledge-aware Recommendation
 | Model | Conference | Paper |
