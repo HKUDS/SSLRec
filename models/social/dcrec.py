@@ -125,6 +125,8 @@ class DcRec(BaseModel):
             adj: the input adjacency matrix (sparse or dense).
             p: the probability of dropping an edge.
         """
+        if p == 0.0:
+            return adj
         num_edges = len(adj.data)
         num_dropout_edges = int(p * num_edges)
         indices_dropoout = np.random.choice(num_edges, size=num_dropout_edges, replace=False)
@@ -140,6 +142,8 @@ class DcRec(BaseModel):
         Args:
             p: the probability of dropping a node.
         """
+        if p == 0.0:
+            return adj
         num_users = adj.shape[0]
         num_discard_users = int(p * num_users)
         indices_discard = np.random.choice(num_users, size=num_discard_users, replace=False)
@@ -147,22 +151,22 @@ class DcRec(BaseModel):
         new_adj = coo_matrix((adj.data[mask], (adj.row[mask], adj.col[mask])), shape=adj.shape)
         return new_adj
 
-    def graph_augment(self, adj, graph_kind='collab'):
+    def graph_augment(self, adj, keep_rate, graph_kind='collab'):
         adj = adj.tocoo()
         switch = random.sample(range(3), k=2)
         if switch[0] == 0:
-            adj1 = self.edge_adding(adj)
+            adj1 = self.edge_adding(adj, 1-keep_rate)
         elif switch[0] == 1:
-            adj1 = self.edge_dropout(adj)
+            adj1 = self.edge_dropout(adj, 1-keep_rate)
         elif switch[0] == 2:
-            adj1 = self.node_dropout(adj)
+            adj1 = self.node_dropout(adj, 1-keep_rate)
 
         if switch[1] == 0:
-            adj2 = self.edge_adding(adj)
+            adj2 = self.edge_adding(adj, 1-keep_rate)
         elif switch[1] == 1:
-            adj2 = self.edge_dropout(adj)
+            adj2 = self.edge_dropout(adj, 1-keep_rate)
         elif switch[1] == 2:
-            adj2 = self.node_dropout(adj)
+            adj2 = self.node_dropout(adj, 1-keep_rate)
 
         # norm
         if graph_kind == 'collab':
@@ -179,8 +183,8 @@ class DcRec(BaseModel):
         if not self.is_training:
             return self.final_user_embeds, self.final_item_embeds
 
-        adj1, adj2 = self.graph_augment(trn_mat, 'collab')
-        uu_adj1, uu_adj2 = self.graph_augment(trust_mat, 'social')
+        adj1, adj2 = self.graph_augment(trn_mat, keep_rate, 'collab')
+        uu_adj1, uu_adj2 = self.graph_augment(trust_mat, keep_rate, 'social')
 
         ui_user_embeds, ui_item_embeds = self._lightgcn(adj, self.ui_user_embeds, self.ui_item_embeds)
         ui_user_embeds1, ui_item_embeds1 = self._lightgcn(adj1, self.ui_user_embeds, self.ui_item_embeds)
@@ -256,7 +260,7 @@ class DcRec(BaseModel):
         return loss, losses
         
     def full_predict(self, batch_data):
-        ret = self.forward(self.adj, self.uu_adj, 1.0)
+        ret = self.forward(self.adj, self.uu_adj, 1.0, self.trn_mat, self.trust_mat)
         user_embeds, item_embeds = ret[:2]
         self.is_training = False
         pck_users, train_mask = batch_data
