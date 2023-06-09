@@ -36,8 +36,6 @@ class DataHandlerSocial:
 			self.uu_vv_graph_file = predir + 'uu_vv_graph.pkl'
 			self.uu_subgraph_file = predir + 'uu_mat_subgraph.pkl'
 			self.ii_subgraph_file = predir + 'ii_mat_subgraph.pkl'
-		if configs['model']['name'] == 'mhcn':
-			pass
 
 	def _load_one_mat(self, file):
 		"""Load one single adjacent matrix from file
@@ -361,6 +359,8 @@ class DataHandlerSocial:
 		trn_mat = self._load(self.trn_file)
 		tst_mat = self._load(self.tst_file)
 		trust_mat = self._load(self.trust_file)
+		self.trn_mat = trn_mat
+		self.trust_mat = trust_mat
 		category_mat = self._load(self.category_file)
 		category_dict = self._create_category_dict(trn_mat, category_mat)
 		configs['data']['user_num'], configs['data']['item_num'] = trn_mat.shape

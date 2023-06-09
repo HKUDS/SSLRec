@@ -2,10 +2,13 @@ import torch as t
 from torch import nn
 import torch.nn.functional as F
 import random
+import numpy as np
+from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
+import scipy.sparse as sp
 from config.configurator import configs
 from models.loss_utils import cal_bpr_loss, reg_pick_embeds
 from models.base_model import BaseModel
-from models.model_utils import SpAdjEdgeDrop, MLP
+from models.model_utils import SpAdjEdgeDrop
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -14,6 +17,9 @@ class DcRec(BaseModel):
     def __init__(self, data_handler):
         super(DcRec, self).__init__(data_handler)
 
+        self.trn_mat = data_handler.trn_mat
+        self.trust_mat = data_handler.trust_mat
+        
         self.adj = data_handler.torch_adj
         self.uu_adj = data_handler.torch_uu_adj
 
@@ -55,20 +61,62 @@ class DcRec(BaseModel):
             embeds_list.append(embeds)
         embeds = sum(embeds_list) / len(embeds_list)
         return embeds
+        
+    def _normalize_adj(self, mat):
+        degree = np.array(mat.sum(axis=-1))
+        d_inv_sqrt = np.reshape(np.power(degree, -0.5), [-1])
+        d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.0
+        d_inv_sqrt_mat = sp.diags(d_inv_sqrt)
+        return mat.dot(d_inv_sqrt_mat).transpose().dot(d_inv_sqrt_mat).tocoo()
+        
+    def _make_torch_adj(self, mat):
+        a = csr_matrix((self.user_num, self.user_num))
+        b = csr_matrix((self.item_num, self.item_num))
+        mat = sp.vstack([sp.hstack([a, mat]), sp.hstack([mat.transpose(), b])])
+        mat = (mat != 0) * 1.0
+        mat = self._normalize_adj(mat)
+        
+        # make torch tensor
+        idxs = t.from_numpy(np.vstack([mat.row, mat.col]).astype(np.int64))
+        vals = t.from_numpy(mat.data.astype(np.float32))
+        shape = t.Size(mat.shape)
+        return t.sparse.FloatTensor(idxs, vals, shape).to(configs['device'])
+        
+    def _make_torch_uu_adj(self, mat):
+        mat = (mat != 0) * 1.0
+        # mat = (mat+ sp.eye(mat.shape[0])) * 1.0
+        mat = self._normalize_adj(mat)
+        
+        # make cuda tensor
+        idxs = t.from_numpy(np.vstack([mat.row, mat.col]).astype(np.int64))
+        vals = t.from_numpy(mat.data.astype(np.float32))
+        shape = t.Size(mat.shape)
+        return t.sparse.FloatTensor(idxs, vals, shape).to(configs['device'])
 
-    # TODO: efficiency
-    def edge_adding(self, adj, p=0.5):
+    def edge_adding(self, adj, p=1e-3):
         """
         Perform edge adding.
 
         Args:
             p: the probability of adding an edge.
         """
-        mask = t.rand(adj.shape) < p
-        adj = adj + mask.to_sparse().to(configs['device'])
-        return adj
+        if p == 0.0:
+            return adj
+        num_nodes1, num_nodes2 = adj.shape
+        row = adj.row
+        col = adj.col
+        num_edges = len(adj.data)
+        num_add_edges = int(p * num_edges)
 
-    # TODO: efficiency
+        new_row = np.random.randint(0, num_nodes1, num_add_edges)
+        new_col = np.random.randint(0, num_nodes2, num_add_edges)
+
+        updated_row = np.concatenate([row, new_row])
+        updated_col = np.concatenate([col, new_col])
+
+        updated_adj = coo_matrix((np.ones_like(updated_row), (updated_row, updated_col)), shape=adj.shape)
+        return updated_adj
+
     def edge_dropout(self, adj, p=0.5):
         """
         Perform edge dropout.
@@ -77,23 +125,31 @@ class DcRec(BaseModel):
             adj: the input adjacency matrix (sparse or dense).
             p: the probability of dropping an edge.
         """
-        mask = torch.bernoulli(torch.full(adj.shape, 1 - p, device=adj.device))
-        adj = adj * mask.to_sparse()
-        return adj
+        num_edges = len(adj.data)
+        num_dropout_edges = int(p * num_edges)
+        indices_dropoout = np.random.choice(num_edges, size=num_dropout_edges, replace=False)
+        mask = np.ones(num_edges, dtype=bool)
+        mask[indices_dropoout] = False
+        new_adj = coo_matrix((adj.data[mask], (adj.row[mask], adj.col[mask])), shape=adj.shape)
+        return new_adj
     
-    # TODO: implement node dropout.
     def node_dropout(self, adj, p=0.5):
         """
-        Perform node dropout.
+        Perform node dropout. dropout random users and their interactions.
         
         Args:
             p: the probability of dropping a node.
         """
+        num_users = adj.shape[0]
+        num_discard_users = int(p * num_users)
+        indices_discard = np.random.choice(num_users, size=num_discard_users, replace=False)
+        mask = np.isin(adj.row, indices_discard, invert=True)
+        new_adj = coo_matrix((adj.data[mask], (adj.row[mask], adj.col[mask])), shape=adj.shape)
+        return new_adj
 
-        pass
-
-    def graph_augment(self, adj):
-        switch = random.sample(range(2), k=2)
+    def graph_augment(self, adj, graph_kind='collab'):
+        adj = adj.tocoo()
+        switch = random.sample(range(3), k=2)
         if switch[0] == 0:
             adj1 = self.edge_adding(adj)
         elif switch[0] == 1:
@@ -108,30 +164,23 @@ class DcRec(BaseModel):
         elif switch[1] == 2:
             adj2 = self.node_dropout(adj)
 
+        # norm
+        if graph_kind == 'collab':
+            adj1 = self._make_torch_adj(adj1)
+            adj2 = self._make_torch_adj(adj2)
+
+        elif graph_kind == 'social':
+            adj1 = self._make_torch_uu_adj(adj1)
+            adj2 = self._make_torch_uu_adj(adj2)
+
         return adj1, adj2
 
-    def edge_dropper(self, adj, p=0.5):
-        keep_rate = 1 - p
-        if keep_rate == 0.0:
-            return adj
-        vals = adj._values()
-        idxs = adj._indices()
-        edge_num = vals.size()
-        mask = (t.rand(edge_num) + keep_rate).floor().type(t.bool)
-        new_vals = vals[mask]
-        new_idxs = idxs[:, mask]
-        return t.sparse.FloatTensor(new_idxs, new_vals, adj.shape)
-
-    def forward(self, adj, uu_adj, keep_rate):
+    def forward(self, adj, uu_adj, keep_rate, trn_mat=None, trust_mat=None):
         if not self.is_training:
             return self.final_user_embeds, self.final_item_embeds
 
-        # adj1, adj2 = self.graph_augment(adj)
-        # uu_adj1, uu_adj2 = self.graph_augment(uu_adj)
-        adj1 = self.edge_dropper(adj)
-        adj2 = self.edge_dropper(adj)
-        uu_adj1 = self.edge_dropper(uu_adj)
-        uu_adj2 = self.edge_dropper(uu_adj)
+        adj1, adj2 = self.graph_augment(trn_mat, 'collab')
+        uu_adj1, uu_adj2 = self.graph_augment(trust_mat, 'social')
 
         ui_user_embeds, ui_item_embeds = self._lightgcn(adj, self.ui_user_embeds, self.ui_item_embeds)
         ui_user_embeds1, ui_item_embeds1 = self._lightgcn(adj1, self.ui_user_embeds, self.ui_item_embeds)
@@ -188,7 +237,7 @@ class DcRec(BaseModel):
 
     def cal_loss(self, batch_data):
         self.is_training = True
-        user_embeds, item_embeds, ui_user_embeds1, ui_item_embeds1, ui_user_embeds2, ui_item_embeds2, uu_user_embeds1, uu_user_embeds2 = self.forward(self.adj, self.uu_adj, self.keep_rate)
+        user_embeds, item_embeds, ui_user_embeds1, ui_item_embeds1, ui_user_embeds2, ui_item_embeds2, uu_user_embeds1, uu_user_embeds2 = self.forward(self.adj, self.uu_adj, self.keep_rate, self.trn_mat, self.trust_mat)
         ancs, poss, negs = batch_data
         anc_embeds = user_embeds[ancs]
         pos_embeds = item_embeds[poss]
