@@ -1,22 +1,23 @@
 optimizer:
   name: adam
-  lr: 1.0e-3 # not 1e-3
+  lr: 5.0e-5 # not 1e-3
   weight_decay: 0.98
 
 train:
-  epoch: 120
-  batch_size: 4096
+  epoch: 300
+  batch_size: 2048
   save_model: true
   loss: pairwise # bpr
-  test_step: 5 # evaluate per {test_step} epochs
+  test_step: 1 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
   reproducible: true
   seed: 2023
+  tensorboard: true
 
 test:
   metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
   k: [10, 20, 40] # top-k
-  batch_size: 512 # How many users per batch during validation
+  batch_size: 2048 # How many users per batch during validation
 
 data:
   type: social # choose in {general_cf, multi_behavior, sequential, social}
@@ -24,16 +25,18 @@ data:
 
 model:
   name: dcrec # case-insensitive
-  keep_rate: 0.5
-  layer_num: 2
-  reg_weight: 1.0e-2
+  keep_rate: 0.3
+  layer_num: 4
+  reg_weight: 1.0e-1
   embedding_size: 64
   cross_weight: 1.0e-3
-  domain_weight: 1.0e-3
-  tau: 0.5
+  domain_weight: 1.0e-2
+  tau: 1.0
 
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
-  hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
+  hyperparameters: [layer_num, reg_weight, cross_weight, domain_weight] # The name of the hyperparameter
   layer_num: [1, 2, 3] # Use a list to store the search range
   reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
+  cross_weight: [1.0e-4, 1.0e-3, 1.0e-2]
+  domain_weight: [1.0e-4, 1.0e-3, 1.0e-2]

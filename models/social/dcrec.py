@@ -207,11 +207,6 @@ class DcRec(BaseModel):
         return t.mm(z1, z2.t())
 
     def semi_loss(self, z1, z2, batch_size):
-        # f = lambda x: t.exp(x / self.tau)
-        # refl_sim = f(self.sim(z1, z1))
-        # between_sim = f(self.sim(z1, z2))
-        # return -t.log(between_sim.diag() / (refl_sim.sum(1) + between_sim.sum(1) - refl_sim.diag()))
-
         num_nodes = z1.size(0)
         num_batches = (num_nodes - 1) // batch_size + 1
         f = lambda x: t.exp(x / self.tau)
