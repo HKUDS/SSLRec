@@ -95,6 +95,7 @@ class Trainer(object):
             # evaluate
             if epoch_idx % train_config['test_step'] == 0:
                 self.evaluate(model, epoch_idx)
+
         self.save_model(model)
 
     @log_exceptions
@@ -102,8 +103,7 @@ class Trainer(object):
         model.eval()
         eval_result = self.metric.eval(
             model, self.data_handler.test_dataloader)
-        writer.add_scalar('HR/test', eval_result['recall'][1], epoch_idx)
-        writer.add_scalar('NDCG/test', eval_result['ndcg'][1], epoch_idx)
+        writer.add_scalar('HR/test', eval_result['recall'][2], epoch_idx)
         self.logger.log_eval(eval_result, configs['test']['k'])
 
     def save_model(self, model):
