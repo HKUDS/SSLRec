@@ -60,7 +60,7 @@ Here, we list the implemented models in abbrevation. For more detailed informati
 
 **Social Recommendation**
 
-+ [MHCN](https://arxiv.org/pdf/2101.06448.pdf) (WWW'21), [KCGN](https://par.nsf.gov/servlets/purl/10220297) (AAAI'21), [SMIN](https://arxiv.org/pdf/2110.03958.pdf) (CIKM'21), [SDCRec](https://web.archive.org/web/20220712110150id_/https://dl.acm.org/doi/pdf/10.1145/3477495.3531780) (SIGIR'22), [DcRec](https://arxiv.org/pdf/2208.08723.pdf) (CIKM'22)
++ [MHCN](https://arxiv.org/pdf/2101.06448.pdf) (WWW'21), [KCGN](https://par.nsf.gov/servlets/purl/10220297) (AAAI'21), [SMIN](https://arxiv.org/pdf/2110.03958.pdf) (CIKM'21), [SDCRec](https://web.archive.org/web/20220712110150id_/https://dl.acm.org/doi/pdf/10.1145/3477495.3531780) (SIGIR'22), [DcRec](https://arxiv.org/pdf/2208.08723.pdf) (CIKM'22), [DSL](https://arxiv.org/abs/2305.12685) (IJCAI'23)
 
 **Knowledge-aware Recommendation**
 + [KGCL](https://arxiv.org/pdf/2205.00976.pdf) (SIGIR'22)
