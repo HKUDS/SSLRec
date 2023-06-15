@@ -67,11 +67,12 @@ class DSL(BaseModel):
 		pos_embeds = item_embeds[poss]
 		neg_embeds = item_embeds[negs]
 		rec_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
+		reg_loss = self.reg_weight * reg_params(self)
 		
 		# bprloss on G_s
-		anc_embeds = user_embeds[user0]
-		pos_embeds = user_embeds[user_p]
-		neg_embeds = user_embeds[user_n]
+		anc_embeds = user_embeds2[user0]
+		pos_embeds = user_embeds2[user_p]
+		neg_embeds = user_embeds2[user_n]
 		soc_loss = self.soc_weight * cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
 
 		# self-augmented learning
@@ -79,7 +80,6 @@ class DSL(BaseModel):
 		preds = (user_embeds2[user1] * user_embeds2[user2]).sum(-1)
 		sal_loss = self.sal_weight * (t.maximum(t.tensor(0.0), 1.0-scores*preds)).sum()
 
-		reg_loss = self.reg_weight * reg_params(self)
 		loss = rec_loss + reg_loss + soc_loss + sal_loss
 		losses = {'rec_loss': rec_loss, 'reg_loss': reg_loss, 'soc_loss': soc_loss, 'sal_loss': sal_loss}
 		return loss, losses
@@ -95,7 +95,7 @@ class DSL(BaseModel):
 		return full_preds
 
 class LightGCN(nn.Module):
-	def __init__(self, user_embeds=None, item_embeds=None, pool='sum'):
+	def __init__(self, user_embeds, item_embeds, pool='sum'):
 		super(LightGCN, self).__init__()
 		self.user_embeds = user_embeds
 		self.item_embeds = item_embeds
@@ -120,7 +120,7 @@ class LightGCN(nn.Module):
 		return embeds[:configs['data']['user_num']], embeds[configs['data']['user_num']:]
 
 class LightGCN2(nn.Module):
-	def __init__(self, user_embeds=None, pool='sum'):
+	def __init__(self, user_embeds, pool='sum'):
 		super(LightGCN2, self).__init__()
 		self.user_embeds = user_embeds
 		self.gnn_layers = nn.Sequential(*[GCNLayer() for i in range(configs['model']['uugnn_layer'])])
