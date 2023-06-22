@@ -30,7 +30,7 @@ class SGL(LightGCN):
 			adj = self.edge_dropper(adj, keep_rate)
 		for i in range(configs['model']['layer_num']):
 			random_walk = self.augmentation == 'random_walk'
-			tem_adj =  adj if not random_walk else self.edge_dropper(tem_adj, keep_rate)
+			tem_adj = adj if not random_walk else self.edge_dropper(tem_adj, keep_rate)
 			embeds = self._propagate(adj, embeds_list[-1])
 			embeds_list.append(embeds)
 		embeds = sum(embeds_list)# / len(embeds_list)
