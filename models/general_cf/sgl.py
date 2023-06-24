@@ -16,11 +16,10 @@ class SGL(LightGCN):
 		self.augmentation = configs['model']['augmentation']
 		self.cl_weight = configs['model']['cl_weight']
 		self.temperature = configs['model']['temperature']
-
 		self.node_dropper = NodeDrop()
 
 	def forward(self, adj, keep_rate):
-		if not self.training:
+		if not self.is_training and self.final_embeds is not None:
 			return self.final_embeds[:self.user_num], self.final_embeds[self.user_num:]
 		embeds = t.concat([self.user_embeds, self.item_embeds], axis=0)
 		if self.augmentation == 'node_drop':
@@ -45,7 +44,7 @@ class SGL(LightGCN):
 		return anc_embeds, pos_embeds, neg_embeds
 
 	def cal_loss(self, batch_data):
-		self.training = True
+		self.is_training = True
 		keep_rate = configs['model']['keep_rate']
 		user_embeds1, item_embeds1 = self.forward(self.adj, keep_rate)
 		user_embeds2, item_embeds2 = self.forward(self.adj, keep_rate)

@@ -24,12 +24,13 @@ class LightGCN(BaseModel):
 
 		self.edge_dropper = SpAdjEdgeDrop()
 		self.is_training = True
+		self.final_embeds = None
 	
 	def _propagate(self, adj, embeds):
 		return t.spmm(adj, embeds)
 	
 	def forward(self, adj, keep_rate):
-		if not self.is_training:
+		if not self.is_training and self.final_embeds is not None:
 			return self.final_embeds[:self.user_num], self.final_embeds[self.user_num:]
 		embeds = t.concat([self.user_embeds, self.item_embeds], axis=0)
 		embeds_list = [embeds]
