@@ -45,7 +45,7 @@ class Tuner(object):
         for _ in range(self.search_length):
             model = self.next_model(data_handler)
             trainer.train(model)
-            trainer.evaluate(model)
+            # trainer.evaluate(model)
             del model
             torch.cuda.empty_cache()
             self.step()
