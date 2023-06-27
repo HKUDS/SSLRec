@@ -45,27 +45,27 @@ class BERT4Rec(BaseModel):
         seqs = seqs.tolist()
         masked_seqs = []
         masked_items = []
-        for seq in seqs:
+        for seq in seqs: # for each seq
             masked_seq = []
             masked_item = []
-            for item in seq:
-                if item == 0:
+            for item in seq: # for each item
+                if item == 0: # ignore 0 idx (padding)
                     masked_seq.append(0)
                     masked_item.append(0)
                     continue
                 prob = random.random()
-                if prob < self.mask_prob:
+                if prob < self.mask_prob: # mask
                     prob /= self.mask_prob
                     if prob < 0.8:
                         masked_seq.append(self.mask_token)
-                    elif prob < 0.9:
-                        masked_seq.append(random.randint(1, self.item_num))
-                    else:
+                    elif prob < 0.9: # replace
+                        masked_seq.append(random.randint(1, self.item_num)) # both include
+                    else: # keep
                         masked_seq.append(item)
                     masked_item.append(item)
-                else:
-                    masked_seq.append(item)
-                    masked_item.append(0)
+                else: # not mask
+                    masked_seq.append(item) # keep
+                    masked_item.append(0) # 0 represent no item
             masked_seqs.append(masked_seq)
             masked_items.append(masked_item)
         masked_seqs = torch.tensor(masked_seqs, device=device, dtype=torch.long)[:, -self.max_len:]
@@ -91,10 +91,10 @@ class BERT4Rec(BaseModel):
         masked_seqs, masked_items = self._transform_train_seq(
             batch_seqs, batch_last_items.unsqueeze(1))
         # B, T, E
-        logits = self.forward(masked_seqs)
-        logits = self.out_fc(logits)
+        logits = self.forward(masked_seqs) # [b, l]
+        logits = self.out_fc(logits) # [b, l, n+1]
         # B, T, E -> B*T, E
-        logits = logits.view(-1, logits.size(-1))
+        logits = logits.view(-1, logits.size(-1)) # [b*l, n+1]
         loss = self.loss_func(logits, masked_items.reshape(-1))
         loss_dict = {'rec_loss': loss.item()}
         return loss, loss_dict
