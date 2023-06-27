@@ -1,10 +1,12 @@
 import torch as t
+import torch.nn.functional as F
 
 def cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds):
 	pos_preds = (anc_embeds * pos_embeds).sum(-1)
 	neg_preds = (anc_embeds * neg_embeds).sum(-1)
-	diff_preds = pos_preds - neg_preds
-	return - diff_preds.sigmoid().log().sum()
+	# diff_preds = pos_preds - neg_preds
+	# return - diff_preds.sigmoid().log().sum()
+	return t.sum(F.softplus(neg_preds - pos_preds))
 
 def reg_pick_embeds(embeds_list):
 	reg_loss = 0
