@@ -22,12 +22,36 @@ def parse_configure():
     with open('./config/modelconf/{}.yml'.format(model_name), encoding='utf-8') as f:
         config_data = f.read()
         configs = yaml.safe_load(config_data)
+
+        # model name
         configs['model']['name'] = configs['model']['name'].lower()
+
+        # grid search
         if 'tune' not in configs:
             configs['tune'] = {'enable': False}
+
+        # gpu device
         configs['device'] = args.device
+
+        # dataset
         if args.dataset is not None:
             configs['data']['name'] = args.dataset
+
+        # log
+        if 'log_loss' not in configs['train']:
+            configs['train']['log_loss'] = True
+
+        # early stop
+        if 'patience' in configs['train']:
+            if configs['train']['patience'] <= 0:
+                raise Exception("'patience' should be greater than 0.")
+            else:
+                configs['train']['early_stop'] = True
+        else:
+            configs['train']['early_stop'] = False
+
+
+
         return configs
 
 configs = parse_configure()
