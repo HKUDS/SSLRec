@@ -46,7 +46,7 @@ Our framework offers a unified training, validation, and testing process for eac
 + 🤖**Easy-to-Use Interface.** We offer a user-friendly interface that streamlines the training and evaluation of recommendation models. This allows researchers and practitioners to experiment with various models and configurations with ease and efficiency.
 
 ## SSLRec News
-`2023-06-28`: Early stop is now feasible in the training strategy. (Check [Here](./update_log/2023-06-28.md) for more details)
+🔥`2023-06-28`: Early stop is now feasible in the training strategy. (Check [Here](./update_log/2023-06-28.md) for more details)
 
 ## Implemented Models
 We are committed to continuously adding new self-supervised models to the SSLRec framework to keep up with the latest developments in the field of recommender systems. Stay tuned for updates! 🔍
