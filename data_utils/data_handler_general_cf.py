@@ -74,6 +74,8 @@ class DataHandlerGeneralCF:
 	def load_data(self):
 		trn_mat = self._load_one_mat(self.trn_file)
 		tst_mat = self._load_one_mat(self.tst_file)
+		val_mat = self._load_one_mat(self.val_file)
+
 		self.trn_mat = trn_mat
 		configs['data']['user_num'], configs['data']['item_num'] = trn_mat.shape
 		self.torch_adj = self._make_torch_adj(trn_mat)
@@ -84,6 +86,9 @@ class DataHandlerGeneralCF:
 			trn_data = PairwiseWEpochFlagTrnData(trn_mat)
 		# elif configs['train']['loss'] == 'pointwise':
 		# 	trn_data = PointwiseTrnData(trn_mat)
+
+		val_data = AllRankTstData(val_mat, trn_mat)
 		tst_data = AllRankTstData(tst_mat, trn_mat)
+		self.valid_dataloader = data.DataLoader(val_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
 		self.test_dataloader = data.DataLoader(tst_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
 		self.train_dataloader = data.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)

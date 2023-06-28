@@ -42,10 +42,14 @@ class Logger(object):
         if print_to_console:
             print(message)
 
-    def log_eval(self, eval_result, k, save_to_log=True, print_to_console=True):
-        message = ''
+    def log_eval(self, eval_result, k, data_type, save_to_log=True, print_to_console=True, epoch_idx=None):
+        if epoch_idx is not None:
+            message = 'Epoch {:3d} '.format(epoch_idx)
+        else:
+            message = ''
+
         for metric in eval_result:
-            message += '['
+            message += '{} ['.format(data_type)
             for i in range(len(k)):
                 message += '{}@{}: {:.4f} '.format(metric, k[i], eval_result[metric][i])
             message += '] '
