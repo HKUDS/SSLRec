@@ -48,6 +48,8 @@ class DCCF(BaseModel):
         self.is_training = True
         self.final_embeds = False
 
+        self._init_weight()
+
     def _init_weight(self):
         init(self.user_embeds.weight)
         init(self.item_embeds.weight)
