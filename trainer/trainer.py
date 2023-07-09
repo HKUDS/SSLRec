@@ -22,6 +22,7 @@ if 'tensorboard' in configs['train'] and configs['train']['tensorboard']:
 else:
     writer = DisabledSummaryWriter()
 
+
 def init_seed():
     if 'reproducible' in configs['train']:
         if configs['train']['reproducible']:
@@ -188,6 +189,7 @@ class Trainer(object):
             self.logger.log(
                 "Load model parameters from {}".format(pretrain_path))
 
+
 class DSLTrainer(Trainer):
     def __init__(self, data_handler, logger):
         super(DSLTrainer, self).__init__(data_handler, logger)
@@ -238,7 +240,7 @@ class DSLTrainer(Trainer):
         writer.add_scalar('Loss/train', ep_loss / steps, epoch_idx)
         # log
         self.logger.log_loss(epoch_idx, loss_log_dict)
- 
+
 
 class CMLTrainer(Trainer):
     def __init__(self, data_handler, logger):
@@ -257,10 +259,16 @@ class CMLTrainer(Trainer):
         ), lr=configs['optimizer']['lr'], weight_decay=configs['optimizer']['opt_weight_decay'])
         self.meta_opt = torch.optim.AdamW(self.meta_weight_net.parameters(
         ), lr=configs['optimizer']['meta_lr'], weight_decay=configs['optimizer']['meta_opt_weight_decay'])
-        self.scheduler = torch.optim.lr_scheduler.CyclicLR(self.opt, configs['optimizer']['opt_base_lr'], configs['optimizer']['opt_max_lr'], step_size_up=5,
-                                                           step_size_down=10, mode='triangular', gamma=0.99, scale_fn=None, scale_mode='cycle', cycle_momentum=False, base_momentum=0.8, max_momentum=0.9, last_epoch=-1)
-        self.meta_scheduler = torch.optim.lr_scheduler.CyclicLR(self.meta_opt, configs['optimizer']['meta_opt_base_lr'], configs['optimizer']['meta_opt_max_lr'], step_size_up=2,
-                                                                step_size_down=3, mode='triangular', gamma=0.98, scale_fn=None, scale_mode='cycle', cycle_momentum=False, base_momentum=0.9, max_momentum=0.99, last_epoch=-1)
+        self.scheduler = torch.optim.lr_scheduler.CyclicLR(self.opt, configs['optimizer']['opt_base_lr'],
+                                                           configs['optimizer']['opt_max_lr'], step_size_up=5,
+                                                           step_size_down=10, mode='triangular', gamma=0.99,
+                                                           scale_fn=None, scale_mode='cycle', cycle_momentum=False,
+                                                           base_momentum=0.8, max_momentum=0.9, last_epoch=-1)
+        self.meta_scheduler = torch.optim.lr_scheduler.CyclicLR(self.meta_opt, configs['optimizer']['meta_opt_base_lr'],
+                                                                configs['optimizer']['meta_opt_max_lr'], step_size_up=2,
+                                                                step_size_down=3, mode='triangular', gamma=0.98,
+                                                                scale_fn=None, scale_mode='cycle', cycle_momentum=False,
+                                                                base_momentum=0.9, max_momentum=0.99, last_epoch=-1)
 
     def train_epoch(self, model, epoch_idx):
         from models.multi_behavior.cml import CML
@@ -276,13 +284,13 @@ class CMLTrainer(Trainer):
         # loss_log_dict = {}
 
         # prepare
-        self.behavior_loss_list = [None]*len(self.data_handler.behaviors)
-        self.user_id_list = [None]*len(self.data_handler.behaviors)
-        self.item_id_pos_list = [None]*len(self.data_handler.behaviors)
-        self.item_id_neg_list = [None]*len(self.data_handler.behaviors)
+        self.behavior_loss_list = [None] * len(self.data_handler.behaviors)
+        self.user_id_list = [None] * len(self.data_handler.behaviors)
+        self.item_id_pos_list = [None] * len(self.data_handler.behaviors)
+        self.item_id_neg_list = [None] * len(self.data_handler.behaviors)
         self.meta_start_index = 0
         self.meta_end_index = self.meta_start_index + \
-            configs['train']['meta_batch']
+                              configs['train']['meta_batch']
 
         # epoch
         cnt = 0
@@ -298,13 +306,13 @@ class CMLTrainer(Trainer):
                 self.meta_start_index = 0
             else:
                 self.meta_start_index = (self.meta_start_index + configs['train']['meta_batch']) % (
-                    self.data_handler.meta_multi_single.shape[0] - 1)
+                        self.data_handler.meta_multi_single.shape[0] - 1)
             self.meta_end_index = min(
                 self.meta_start_index + configs['train']['meta_batch'], self.data_handler.meta_multi_single.shape[0])
 
             # round one
-            meta_behavior_loss_list = [None]*len(self.data_handler.behaviors)
-            meta_user_index_list = [None]*len(self.data_handler.behaviors)
+            meta_behavior_loss_list = [None] * len(self.data_handler.behaviors)
+            meta_user_index_list = [None] * len(self.data_handler.behaviors)
             meta_model = CML(self.data_handler).cuda()
             meta_opt = torch.optim.AdamW(meta_model.parameters(
             ), lr=configs['optimizer']['lr'], weight_decay=configs['optimizer']['opt_weight_decay'])
@@ -338,17 +346,17 @@ class CMLTrainer(Trainer):
 
             for i in range(len(self.data_handler.behaviors)):
                 meta_infoNCELoss_list[i] = (
-                    meta_infoNCELoss_list[i]*meta_infoNCELoss_list_weights[i]).sum()
+                        meta_infoNCELoss_list[i] * meta_infoNCELoss_list_weights[i]).sum()
                 meta_behavior_loss_list[i] = (
-                    meta_behavior_loss_list[i]*meta_behavior_loss_list_weights[i]).sum()
+                        meta_behavior_loss_list[i] * meta_behavior_loss_list_weights[i]).sum()
             meta_bprloss = sum(meta_behavior_loss_list) / \
-                len(meta_behavior_loss_list)
+                           len(meta_behavior_loss_list)
             meta_infoNCELoss = sum(meta_infoNCELoss_list) / \
-                len(meta_infoNCELoss_list)
+                               len(meta_infoNCELoss_list)
             meta_regLoss = (torch.norm(meta_userEmbed) ** 2 +
                             torch.norm(meta_posEmbed) ** 2 + torch.norm(meta_negEmbed) ** 2)
             meta_model_loss = (meta_bprloss + configs['train']['reg'] * meta_regLoss +
-                               configs['train']['beta']*meta_infoNCELoss) / configs['train']['batch_size']
+                               configs['train']['beta'] * meta_infoNCELoss) / configs['train']['batch_size']
             meta_opt.zero_grad(set_to_none=True)
             self.meta_opt.zero_grad(set_to_none=True)
             meta_model_loss.backward()
@@ -360,8 +368,8 @@ class CMLTrainer(Trainer):
             self.meta_opt.step()
 
             # round two
-            behavior_loss_list = [None]*len(self.data_handler.behaviors)
-            user_index_list = [None]*len(self.data_handler.behaviors)
+            behavior_loss_list = [None] * len(self.data_handler.behaviors)
+            user_index_list = [None] * len(self.data_handler.behaviors)
             user_embed, item_embed, user_embeds, item_embeds = meta_model()
             for index in range(len(self.data_handler.behaviors)):
                 user_id, item_id_pos, item_id_neg = self._sampleTrainBatch(
@@ -385,17 +393,17 @@ class CMLTrainer(Trainer):
                 user_embed)
             for i in range(len(self.data_handler.behaviors)):
                 self.infoNCELoss_list[i] = (
-                    self.infoNCELoss_list[i]*infoNCELoss_list_weights[i]).sum()
+                        self.infoNCELoss_list[i] * infoNCELoss_list_weights[i]).sum()
                 behavior_loss_list[i] = (
-                    behavior_loss_list[i]*behavior_loss_list_weights[i]).sum()
+                        behavior_loss_list[i] * behavior_loss_list_weights[i]).sum()
 
             bprloss = sum(behavior_loss_list) / len(self.behavior_loss_list)
             infoNCELoss = sum(self.infoNCELoss_list) / \
-                len(self.infoNCELoss_list)
+                          len(self.infoNCELoss_list)
             round_two_regLoss = (torch.norm(
                 userEmbed) ** 2 + torch.norm(posEmbed) ** 2 + torch.norm(negEmbed) ** 2)
             meta_loss = 0.5 * (bprloss + configs['train']['reg'] * round_two_regLoss +
-                               configs['train']['beta']*infoNCELoss) / configs['train']['batch_size']
+                               configs['train']['beta'] * infoNCELoss) / configs['train']['batch_size']
             self.meta_opt.zero_grad()
             meta_loss.backward()
             nn.utils.clip_grad_norm_(
@@ -425,16 +433,16 @@ class CMLTrainer(Trainer):
                     user_embed)
             for i in range(len(self.data_handler.behaviors)):
                 infoNCELoss_list[i] = (
-                    infoNCELoss_list[i]*infoNCELoss_list_weights[i]).sum()
+                        infoNCELoss_list[i] * infoNCELoss_list_weights[i]).sum()
                 self.behavior_loss_list[i] = (
-                    self.behavior_loss_list[i]*behavior_loss_list_weights[i]).sum()
+                        self.behavior_loss_list[i] * behavior_loss_list_weights[i]).sum()
             bprloss = sum(self.behavior_loss_list) / \
-                len(self.behavior_loss_list)
+                      len(self.behavior_loss_list)
             infoNCELoss = sum(infoNCELoss_list) / len(infoNCELoss_list)
             regLoss = (torch.norm(userEmbed) ** 2 +
                        torch.norm(posEmbed) ** 2 + torch.norm(negEmbed) ** 2)
             loss = (bprloss + configs['train']['reg'] * regLoss + configs['train']
-                    ['beta']*infoNCELoss) / configs['train']['batch_size']
+            ['beta'] * infoNCELoss) / configs['train']['batch_size']
             epoch_loss = epoch_loss + loss.item()
             self.opt.zero_grad(set_to_none=True)
             loss.backward()
@@ -445,9 +453,9 @@ class CMLTrainer(Trainer):
 
     def _innerProduct(self, u, i, j):
         pred_i = torch.sum(torch.mul(u, i), dim=1) * \
-            configs['model']['inner_product_mult']
+                 configs['model']['inner_product_mult']
         pred_j = torch.sum(torch.mul(u, j), dim=1) * \
-            configs['model']['inner_product_mult']
+                 configs['model']['inner_product_mult']
         return pred_i, pred_j
 
     def _negSamp(self, temLabel, sampSize, nodeNum):
@@ -485,7 +493,8 @@ class CMLTrainer(Trainer):
                 item_id_neg.append(neglocs[j])
                 cur += 1
 
-        return torch.as_tensor(np.array(user_id)).cuda(), torch.as_tensor(np.array(item_id_pos)).cuda(), torch.as_tensor(np.array(item_id_neg)).cuda()
+        return torch.as_tensor(np.array(user_id)).cuda(), torch.as_tensor(
+            np.array(item_id_pos)).cuda(), torch.as_tensor(np.array(item_id_neg)).cuda()
 
     def _SSL(self, user_embeddings, item_embeddings, target_user_embeddings, target_item_embeddings, user_step_index):
         def row_shuffle(embedding):
@@ -509,7 +518,7 @@ class CMLTrainer(Trainer):
                 index_set.remove(i)
                 index_set_neg = torch.as_tensor(
                     np.array(list(index_set))).long().cuda()
-                x_pos = x1[i].repeat(x1.shape[0]-1, 1)
+                x_pos = x1[i].repeat(x1.shape[0] - 1, 1)
                 x_neg = x2[index_set]
                 if i == 0:
                     x_pos_all = x_pos
@@ -562,7 +571,7 @@ class CMLTrainer(Trainer):
             x1 = x1
             x2 = x2
             scores = torch.exp(torch.div(
-                torch.bmm(x1.view(N, 1, D), x2.view(N, D, 1)).view(N, 1), np.power(D, 1)+1e-8))
+                torch.bmm(x1.view(N, 1, D), x2.view(N, D, 1)).view(N, 1), np.power(D, 1) + 1e-8))
             return scores
 
         def single_infoNCE_loss_simple(embedding1, embedding2):
@@ -580,7 +589,7 @@ class CMLTrainer(Trainer):
             pos_score = compute(embedding1, embedding2).squeeze()
             neg_x1, neg_x2 = neg_sample_pair(embedding1, embedding2)
             neg_score = torch.sum(
-                compute(neg_x1, neg_x2).view(N, (N-1)), dim=1)
+                compute(neg_x1, neg_x2).view(N, (N - 1)), dim=1)
             con_loss = -torch.log(1e-8 + torch.div(pos_score, neg_score))
             con_loss = torch.mean(con_loss)
             return max(0, con_loss)
@@ -594,7 +603,7 @@ class CMLTrainer(Trainer):
             steps = int(np.ceil(N / configs['train']['SSL_batch']))
             for i in range(steps):
                 st = i * configs['train']['SSL_batch']
-                ed = min((i+1) * configs['train']['SSL_batch'], N)
+                ed = min((i + 1) * configs['train']['SSL_batch'], N)
                 batch_index = step_index[st: ed]
                 neg_score_pre = multi_neg_sample_pair_index(
                     batch_index, step_index, embedding1, embedding2)
@@ -603,14 +612,14 @@ class CMLTrainer(Trainer):
                 else:
                     neg_score = torch.cat((neg_score, neg_score_pre), 0)
             con_loss = - \
-                torch.log(1e-8 + torch.div(pos_score, neg_score+1e-8))  #
+                torch.log(1e-8 + torch.div(pos_score, neg_score + 1e-8))  #
             assert not torch.any(torch.isnan(con_loss))
             assert not torch.any(torch.isinf(con_loss))
-            return torch.where(torch.isnan(con_loss), torch.full_like(con_loss, 0+1e-8), con_loss)
+            return torch.where(torch.isnan(con_loss), torch.full_like(con_loss, 0 + 1e-8), con_loss)
 
         user_con_loss_list = []
         item_con_loss_list = []
-        SSL_len = int(user_step_index.shape[0]/10)
+        SSL_len = int(user_step_index.shape[0] / 10)
         user_step_index = torch.as_tensor(np.random.choice(
             user_step_index.cpu(), size=SSL_len, replace=False, p=None)).cuda()
         for i in range(len(self.data_handler.behaviors)):
@@ -627,7 +636,8 @@ class MMCLRTrainer(Trainer):
     def train_epoch(self, model, epoch_idx):
 
         model.train()
-        for input_nodes, pos_graph, neg_graph, blocks, block_src_nodes, seq_tensors, neg_user_ids in tqdm(self.data_handler.train_dataloader):
+        for input_nodes, pos_graph, neg_graph, blocks, block_src_nodes, seq_tensors, neg_user_ids in tqdm(
+                self.data_handler.train_dataloader):
             if block_src_nodes is not None:
                 block_src_nodes = [{k: v.to(configs['train']['device'])
                                     for k, v in nodes.items()} for nodes in block_src_nodes]
@@ -651,7 +661,7 @@ class MMCLRTrainer(Trainer):
 class ICLRecTrainer(Trainer):
     def __init__(self, data_handler, logger):
         super(ICLRecTrainer, self).__init__(data_handler, logger)
-        self. cluster_dataloader = copy.deepcopy(
+        self.cluster_dataloader = copy.deepcopy(
             self.data_handler.train_dataloader)
 
     def train_epoch(self, model, epoch_idx):
@@ -758,9 +768,9 @@ class KMCLRTrainer(Trainer):
                 mul_infoNCELoss_list[i] = (mul_infoNCELoss_list[i]).sum()
                 mul_behavior_loss_list[i] = (mul_behavior_loss_list[i]).sum()
             mul_bprloss = sum(mul_behavior_loss_list) / \
-                len(mul_behavior_loss_list)
+                          len(mul_behavior_loss_list)
             mul_infoNCELoss = sum(mul_infoNCELoss_list) / \
-                len(mul_infoNCELoss_list)
+                              len(mul_infoNCELoss_list)
             mul_regLoss = (torch.norm(mul_userEmbed) ** 2 +
                            torch.norm(mul_posEmbed) ** 2 + torch.norm(mul_negEmbed) ** 2)
             mul_model_loss = (mul_bprloss + configs['optimizer']['weight_decay'] * mul_regLoss +
@@ -774,7 +784,7 @@ class KMCLRTrainer(Trainer):
             user_embed, item_embed, user_embeds, item_embeds = model()
             with torch.no_grad():
                 user_embed1, item_embed1 = self.Kg_model.getAll()
-            user_embed = 0.9*user_embed + 0.1*user_embed1
+            user_embed = 0.9 * user_embed + 0.1 * user_embed1
             item_embed = item_embed
 
             for index in range(len(self.data_handler.behaviors)):
@@ -791,7 +801,7 @@ class KMCLRTrainer(Trainer):
                 infoNCELoss_list[i] = (infoNCELoss_list[i]).sum()
                 self.behavior_loss_list[i] = (self.behavior_loss_list[i]).sum()
             bprloss = sum(self.behavior_loss_list) / \
-                len(self.behavior_loss_list)
+                      len(self.behavior_loss_list)
             infoNCELoss = sum(infoNCELoss_list) / len(infoNCELoss_list)
             regLoss = (torch.norm(userEmbed) ** 2 +
                        torch.norm(posEmbed) ** 2 + torch.norm(negEmbed) ** 2)
@@ -804,9 +814,9 @@ class KMCLRTrainer(Trainer):
 
     def innerProduct(self, u, i, j):
         pred_i = torch.sum(torch.mul(u, i), dim=1) * \
-            configs['model']['inner_product_mult']
+                 configs['model']['inner_product_mult']
         pred_j = torch.sum(torch.mul(u, j), dim=1) * \
-            configs['model']['inner_product_mult']
+                 configs['model']['inner_product_mult']
         return pred_i, pred_j
 
     def SSL(self, user_embeddings, user_step_index):
@@ -868,6 +878,7 @@ class KMCLRTrainer(Trainer):
             assert not torch.any(torch.isnan(con_loss))
             assert not torch.any(torch.isinf(con_loss))
             return torch.where(torch.isnan(con_loss), torch.full_like(con_loss, 0 + 1e-8), con_loss)
+
         user_con_loss_list = []
         SSL_len = int(user_step_index.shape[0] / 10)
         user_step_index = torch.as_tensor(
@@ -897,13 +908,13 @@ class MBGMNTrainer(Trainer):
         num = configs['data']['user_num']
         sfIds = np.random.permutation(num)[:configs['model']['trnNum']]
         epochLoss, epochPreLoss = [0] * 2
-        uids, iids = [0]*len(self.data_handler.behaviors), [0] * \
-            len(self.data_handler.behaviors)
+        uids, iids = [0] * len(self.data_handler.behaviors), [0] * \
+                     len(self.data_handler.behaviors)
         num = len(sfIds)
         steps = int(np.ceil(num / configs['train']['batch_size']))
         for i in range(steps):
             st = i * configs['train']['batch_size']
-            ed = min((i+1) * configs['train']['batch_size'], num)
+            ed = min((i + 1) * configs['train']['batch_size'], num)
             batIds = sfIds[st: ed]
             for beh in range(len(self.data_handler.behaviors)):
                 uLocs, iLocs = self.sampleTrainBatch(
@@ -945,12 +956,12 @@ class MBGMNTrainer(Trainer):
             for j in range(sampNum):
                 posloc = poslocs[j]
                 negloc = neglocs[j]
-                uLocs[cur] = uLocs[cur+temlen//2] = batIds[i]
+                uLocs[cur] = uLocs[cur + temlen // 2] = batIds[i]
                 iLocs[cur] = posloc
-                iLocs[cur+temlen//2] = negloc
+                iLocs[cur + temlen // 2] = negloc
                 cur += 1
-        uLocs = uLocs[:cur] + uLocs[temlen//2: temlen//2 + cur]
-        iLocs = iLocs[:cur] + iLocs[temlen//2: temlen//2 + cur]
+        uLocs = uLocs[:cur] + uLocs[temlen // 2: temlen // 2 + cur]
+        iLocs = iLocs[:cur] + iLocs[temlen // 2: temlen // 2 + cur]
         return uLocs, iLocs
 
 
@@ -1017,39 +1028,109 @@ class KGTrainer(Trainer):
         self.logger.log_loss(epoch_idx, loss_log_dict)
 
 
-class AutoCFTrainer(Trainer):
+class GFormerTrainer(Trainer):
     def __init__(self, data_handler, logger):
-        super(AutoCFTrainer, self).__init__(data_handler, logger)
+        super(GFormerTrainer, self).__init__(data_handler, logger)
+        self.handler = data_handler
 
-        self.fix_steps = configs['model']['fix_steps']
+        self.user = configs['data']['user_num']
+        self.item = configs['data']['item_num']
+        self.latdim = configs['model']['embedding_size']
+
+        self.ctra = configs['model']['ctra']
+
+        self.fixSteps = configs['model']['fix_steps']
+        self.ssl_reg = configs['model']['ssl_reg']
+        self.reg = configs['model']['reg_weight']
+        self.b2 = configs['model']['b2']
+        self.batch = configs['train']['batch_size']
+
+    def create_optimizer(self, model):
+        optim_config = configs['optimizer']
+        if optim_config['name'] == 'adam':
+            self.optimizer = optim.Adam(model.parameters(
+            ), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
+
+    def pairPredict(self, ancEmbeds, posEmbeds, negEmbeds):
+        return self.innerProduct(ancEmbeds, posEmbeds) - self.innerProduct(ancEmbeds, negEmbeds)
+
+    def innerProduct(self, usrEmbeds, itmEmbeds):
+        return torch.sum(usrEmbeds * itmEmbeds, dim=-1)
+
+    def calcRegLoss(self, model):
+        ret = 0
+        for W in model.parameters():
+            ret += W.norm(2).square()
+        return ret
+
+    def contrast(self, nodes, allEmbeds, allEmbeds2=None):
+        if allEmbeds2 is not None:
+            pckEmbeds = allEmbeds[nodes]
+            scores = torch.log(torch.exp(pckEmbeds @ allEmbeds2.T).sum(-1)).mean()
+        else:
+            uniqNodes = torch.unique(nodes)
+            pckEmbeds = allEmbeds[uniqNodes]
+            scores = torch.log(torch.exp(pckEmbeds @ allEmbeds.T).sum(-1)).mean()
+        return scores
+
+    def contrastNCE(self, nodes, allEmbeds, allEmbeds2=None):
+        if allEmbeds2 is not None:
+            pckEmbeds = allEmbeds[nodes]
+            pckEmbeds2 = allEmbeds2[nodes]
+            # posScore = t.sum(pckEmbeds * pckEmbeds2)
+            scores = torch.log(torch.exp(pckEmbeds * pckEmbeds2).sum(-1)).mean()
+            # ssl_score = scores - posScore
+
+        return scores
 
     def train_epoch(self, model, epoch_idx):
-        # prepare training data
+        """ train in train mode """
+        model.train()
+        """ train Rec """
         train_dataloader = self.data_handler.train_dataloader
         train_dataloader.dataset.sample_negs()
-
+        self.handler.preSelect_anchor_set()
         # for recording loss
         loss_log_dict = {}
-        ep_loss = 0
-        steps = len(train_dataloader.dataset) // configs['train']['batch_size']
         # start this epoch
-        model.train()
         for i, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
+            if i % self.fixSteps == 0:
+                att_edge, add_adj = model.localGraph(self.handler.torchBiAdj, model.getEgoEmbeds(),
+                                                     self.handler)
+                encoderAdj, decoderAdj, sub, cmp = model.masker(add_adj, att_edge)
+            ancs, poss, negs = tem
+            ancs = ancs.long().cuda()
+            poss = poss.long().cuda()
+            negs = negs.long().cuda()
+
+            usrEmbeds, itmEmbeds, cList, subLst = model(self.handler, False, sub, cmp, encoderAdj,
+                                                        decoderAdj)
+            ancEmbeds = usrEmbeds[ancs]
+            posEmbeds = itmEmbeds[poss]
+            negEmbeds = itmEmbeds[negs]
+
+            usrEmbeds2 = subLst[:self.user]
+            itmEmbeds2 = subLst[self.user:]
+            ancEmbeds2 = usrEmbeds2[ancs]
+            posEmbeds2 = itmEmbeds2[poss]
+
+            bprLoss = (-torch.sum(ancEmbeds * posEmbeds, dim=-1)).mean()
+            #
+            scoreDiff = self.pairPredict(ancEmbeds2, posEmbeds2, negEmbeds)
+            bprLoss2 = - (scoreDiff).sigmoid().log().sum() / self.batch
+            regLoss = self.calcRegLoss(model) * self.reg
+
+            contrastLoss = (self.contrast(ancs, usrEmbeds) + self.contrast(poss,
+                                                                           itmEmbeds)) * self.ssl_reg + self.contrast(
+                ancs, usrEmbeds, itmEmbeds) + self.ctra * self.contrastNCE(ancs, subLst, cList)
+            loss = bprLoss + regLoss + contrastLoss + self.b2 * bprLoss2
+            loss_dict = {'bpr_loss': bprLoss, 'reg_loss': regLoss, 'cl_loss': contrastLoss}
+
             self.optimizer.zero_grad()
-            batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
-
-            if i % self.fix_steps == 0:
-                sampScores, seeds = model.sample_subgraphs()
-                encoderAdj, decoderAdj = model.mask_subgraphs(seeds)
-            
-            loss, loss_dict = model.cal_loss(batch_data, encoderAdj, decoderAdj)
-
-            if i % self.fix_steps == 0:
-                localGlobalLoss = -sampScores.mean()
-                loss += localGlobalLoss
-                loss_dict['infomax_loss'] = localGlobalLoss
-
-            ep_loss += loss.item()
+            # batch_data = list(
+            #     map(lambda x: x.long().to(configs['device']), tem))
+            # batch_data.extend([kg_view_1, kg_view_2, ui_view_1, ui_view_2])
+            # loss, loss_dict = model.cal_loss(batch_data)
             loss.backward()
             self.optimizer.step()
 
@@ -1061,10 +1142,5 @@ class AutoCFTrainer(Trainer):
                 else:
                     loss_log_dict[loss_name] += _loss_val
 
-        writer.add_scalar('Loss/train', ep_loss / steps, epoch_idx)
-
-        # log loss
-        if configs['train']['log_loss']:
-            self.logger.log_loss(epoch_idx, loss_log_dict)
-        else:
-            self.logger.log_loss(epoch_idx, loss_log_dict, save_to_log=False)
+        # log
+        self.logger.log_loss(epoch_idx, loss_log_dict)
