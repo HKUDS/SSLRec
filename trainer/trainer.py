@@ -1015,3 +1015,56 @@ class KGTrainer(Trainer):
 
         # log
         self.logger.log_loss(epoch_idx, loss_log_dict)
+
+
+class AutoCFTrainer(Trainer):
+    def __init__(self, data_handler, logger):
+        super(AutoCFTrainer, self).__init__(data_handler, logger)
+
+        self.fix_steps = configs['model']['fix_steps']
+
+    def train_epoch(self, model, epoch_idx):
+        # prepare training data
+        train_dataloader = self.data_handler.train_dataloader
+        train_dataloader.dataset.sample_negs()
+
+        # for recording loss
+        loss_log_dict = {}
+        ep_loss = 0
+        steps = len(train_dataloader.dataset) // configs['train']['batch_size']
+        # start this epoch
+        model.train()
+        for i, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
+            self.optimizer.zero_grad()
+            batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
+
+            if i % self.fix_steps == 0:
+                sampScores, seeds = model.sample_subgraphs()
+                encoderAdj, decoderAdj = model.mask_subgraphs(seeds)
+            
+            loss, loss_dict = model.cal_loss(batch_data, encoderAdj, decoderAdj)
+
+            if i % self.fix_steps == 0:
+                localGlobalLoss = -sampScores.mean()
+                loss += localGlobalLoss
+                loss_dict['infomax_loss'] = localGlobalLoss
+
+            ep_loss += loss.item()
+            loss.backward()
+            self.optimizer.step()
+
+            # record loss
+            for loss_name in loss_dict:
+                _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
+                if loss_name not in loss_log_dict:
+                    loss_log_dict[loss_name] = _loss_val
+                else:
+                    loss_log_dict[loss_name] += _loss_val
+
+        writer.add_scalar('Loss/train', ep_loss / steps, epoch_idx)
+
+        # log loss
+        if configs['train']['log_loss']:
+            self.logger.log_loss(epoch_idx, loss_log_dict)
+        else:
+            self.logger.log_loss(epoch_idx, loss_log_dict, save_to_log=False)
