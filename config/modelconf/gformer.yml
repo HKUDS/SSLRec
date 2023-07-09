@@ -1,0 +1,43 @@
+optimizer:
+  name: adam
+  lr: 1.0e-3
+  weight_decay: 0
+
+train:
+  epoch: 100
+  batch_size: 4096
+  save_model: false
+  loss: pairwise
+  test_step: 3
+  trainer: GFormerTrainer
+  #pretrain_path: ./checkpoint/xxxx.pth
+
+test:
+  metrics: [recall, ndcg]
+  k: [10, 20, 40]
+  batch_size: 256
+
+data:
+  type: gformer # choose in {general_cf, multi_behavior, sequential, social}
+  name: yelp
+
+model:
+  name: gformer # case-insensitive
+  keep_rate: 0.9
+  layer_num: 3
+  reg_weight: 1.0e-4
+  cl_weight: 1.0
+  temperature: 0.1
+  embedding_size: 32
+  gtw: 0.1
+  anchor_set_num: 64
+  fix_steps: 10
+  ctra: 1.0e-3
+  ssl_reg: 1.0
+  b2: 1.0
+  reRate: 0.8
+  head: 4
+  ext: 0.5
+  addRate: 0.01
+  pnn_layer: 1
+  sub: 0.1
