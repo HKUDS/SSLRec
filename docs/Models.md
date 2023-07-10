@@ -9,6 +9,7 @@
 | DirectAU| KDD'22 | [Towards Representation Alignment and Uniformity in Collaborative Filtering](https://dl.acm.org/doi/pdf/10.1145/3534678.3539253)|
 | LightGCL| ICLR'22  | [LightGCL: Simple yet Effective Graph Contrastive Learning for Recommendation](https://arxiv.org/pdf/2302.08191.pdf)|
 | AutoCF| WWW'23 | [Automated Self-Supervised Learning for Recommendation](https://arxiv.org/pdf/2303.07797.pdf)
+| GFormer| SIGIR'23 | [Graph Transformer for Recommendation](https://arxiv.org/pdf/2306.02330.pdf)
 | DCCF| SIGIR'23 | [Disentangled Contrastive Collaborative Filtering](https://arxiv.org/pdf/2305.02759.pdf)
 
 

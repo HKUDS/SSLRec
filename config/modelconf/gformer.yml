@@ -10,7 +10,6 @@ train:
   loss: pairwise
   test_step: 3
   trainer: GFormerTrainer
-  #pretrain_path: ./checkpoint/xxxx.pth
 
 test:
   metrics: [recall, ndcg]
@@ -18,11 +17,11 @@ test:
   batch_size: 256
 
 data:
-  type: gformer # choose in {general_cf, multi_behavior, sequential, social}
+  type: general_cf
   name: yelp
 
 model:
-  name: gformer # case-insensitive
+  name: gformer
   keep_rate: 0.9
   layer_num: 3
   reg_weight: 1.0e-4
