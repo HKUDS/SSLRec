@@ -11,11 +11,12 @@ from .datasets_kg import KGTrainDataset, KGTestDataset, KGTripletDataset
 class DataHandlerKG:
     def __init__(self) -> None:
         if configs['data']['name'] == 'mind':
-            predir = './datasets/mind_kg/'
+            predir = './datasets/kg/mind_kg/'
         elif configs['data']['name'] == 'amazon-book':
-            predir = './datasets/amazon-book_kg/'
+            predir = './datasets/kg/amazon-book_kg/'
         elif configs['data']['name'] == 'last-fm':
-            predir = './datasets/last-fm_kg/'
+            predir = './datasets/kg/last-fm_kg/'
+
         configs['data']['dir'] = predir
         self.trn_file = path.join(predir, 'train.txt')
         self.val_file = path.join(predir, 'test.txt')

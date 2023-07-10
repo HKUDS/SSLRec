@@ -10,11 +10,11 @@ import torch.utils.data as data
 class DataHandlerGeneralCF:
 	def __init__(self):
 		if configs['data']['name'] == 'yelp':
-			predir = './datasets/sparse_yelp/'
+			predir = './datasets/general_cf/sparse_yelp/'
 		elif configs['data']['name'] == 'gowalla':
-			predir = './datasets/sparse_gowalla/'
+			predir = './datasets/general_cf/sparse_gowalla/'
 		elif configs['data']['name'] == 'amazon':
-			predir = './datasets/sparse_amazon/'
+			predir = './datasets/general_cf/sparse_amazon/'
 		self.trn_file = predir + 'train_mat.pkl'
 		self.val_file = predir + 'valid_mat.pkl'
 		self.tst_file = predir + 'test_mat.pkl'

@@ -11,7 +11,7 @@ from os import path
 class DataHandlerSequential:
     def __init__(self):
         if configs['data']['name'] == 'ml-20m':
-            predir = './datasets/ml-20m_seq/'
+            predir = './datasets/sequential/ml-20m_seq/'
             configs['data']['dir'] = predir
         self.trn_file = path.join(predir, 'train.tsv')
         self.val_file = path.join(predir, 'test.tsv')

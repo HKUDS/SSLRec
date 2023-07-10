@@ -16,13 +16,14 @@ import os
 class DataHandlerSocial:
 	def __init__(self):
 		if configs['data']['name'] == 'ciao':
-			predir = './datasets/social_ciao/'
+			predir = './datasets/social/social_ciao/'
 		elif configs['data']['name'] == 'epinions':
-			predir = './datasets/social_epinions/'
+			predir = './datasets/social/social_epinions/'
 		elif configs['data']['name'] == 'yelp':
-			predir = './datasets/social_yelp/'
+			predir = './datasets/social/social_yelp/'
 		elif configs['data']['name'] == 'lastfm':
-			predir = './datasets/social_lastfm/'
+			predir = './datasets/social/social_lastfm/'
+
 		self.trn_file = predir + 'trn_mat.pkl'
 		self.tst_file = predir + 'tst_mat.pkl'
 		self.trust_file = predir + 'trust_mat.pkl'
@@ -115,12 +116,12 @@ class DataHandlerSocial:
 		A9 = A9+A9.T
 		A10  = Y.dot(Y.T)-A8-A9
 		#addition and row-normalization
-		H_s = sum([A1,A2,A3,A4,A5,A6,A7])
-		H_s = H_s.multiply(1.0/H_s.sum(axis=1).reshape(-1, 1))
-		H_j = sum([A8,A9])
-		H_j = H_j.multiply(1.0/H_j.sum(axis=1).reshape(-1, 1))
+		H_s = sum([A1, A2, A3, A4, A5, A6, A7])
+		H_s = H_s.multiply(1.0 / H_s.sum(axis=1).reshape(-1, 1))
+		H_j = sum([A8, A9])
+		H_j = H_j.multiply(1.0 / H_j.sum(axis=1).reshape(-1, 1))
 		H_p = A10
-		H_p = H_p.multiply(H_p>1)
+		H_p = H_p.multiply(H_p > 1)
 		H_p = H_p.multiply(1.0/H_p.sum(axis=1).reshape(-1, 1))
 		return [H_s, H_j, H_p]
 
