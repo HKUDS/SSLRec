@@ -189,6 +189,159 @@ class Trainer(object):
             self.logger.log(
                 "Load model parameters from {}".format(pretrain_path))
 
+"""
+Special Trainer for General Collaborative Filtering methods (AutoCF, GFormer, ...)
+"""
+class AutoCFTrainer(Trainer):
+    def __init__(self, data_handler, logger):
+        super(AutoCFTrainer, self).__init__(data_handler, logger)
+
+        self.fix_steps = configs['model']['fix_steps']
+
+    def train_epoch(self, model, epoch_idx):
+        # prepare training data
+        train_dataloader = self.data_handler.train_dataloader
+        train_dataloader.dataset.sample_negs()
+
+        # for recording loss
+        loss_log_dict = {}
+        ep_loss = 0
+        steps = len(train_dataloader.dataset) // configs['train']['batch_size']
+        # start this epoch
+        model.train()
+        for i, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
+            self.optimizer.zero_grad()
+            batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
+
+            if i % self.fix_steps == 0:
+                sampScores, seeds = model.sample_subgraphs()
+                encoderAdj, decoderAdj = model.mask_subgraphs(seeds)
+
+            loss, loss_dict = model.cal_loss(batch_data, encoderAdj, decoderAdj)
+
+            if i % self.fix_steps == 0:
+                localGlobalLoss = -sampScores.mean()
+                loss += localGlobalLoss
+                loss_dict['infomax_loss'] = localGlobalLoss
+
+            ep_loss += loss.item()
+            loss.backward()
+            self.optimizer.step()
+
+            # record loss
+            for loss_name in loss_dict:
+                _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
+                if loss_name not in loss_log_dict:
+                    loss_log_dict[loss_name] = _loss_val
+                else:
+                    loss_log_dict[loss_name] += _loss_val
+
+        writer.add_scalar('Loss/train', ep_loss / steps, epoch_idx)
+
+        # log loss
+        if configs['train']['log_loss']:
+            self.logger.log_loss(epoch_idx, loss_log_dict)
+        else:
+            self.logger.log_loss(epoch_idx, loss_log_dict, save_to_log=False)
+
+class GFormerTrainer(Trainer):
+    def __init__(self, data_handler, logger):
+        super(GFormerTrainer, self).__init__(data_handler, logger)
+        self.handler = data_handler
+        self.user = configs['data']['user_num']
+        self.item = configs['data']['item_num']
+        self.latdim = configs['model']['embedding_size']
+        self.ctra = configs['model']['ctra']
+        self.fixSteps = configs['model']['fix_steps']
+        self.ssl_reg = configs['model']['ssl_reg']
+        self.reg = configs['model']['reg_weight']
+        self.b2 = configs['model']['b2']
+        self.batch = configs['train']['batch_size']
+
+    def pairPredict(self, ancEmbeds, posEmbeds, negEmbeds):
+        return self.innerProduct(ancEmbeds, posEmbeds) - self.innerProduct(ancEmbeds, negEmbeds)
+
+    def innerProduct(self, usrEmbeds, itmEmbeds):
+        return torch.sum(usrEmbeds * itmEmbeds, dim=-1)
+
+    def calcRegLoss(self, model):
+        ret = 0
+        for W in model.parameters():
+            ret += W.norm(2).square()
+        return ret
+
+    def contrast(self, nodes, allEmbeds, allEmbeds2=None):
+        if allEmbeds2 is not None:
+            pckEmbeds = allEmbeds[nodes]
+            scores = torch.log(torch.exp(pckEmbeds @ allEmbeds2.T).sum(-1)).mean()
+        else:
+            uniqNodes = torch.unique(nodes)
+            pckEmbeds = allEmbeds[uniqNodes]
+            scores = torch.log(torch.exp(pckEmbeds @ allEmbeds.T).sum(-1)).mean()
+        return scores
+
+    def contrastNCE(self, nodes, allEmbeds, allEmbeds2=None):
+        if allEmbeds2 is not None:
+            pckEmbeds = allEmbeds[nodes]
+            pckEmbeds2 = allEmbeds2[nodes]
+            scores = torch.log(torch.exp(pckEmbeds * pckEmbeds2).sum(-1)).mean()
+        return scores
+
+    def train_epoch(self, model, epoch_idx):
+        """ train in train mode """
+        model.train()
+        """ train Rec """
+        train_dataloader = self.data_handler.train_dataloader
+        train_dataloader.dataset.sample_negs()
+        self.handler.preSelect_anchor_set()
+        # for recording loss
+        loss_log_dict = {}
+        # start this epoch
+        for i, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
+            if i % self.fixSteps == 0:
+                att_edge, add_adj = model.localGraph(self.handler.torchBiAdj, model.getEgoEmbeds(), self.handler)
+                encoderAdj, decoderAdj, sub, cmp = model.masker(add_adj, att_edge)
+            ancs, poss, negs = tem
+            ancs = ancs.long().cuda()
+            poss = poss.long().cuda()
+            negs = negs.long().cuda()
+
+            usrEmbeds, itmEmbeds, cList, subLst = model(self.handler, False, sub, cmp, encoderAdj, decoderAdj)
+            ancEmbeds = usrEmbeds[ancs]
+            posEmbeds = itmEmbeds[poss]
+            negEmbeds = itmEmbeds[negs]
+
+            usrEmbeds2 = subLst[:self.user]
+            itmEmbeds2 = subLst[self.user:]
+            ancEmbeds2 = usrEmbeds2[ancs]
+            posEmbeds2 = itmEmbeds2[poss]
+
+            bprLoss = (-torch.sum(ancEmbeds * posEmbeds, dim=-1)).mean()
+            #
+            scoreDiff = self.pairPredict(ancEmbeds2, posEmbeds2, negEmbeds)
+            bprLoss2 = - (scoreDiff).sigmoid().log().sum() / self.batch
+            regLoss = self.calcRegLoss(model) * self.reg
+
+            contrastLoss = (self.contrast(ancs, usrEmbeds) + self.contrast(poss, itmEmbeds)) * self.ssl_reg + self.contrast(
+                ancs, usrEmbeds, itmEmbeds) + self.ctra * self.contrastNCE(ancs, subLst, cList)
+            loss = bprLoss + regLoss + contrastLoss + self.b2 * bprLoss2
+            loss_dict = {'bpr_loss': bprLoss, 'reg_loss': regLoss, 'cl_loss': contrastLoss}
+
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+
+            # record loss
+            for loss_name in loss_dict:
+                _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
+                if loss_name not in loss_log_dict:
+                    loss_log_dict[loss_name] = _loss_val
+                else:
+                    loss_log_dict[loss_name] += _loss_val
+
+        # log
+        self.logger.log_loss(epoch_idx, loss_log_dict)
+
 
 class DSLTrainer(Trainer):
     def __init__(self, data_handler, logger):
@@ -1023,124 +1176,6 @@ class KGTrainer(Trainer):
                     loss_log_dict['kg_loss'] = float(kg_loss) / len(triplet_dataloader)
                 else:
                     loss_log_dict['kg_loss'] += float(kg_loss) / len(triplet_dataloader)
-
-        # log
-        self.logger.log_loss(epoch_idx, loss_log_dict)
-
-
-class GFormerTrainer(Trainer):
-    def __init__(self, data_handler, logger):
-        super(GFormerTrainer, self).__init__(data_handler, logger)
-        self.handler = data_handler
-
-        self.user = configs['data']['user_num']
-        self.item = configs['data']['item_num']
-        self.latdim = configs['model']['embedding_size']
-
-        self.ctra = configs['model']['ctra']
-
-        self.fixSteps = configs['model']['fix_steps']
-        self.ssl_reg = configs['model']['ssl_reg']
-        self.reg = configs['model']['reg_weight']
-        self.b2 = configs['model']['b2']
-        self.batch = configs['train']['batch_size']
-
-    def create_optimizer(self, model):
-        optim_config = configs['optimizer']
-        if optim_config['name'] == 'adam':
-            self.optimizer = optim.Adam(model.parameters(
-            ), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
-
-    def pairPredict(self, ancEmbeds, posEmbeds, negEmbeds):
-        return self.innerProduct(ancEmbeds, posEmbeds) - self.innerProduct(ancEmbeds, negEmbeds)
-
-    def innerProduct(self, usrEmbeds, itmEmbeds):
-        return torch.sum(usrEmbeds * itmEmbeds, dim=-1)
-
-    def calcRegLoss(self, model):
-        ret = 0
-        for W in model.parameters():
-            ret += W.norm(2).square()
-        return ret
-
-    def contrast(self, nodes, allEmbeds, allEmbeds2=None):
-        if allEmbeds2 is not None:
-            pckEmbeds = allEmbeds[nodes]
-            scores = torch.log(torch.exp(pckEmbeds @ allEmbeds2.T).sum(-1)).mean()
-        else:
-            uniqNodes = torch.unique(nodes)
-            pckEmbeds = allEmbeds[uniqNodes]
-            scores = torch.log(torch.exp(pckEmbeds @ allEmbeds.T).sum(-1)).mean()
-        return scores
-
-    def contrastNCE(self, nodes, allEmbeds, allEmbeds2=None):
-        if allEmbeds2 is not None:
-            pckEmbeds = allEmbeds[nodes]
-            pckEmbeds2 = allEmbeds2[nodes]
-            # posScore = t.sum(pckEmbeds * pckEmbeds2)
-            scores = torch.log(torch.exp(pckEmbeds * pckEmbeds2).sum(-1)).mean()
-            # ssl_score = scores - posScore
-
-        return scores
-
-    def train_epoch(self, model, epoch_idx):
-        """ train in train mode """
-        model.train()
-        """ train Rec """
-        train_dataloader = self.data_handler.train_dataloader
-        train_dataloader.dataset.sample_negs()
-        self.handler.preSelect_anchor_set()
-        # for recording loss
-        loss_log_dict = {}
-        # start this epoch
-        for i, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
-            if i % self.fixSteps == 0:
-                att_edge, add_adj = model.localGraph(self.handler.torchBiAdj, model.getEgoEmbeds(),
-                                                     self.handler)
-                encoderAdj, decoderAdj, sub, cmp = model.masker(add_adj, att_edge)
-            ancs, poss, negs = tem
-            ancs = ancs.long().cuda()
-            poss = poss.long().cuda()
-            negs = negs.long().cuda()
-
-            usrEmbeds, itmEmbeds, cList, subLst = model(self.handler, False, sub, cmp, encoderAdj,
-                                                        decoderAdj)
-            ancEmbeds = usrEmbeds[ancs]
-            posEmbeds = itmEmbeds[poss]
-            negEmbeds = itmEmbeds[negs]
-
-            usrEmbeds2 = subLst[:self.user]
-            itmEmbeds2 = subLst[self.user:]
-            ancEmbeds2 = usrEmbeds2[ancs]
-            posEmbeds2 = itmEmbeds2[poss]
-
-            bprLoss = (-torch.sum(ancEmbeds * posEmbeds, dim=-1)).mean()
-            #
-            scoreDiff = self.pairPredict(ancEmbeds2, posEmbeds2, negEmbeds)
-            bprLoss2 = - (scoreDiff).sigmoid().log().sum() / self.batch
-            regLoss = self.calcRegLoss(model) * self.reg
-
-            contrastLoss = (self.contrast(ancs, usrEmbeds) + self.contrast(poss,
-                                                                           itmEmbeds)) * self.ssl_reg + self.contrast(
-                ancs, usrEmbeds, itmEmbeds) + self.ctra * self.contrastNCE(ancs, subLst, cList)
-            loss = bprLoss + regLoss + contrastLoss + self.b2 * bprLoss2
-            loss_dict = {'bpr_loss': bprLoss, 'reg_loss': regLoss, 'cl_loss': contrastLoss}
-
-            self.optimizer.zero_grad()
-            # batch_data = list(
-            #     map(lambda x: x.long().to(configs['device']), tem))
-            # batch_data.extend([kg_view_1, kg_view_2, ui_view_1, ui_view_2])
-            # loss, loss_dict = model.cal_loss(batch_data)
-            loss.backward()
-            self.optimizer.step()
-
-            # record loss
-            for loss_name in loss_dict:
-                _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
-                if loss_name not in loss_log_dict:
-                    loss_log_dict[loss_name] = _loss_val
-                else:
-                    loss_log_dict[loss_name] += _loss_val
 
         # log
         self.logger.log_loss(epoch_idx, loss_log_dict)
