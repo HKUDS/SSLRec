@@ -8,6 +8,7 @@
 | NCL   | WWW'22     | [Improving Graph Collaborative Filtering with Neighborhood-enriched Contrastive Learning](https://arxiv.org/pdf/2202.06200.pdf)|
 | DirectAU| KDD'22 | [Towards Representation Alignment and Uniformity in Collaborative Filtering](https://dl.acm.org/doi/pdf/10.1145/3534678.3539253)|
 | LightGCL| ICLR'22  | [LightGCL: Simple yet Effective Graph Contrastive Learning for Recommendation](https://arxiv.org/pdf/2302.08191.pdf)|
+| AutoCF| WWW'23 | [Automated Self-Supervised Learning for Recommendation](https://arxiv.org/pdf/2303.07797.pdf)
 | DCCF| SIGIR'23 | [Disentangled Contrastive Collaborative Filtering](https://arxiv.org/pdf/2305.02759.pdf)
 
 
@@ -34,7 +35,7 @@
 | Model | Conference | Paper |
 | ----- | ---------- | ----- |
 |KGCL|SIGIR'22|[Knowledge Graph Contrastive Learning for Recommendation](https://arxiv.org/pdf/2205.00976.pdf)|
-
+|KGRec|KDD'23|[Knowledge Graph Self-Supervised Rationalization for Recommendation](https://arxiv.org/pdf/2307.02759.pdf)|
 
 ### Multi-behavior Recommendation
 | Model | Conference | Paper |
