@@ -4,31 +4,42 @@ optimizer:
   weight_decay: 0
 
 train:
-  epoch: 100
+  epoch: 300
   batch_size: 4096
   save_model: false
   loss: pairwise_with_epoch_flag
+  log_loss: false
   test_step: 3
-  #pretrain_path: ./checkpoint/xxxx.pth
+  patience: 5
+  reproducible: true
+  seed: 2023
 
 test:
   metrics: [recall, ndcg]
   k: [10, 20, 40]
-  batch_size: 256
+  batch_size: 1024
 
 data:
-  type: general_cf # choose in {general_cf, multi_behavior, sequential, social}
+  type: general_cf
   name: gowalla
 
 model:
-  name: ncl # case-insensitive
+  name: ncl
   keep_rate: 1.0
-  layer_num: 2
+  layer_num: 3
   high_order: 2
-  reg_weight: 1.0e-6
-  proto_weight: 1.0e-3
-  struct_weight: 1.0e-2
+  reg_weight: 1.0e-7
+  proto_weight: 1.0e-4
+  struct_weight: 1.0e-3
   temperature: 0.3
   embedding_size: 32
   epoch_period: 3
   cluster_num: 50
+
+tune:
+  enable: false
+  hyperparameters: [layer_num, reg_weight, proto_weight, struct_weight]
+  layer_num: [2, 3]
+  reg_weight: [1.0e-5, 1.0e-6, 1.0e-7]
+  proto_weight: [1.0e-2, 1.0e-3, 1.0e-4]
+  struct_weight: [1.0e-1, 1.0e-2, 1.0e-3]
