@@ -22,10 +22,10 @@ def main():
     trainer = build_trainer(data_handler, logger)
 
     # Fifth Step: training
-    trainer.train(model)
+    best_model = trainer.train(model)
 
-    # Sixth Step: evaluate
-    trainer.evaluate(model)
+    # Sixth Step: test
+    trainer.test(best_model)
 
 def tune():
     # First Step: Create data_handler

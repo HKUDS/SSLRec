@@ -97,6 +97,7 @@ class Trainer(object):
                     self.evaluate(model, epoch_idx)
             self.test(model)
             self.save_model(model)
+            return model
 
         elif train_config['early_stop']:
             now_patience = 0
@@ -131,6 +132,7 @@ class Trainer(object):
             model.load_state_dict(best_state_dict)
             self.test(model)
             self.save_model(model)
+            return model
 
     @log_exceptions
     def evaluate(self, model, epoch_idx=None):
@@ -155,7 +157,6 @@ class Trainer(object):
             self.logger.log_eval(eval_result, configs['test']['k'], data_type='Test set')
         else:
             raise NotImplemented
-        print(eval_result)
         return eval_result
 
     def save_model(self, model):
@@ -195,7 +196,6 @@ Special Trainer for General Collaborative Filtering methods (AutoCF, GFormer, ..
 class AutoCFTrainer(Trainer):
     def __init__(self, data_handler, logger):
         super(AutoCFTrainer, self).__init__(data_handler, logger)
-
         self.fix_steps = configs['model']['fix_steps']
 
     def train_epoch(self, model, epoch_idx):
@@ -244,6 +244,7 @@ class AutoCFTrainer(Trainer):
         else:
             self.logger.log_loss(epoch_idx, loss_log_dict, save_to_log=False)
 
+
 class GFormerTrainer(Trainer):
     def __init__(self, data_handler, logger):
         super(GFormerTrainer, self).__init__(data_handler, logger)
@@ -251,41 +252,7 @@ class GFormerTrainer(Trainer):
         self.user = configs['data']['user_num']
         self.item = configs['data']['item_num']
         self.latdim = configs['model']['embedding_size']
-        self.ctra = configs['model']['ctra']
         self.fixSteps = configs['model']['fix_steps']
-        self.ssl_reg = configs['model']['ssl_reg']
-        self.reg = configs['model']['reg_weight']
-        self.b2 = configs['model']['b2']
-        self.batch = configs['train']['batch_size']
-
-    def pairPredict(self, ancEmbeds, posEmbeds, negEmbeds):
-        return self.innerProduct(ancEmbeds, posEmbeds) - self.innerProduct(ancEmbeds, negEmbeds)
-
-    def innerProduct(self, usrEmbeds, itmEmbeds):
-        return torch.sum(usrEmbeds * itmEmbeds, dim=-1)
-
-    def calcRegLoss(self, model):
-        ret = 0
-        for W in model.parameters():
-            ret += W.norm(2).square()
-        return ret
-
-    def contrast(self, nodes, allEmbeds, allEmbeds2=None):
-        if allEmbeds2 is not None:
-            pckEmbeds = allEmbeds[nodes]
-            scores = torch.log(torch.exp(pckEmbeds @ allEmbeds2.T).sum(-1)).mean()
-        else:
-            uniqNodes = torch.unique(nodes)
-            pckEmbeds = allEmbeds[uniqNodes]
-            scores = torch.log(torch.exp(pckEmbeds @ allEmbeds.T).sum(-1)).mean()
-        return scores
-
-    def contrastNCE(self, nodes, allEmbeds, allEmbeds2=None):
-        if allEmbeds2 is not None:
-            pckEmbeds = allEmbeds[nodes]
-            pckEmbeds2 = allEmbeds2[nodes]
-            scores = torch.log(torch.exp(pckEmbeds * pckEmbeds2).sum(-1)).mean()
-        return scores
 
     def train_epoch(self, model, epoch_idx):
         """ train in train mode """
@@ -293,39 +260,17 @@ class GFormerTrainer(Trainer):
         """ train Rec """
         train_dataloader = self.data_handler.train_dataloader
         train_dataloader.dataset.sample_negs()
-        self.handler.preSelect_anchor_set()
+        model.preSelect_anchor_set()
         # for recording loss
         loss_log_dict = {}
         # start this epoch
         for i, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
+            batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
             if i % self.fixSteps == 0:
-                att_edge, add_adj = model.localGraph(self.handler.torchBiAdj, model.getEgoEmbeds(), self.handler)
+                att_edge, add_adj = model.localGraph(self.handler.torch_adj, model.getEgoEmbeds(), self.handler)
                 encoderAdj, decoderAdj, sub, cmp = model.masker(add_adj, att_edge)
-            ancs, poss, negs = tem
-            ancs = ancs.long().cuda()
-            poss = poss.long().cuda()
-            negs = negs.long().cuda()
 
-            usrEmbeds, itmEmbeds, cList, subLst = model(self.handler, False, sub, cmp, encoderAdj, decoderAdj)
-            ancEmbeds = usrEmbeds[ancs]
-            posEmbeds = itmEmbeds[poss]
-            negEmbeds = itmEmbeds[negs]
-
-            usrEmbeds2 = subLst[:self.user]
-            itmEmbeds2 = subLst[self.user:]
-            ancEmbeds2 = usrEmbeds2[ancs]
-            posEmbeds2 = itmEmbeds2[poss]
-
-            bprLoss = (-torch.sum(ancEmbeds * posEmbeds, dim=-1)).mean()
-            #
-            scoreDiff = self.pairPredict(ancEmbeds2, posEmbeds2, negEmbeds)
-            bprLoss2 = - (scoreDiff).sigmoid().log().sum() / self.batch
-            regLoss = self.calcRegLoss(model) * self.reg
-
-            contrastLoss = (self.contrast(ancs, usrEmbeds) + self.contrast(poss, itmEmbeds)) * self.ssl_reg + self.contrast(
-                ancs, usrEmbeds, itmEmbeds) + self.ctra * self.contrastNCE(ancs, subLst, cList)
-            loss = bprLoss + regLoss + contrastLoss + self.b2 * bprLoss2
-            loss_dict = {'bpr_loss': bprLoss, 'reg_loss': regLoss, 'cl_loss': contrastLoss}
+            loss, loss_dict = model.cal_loss(batch_data, encoderAdj, decoderAdj, sub, cmp)
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -342,25 +287,65 @@ class GFormerTrainer(Trainer):
         # log
         self.logger.log_loss(epoch_idx, loss_log_dict)
 
+"""
+Special Trainer for Sequential Recommendation methods (ICLRec, ...)
+"""
+class ICLRecTrainer(Trainer):
+    def __init__(self, data_handler, logger):
+        super(ICLRecTrainer, self).__init__(data_handler, logger)
+        self.cluster_dataloader = copy.deepcopy(self.data_handler.train_dataloader)
 
+    def train_epoch(self, model, epoch_idx):
+        """ prepare clustering in eval mode """
+        model.eval()
+        kmeans_training_data = []
+        cluster_dataloader = self.cluster_dataloader
+        cluster_dataloader.dataset.sample_negs()
+        for _, tem in tqdm(enumerate(cluster_dataloader), desc='Training Clustering', total=len(cluster_dataloader)):
+            batch_data = list(
+                map(lambda x: x.long().to(configs['device']), tem))
+            # feed batch_seqs into model.forward()
+            sequence_output = model(batch_data[1], return_mean=True)
+            kmeans_training_data.append(sequence_output.detach().cpu().numpy())
+        kmeans_training_data = np.concatenate(kmeans_training_data, axis=0)
+        model.cluster.train(kmeans_training_data)
+        del kmeans_training_data
+        gc.collect()
+
+        """ train in train mode """
+        model.train()
+        train_dataloader = self.data_handler.train_dataloader
+        train_dataloader.dataset.sample_negs()
+        # for recording loss
+        loss_log_dict = {}
+        # start this epoch
+        model.train()
+        for _, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
+            self.optimizer.zero_grad()
+            batch_data = list(
+                map(lambda x: x.long().to(configs['device']), tem))
+            loss, loss_dict = model.cal_loss(batch_data)
+            loss.backward()
+            self.optimizer.step()
+
+            # record loss
+            for loss_name in loss_dict:
+                _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
+                if loss_name not in loss_log_dict:
+                    loss_log_dict[loss_name] = _loss_val
+                else:
+                    loss_log_dict[loss_name] += _loss_val
+
+        # log
+        self.logger.log_loss(epoch_idx, loss_log_dict)
+
+
+"""
+Special Trainer for Social Recommendation methods (DSL, ...)
+"""
 class DSLTrainer(Trainer):
     def __init__(self, data_handler, logger):
         super(DSLTrainer, self).__init__(data_handler, logger)
-
-    @log_exceptions
-    def train(self, model):
-        # self.evaluate(model, 0)
-        self.create_optimizer(model)
-        train_config = configs['train']
-        # torch.autograd.set_detect_anomaly(True)
-        for epoch_idx in range(train_config['epoch']):
-            # train
-            self.train_epoch(model, epoch_idx)
-            # evaluate
-            if epoch_idx % train_config['test_step'] == 0:
-                self.evaluate(model, epoch_idx)
-
-        self.save_model(model)
 
     def train_epoch(self, model, epoch_idx):
         # prepare training data
@@ -393,6 +378,70 @@ class DSLTrainer(Trainer):
         writer.add_scalar('Loss/train', ep_loss / steps, epoch_idx)
         # log
         self.logger.log_loss(epoch_idx, loss_log_dict)
+
+
+"""
+Special Trainer for Knowledge Graph-enhanced Recommendation methods (KGCL, KGRec, ...)
+"""
+class KGTrainer(Trainer):
+    def __init__(self, data_handler, logger):
+        super(KGTrainer, self).__init__(data_handler, logger)
+        self.train_trans = configs['model']['train_trans']
+        if self.train_trans:
+            self.triplet_dataloader = data_handler.triplet_dataloader
+
+    def create_optimizer(self, model):
+        optim_config = configs['optimizer']
+        if optim_config['name'] == 'adam':
+            self.optimizer = optim.Adam(model.parameters(), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
+            self.kg_optimizer = optim.Adam(model.parameters(), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
+
+    def train_epoch(self, model, epoch_idx):
+        """ train in train mode """
+        model.train()
+        """ train Rec """
+        train_dataloader = self.data_handler.train_dataloader
+        train_dataloader.dataset.sample_negs()
+        # for recording loss
+        loss_log_dict = {}
+        # start this epoch
+        kg_view_1, kg_view_2, ui_view_1, ui_view_2 = model.get_aug_views()
+        for _, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
+            self.optimizer.zero_grad()
+            batch_data = list(
+                map(lambda x: x.long().to(configs['device']), tem))
+            batch_data.extend([kg_view_1, kg_view_2, ui_view_1, ui_view_2])
+            loss, loss_dict = model.cal_loss(batch_data)
+            loss.backward()
+            self.optimizer.step()
+
+            # record loss
+            for loss_name in loss_dict:
+                _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
+                if loss_name not in loss_log_dict:
+                    loss_log_dict[loss_name] = _loss_val
+                else:
+                    loss_log_dict[loss_name] += _loss_val
+
+        if self.train_trans:
+            """ train KG trans """
+            triplet_dataloader = self.triplet_dataloader
+            for _, tem in tqdm(enumerate(triplet_dataloader), desc='Training KG Trans', total=len(triplet_dataloader)):
+                self.kg_optimizer.zero_grad()
+                batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
+                # feed batch_seqs into model.forward()
+                kg_loss = model.cal_kg_loss(batch_data)
+                kg_loss.backward()
+                self.kg_optimizer.step()
+
+                if 'kg_loss' not in loss_log_dict:
+                    loss_log_dict['kg_loss'] = float(kg_loss) / len(triplet_dataloader)
+                else:
+                    loss_log_dict['kg_loss'] += float(kg_loss) / len(triplet_dataloader)
+
+        # log
+        self.logger.log_loss(epoch_idx, loss_log_dict)
+
 
 
 class CMLTrainer(Trainer):
@@ -811,57 +860,6 @@ class MMCLRTrainer(Trainer):
             self.optimizer.step()
 
 
-class ICLRecTrainer(Trainer):
-    def __init__(self, data_handler, logger):
-        super(ICLRecTrainer, self).__init__(data_handler, logger)
-        self.cluster_dataloader = copy.deepcopy(
-            self.data_handler.train_dataloader)
-
-    def train_epoch(self, model, epoch_idx):
-        """ prepare clustering in eval mode """
-        model.eval()
-        kmeans_training_data = []
-        cluster_dataloader = self.cluster_dataloader
-        cluster_dataloader.dataset.sample_negs()
-        for _, tem in tqdm(enumerate(cluster_dataloader), desc='Training Clustering', total=len(cluster_dataloader)):
-            batch_data = list(
-                map(lambda x: x.long().to(configs['device']), tem))
-            # feed batch_seqs into model.forward()
-            sequence_output = model(batch_data[1], return_mean=True)
-            kmeans_training_data.append(sequence_output.detach().cpu().numpy())
-        kmeans_training_data = np.concatenate(kmeans_training_data, axis=0)
-        model.cluster.train(kmeans_training_data)
-        del kmeans_training_data
-        gc.collect()
-
-        """ train in train mode """
-        model.train()
-        train_dataloader = self.data_handler.train_dataloader
-        train_dataloader.dataset.sample_negs()
-        # for recording loss
-        loss_log_dict = {}
-        # start this epoch
-        model.train()
-        for _, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
-            self.optimizer.zero_grad()
-            batch_data = list(
-                map(lambda x: x.long().to(configs['device']), tem))
-            loss, loss_dict = model.cal_loss(batch_data)
-            loss.backward()
-            self.optimizer.step()
-
-            # record loss
-            for loss_name in loss_dict:
-                _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
-                if loss_name not in loss_log_dict:
-                    loss_log_dict[loss_name] = _loss_val
-                else:
-                    loss_log_dict[loss_name] += _loss_val
-
-        # log
-        self.logger.log_loss(epoch_idx, loss_log_dict)
-
-
 class KMCLRTrainer(Trainer):
     def __init__(self, data_handler, logger):
         super(KMCLRTrainer, self).__init__(data_handler, logger)
@@ -1118,64 +1116,3 @@ class MBGMNTrainer(Trainer):
         return uLocs, iLocs
 
 
-class KGTrainer(Trainer):
-    def __init__(self, data_handler, logger):
-        super(KGTrainer, self).__init__(data_handler, logger)
-        self.train_trans = configs['model']['train_trans']
-        if self.train_trans:
-            self.triplet_dataloader = data_handler.triplet_dataloader
-
-    def create_optimizer(self, model):
-        optim_config = configs['optimizer']
-        if optim_config['name'] == 'adam':
-            self.optimizer = optim.Adam(model.parameters(
-            ), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
-            self.kg_optimizer = optim.Adam(model.parameters(
-            ), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
-
-    def train_epoch(self, model, epoch_idx):
-        """ train in train mode """
-        model.train()
-        """ train Rec """
-        train_dataloader = self.data_handler.train_dataloader
-        train_dataloader.dataset.sample_negs()
-        # for recording loss
-        loss_log_dict = {}
-        # start this epoch
-        kg_view_1, kg_view_2, ui_view_1, ui_view_2 = model.get_aug_views()
-        for _, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
-            self.optimizer.zero_grad()
-            batch_data = list(
-                map(lambda x: x.long().to(configs['device']), tem))
-            batch_data.extend([kg_view_1, kg_view_2, ui_view_1, ui_view_2])
-            loss, loss_dict = model.cal_loss(batch_data)
-            loss.backward()
-            self.optimizer.step()
-
-            # record loss
-            for loss_name in loss_dict:
-                _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
-                if loss_name not in loss_log_dict:
-                    loss_log_dict[loss_name] = _loss_val
-                else:
-                    loss_log_dict[loss_name] += _loss_val
-
-        if self.train_trans:
-            """ train KG trans """
-            triplet_dataloader = self.triplet_dataloader
-            for _, tem in tqdm(enumerate(triplet_dataloader), desc='Training KG Trans', total=len(triplet_dataloader)):
-                self.kg_optimizer.zero_grad()
-                batch_data = list(
-                    map(lambda x: x.long().to(configs['device']), tem))
-                # feed batch_seqs into model.forward()
-                kg_loss = model.cal_kg_loss(batch_data)
-                kg_loss.backward()
-                self.kg_optimizer.step()
-
-                if 'kg_loss' not in loss_log_dict:
-                    loss_log_dict['kg_loss'] = float(kg_loss) / len(triplet_dataloader)
-                else:
-                    loss_log_dict['kg_loss'] += float(kg_loss) / len(triplet_dataloader)
-
-        # log
-        self.logger.log_loss(epoch_idx, loss_log_dict)

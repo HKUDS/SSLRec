@@ -17,7 +17,7 @@ class GFormer(BaseModel):
     def __init__(self, data_handler):
         super(GFormer, self).__init__(data_handler)
 
-        self.adj = data_handler.torchBiAdj
+        self.adj = data_handler.torch_adj
         self.handler = data_handler
 
         # hyper meters
@@ -27,6 +27,12 @@ class GFormer(BaseModel):
         self.keep_rate = configs['model']['keep_rate']
         self.gtw = configs['model']['gtw']
         self.anchor_set_num = configs['model']['anchor_set_num']
+
+        self.ctra = configs['model']['ctra']
+        self.ssl_reg = configs['model']['ssl_reg']
+        self.reg = configs['model']['reg_weight']
+        self.b2 = configs['model']['b2']
+        self.batch_train = configs['train']['batch_size']
 
         self.uEmbeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
         self.iEmbeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))
@@ -69,7 +75,7 @@ class GFormer(BaseModel):
         return embeds[:self.user_num], embeds[self.user_num:], cList, subList
 
     def full_predict(self, batch_data):
-        user_embeds, item_embeds,_,_ = self.forward(self.handler,True,self.adj,self.adj,self.adj)
+        user_embeds, item_embeds, _, _ = self.forward(self.handler, True, self.adj, self.adj, self.adj)
         self.is_training = False
         pck_users, train_mask = batch_data
         pck_users = pck_users.long()
@@ -77,6 +83,101 @@ class GFormer(BaseModel):
         full_preds = pck_user_embeds @ item_embeds.T
         full_preds = self._mask_predict(full_preds, train_mask)
         return full_preds
+
+    def cal_loss(self, batch_data, encoder_adj, decoder_adj, sub, cmp):
+        user_embeds, item_embeds, cList, subLst = self.forward(self.handler, False, sub, cmp, encoder_adj, decoder_adj)
+        ancs, poss, negs = batch_data
+        # -------
+        ancs = ancs.long().cuda()
+        poss = poss.long().cuda()
+        negs = negs.long().cuda()
+
+        ancEmbeds = user_embeds[ancs]
+        posEmbeds = item_embeds[poss]
+        negEmbeds = item_embeds[negs]
+
+        usrEmbeds2 = subLst[:self.user_num]
+        itmEmbeds2 = subLst[self.user_num:]
+        ancEmbeds2 = usrEmbeds2[ancs]
+        posEmbeds2 = itmEmbeds2[poss]
+
+        bprLoss = (-torch.sum(ancEmbeds * posEmbeds, dim=-1)).mean()
+        #
+        scoreDiff = self.pairPredict(ancEmbeds2, posEmbeds2, negEmbeds)
+        bprLoss2 = - (scoreDiff).sigmoid().log().sum() / self.batch_train
+        regLoss = self.calcRegLoss(self) * self.reg
+
+        contrastLoss = (self.contrast(ancs, user_embeds) + self.contrast(poss, item_embeds)) * self.ssl_reg + self.contrast(
+            ancs, user_embeds, item_embeds) + self.ctra * self.contrastNCE(ancs, subLst, cList)
+        loss = bprLoss + regLoss + contrastLoss + self.b2 * bprLoss2
+        loss_dict = {'bpr_loss': bprLoss, 'reg_loss': regLoss, 'cl_loss': contrastLoss}
+
+        return loss, loss_dict
+
+    def pairPredict(self, ancEmbeds, posEmbeds, negEmbeds):
+        return self.innerProduct(ancEmbeds, posEmbeds) - self.innerProduct(ancEmbeds, negEmbeds)
+
+    def innerProduct(self, usrEmbeds, itmEmbeds):
+        return torch.sum(usrEmbeds * itmEmbeds, dim=-1)
+
+    def calcRegLoss(self, model):
+        ret = 0
+        for W in model.parameters():
+            ret += W.norm(2).square()
+        return ret
+
+    def contrast(self, nodes, allEmbeds, allEmbeds2=None):
+        if allEmbeds2 is not None:
+            pckEmbeds = allEmbeds[nodes]
+            scores = torch.log(torch.exp(pckEmbeds @ allEmbeds2.T).sum(-1)).mean()
+        else:
+            uniqNodes = torch.unique(nodes)
+            pckEmbeds = allEmbeds[uniqNodes]
+            scores = torch.log(torch.exp(pckEmbeds @ allEmbeds.T).sum(-1)).mean()
+        return scores
+
+    def contrastNCE(self, nodes, allEmbeds, allEmbeds2=None):
+        if allEmbeds2 is not None:
+            pckEmbeds = allEmbeds[nodes]
+            pckEmbeds2 = allEmbeds2[nodes]
+            scores = torch.log(torch.exp(pckEmbeds * pckEmbeds2).sum(-1)).mean()
+        return scores
+
+    def single_source_shortest_path_length_range(self, graph, node_range, cutoff):  # 最短路径算法
+        dists_dict = {}
+        for node in node_range:
+            dists_dict[node] = nx.single_source_shortest_path_length(graph, node, cutoff=None)
+        return dists_dict
+
+    def get_random_anchorset(self):
+        n = self.num_nodes
+        annchorset_id = np.random.choice(n, size=configs['model']['anchor_set_num'], replace=False)
+        graph = nx.Graph()
+        graph.add_nodes_from(np.arange(configs['data']['user_num'] + configs['data']['item_num']))
+
+        rows = self.adj._indices()[0, :]
+        cols = self.adj._indices()[1, :]
+
+        rows = np.array(rows.cpu())
+        cols = np.array(cols.cpu())
+
+        edge_pair = list(zip(rows, cols))
+        graph.add_edges_from(edge_pair)
+        dists_array = np.zeros((len(annchorset_id), self.num_nodes))
+
+        dicts_dict = self.single_source_shortest_path_length_range(graph, annchorset_id, None)
+        for i, node_i in enumerate(annchorset_id):
+            shortest_dist = dicts_dict[node_i]
+            for j, node_j in enumerate(graph.nodes()):
+                dist = shortest_dist.get(node_j, -1)
+                if dist != -1:
+                    dists_array[i, j] = 1 / (dist + 1)
+        self.handler.dists_array = dists_array
+        self.handler.anchorset_id = annchorset_id  #
+
+    def preSelect_anchor_set(self):
+        self.num_nodes = configs['data']['user_num'] + configs['data']['item_num']
+        self.get_random_anchorset()
 
 
 class GCNLayer(nn.Module):
@@ -284,7 +385,8 @@ class RandomMaskSubgraphs(BaseModel):
             att_f[att_f > 3] = 3
             att_edge = 1.0 / (np.exp(np.array(att_f.detach().cpu() + 1E-8)))  # 基于mlp可以去除
         att_f = att_edge / att_edge.sum()
-        keep_index = np.random.choice(np.arange(len(users_up.cpu())), int(len(users_up.cpu()) * configs['model']['sub']),
+        keep_index = np.random.choice(np.arange(len(users_up.cpu())),
+                                      int(len(users_up.cpu()) * configs['model']['sub']),
                                       replace=False, p=att_f)
 
         keep_index.sort()
@@ -331,7 +433,8 @@ class RandomMaskSubgraphs(BaseModel):
         att_f = 1.0 / (np.exp(np.array(att_f.detach().cpu() + 1E-8)))
         att_f1 = att_f / att_f.sum()
 
-        keep_index = np.random.choice(np.arange(len(users_up.cpu())), int(len(users_up.cpu()) * configs['model']['keep_rate']),
+        keep_index = np.random.choice(np.arange(len(users_up.cpu())),
+                                      int(len(users_up.cpu()) * configs['model']['keep_rate']),
                                       replace=False, p=att_f1)
         keep_index.sort()
         rows = users_up[keep_index]

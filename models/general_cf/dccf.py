@@ -46,7 +46,7 @@ class DCCF(BaseModel):
 
         # train/test
         self.is_training = True
-        self.final_embeds = False
+        self.final_embeds = None
 
         self._init_weight()
 
