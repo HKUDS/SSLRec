@@ -4,14 +4,16 @@ optimizer:
   weight_decay: 0
 
 train:
-  epoch: 100
+  epoch: 500
   batch_size: 4096
-  save_model: true
+  save_model: false
   loss: pairwise # bpr
-  test_step: 5 # evaluate per {test_step} epochs
-  #pretrain_path: ./checkpoint/xxxx.pth
+  log_loss: false # whether to log loss
+  test_step: 3 # evaluate per {test_step} epochs
+  patience: 5
   reproducible: true
   seed: 2023
+  #pretrain_path: ./checkpoint/xxxx.pth
 
 test:
   metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
@@ -27,11 +29,11 @@ model:
   name: lightgcn # case-insensitive
   keep_rate: 0.5
   layer_num: 2
-  reg_weight: 1.0e-7
+  reg_weight: 1.0e-8
   embedding_size: 32
 
 tune:
-  enable: false # Whether to enable grid search to search for optimal hyperparameters
+  enable: true # Whether to enable grid search to search for optimal hyperparameters
   hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
-  layer_num: [1, 2, 3] # Use a list to store the search range
-  reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
+  layer_num: [2, 3] # Use a list to store the search range
+  reg_weight: [1.0e-6, 1.0e-7, 1.0e-8]
