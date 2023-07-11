@@ -284,8 +284,11 @@ class GFormerTrainer(Trainer):
                 else:
                     loss_log_dict[loss_name] += _loss_val
 
-        # log
-        self.logger.log_loss(epoch_idx, loss_log_dict)
+        # log loss
+        if configs['train']['log_loss']:
+            self.logger.log_loss(epoch_idx, loss_log_dict)
+        else:
+            self.logger.log_loss(epoch_idx, loss_log_dict, save_to_log=False)
 
 """
 Special Trainer for Sequential Recommendation methods (ICLRec, ...)

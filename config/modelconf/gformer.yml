@@ -4,27 +4,31 @@ optimizer:
   weight_decay: 0
 
 train:
-  epoch: 100
+  epoch: 300
   batch_size: 4096
   save_model: false
   loss: pairwise
+  log_loss: false
   test_step: 3
-  trainer: GFormerTrainer
+  patience: 5
+  reproducible: true
+  seed: 2023
+  trainer: gformer_trainer
 
 test:
   metrics: [recall, ndcg]
   k: [10, 20, 40]
-  batch_size: 256
+  batch_size: 1024
 
 data:
   type: general_cf
-  name: yelp
+  name: gowalla
 
 model:
   name: gformer
   keep_rate: 0.9
-  layer_num: 3
-  reg_weight: 1.0e-4
+  layer_num: 2
+  reg_weight: 1.0e-6
   cl_weight: 1.0
   temperature: 0.1
   embedding_size: 32
@@ -40,3 +44,10 @@ model:
   addRate: 0.01
   pnn_layer: 1
   sub: 0.1
+
+tune:
+  enable: false
+  hyperparameters: [layer_num, reg_weight, ssl_reg]
+  layer_num: [2, 3]
+  reg_weight: [1.0e-6, 1.0e-7, 1.0e-8]
+  ssl_reg: [1.0e-1, 1, 2, 5]
