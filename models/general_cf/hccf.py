@@ -30,7 +30,7 @@ class HCCF(BaseModel):
 		self.user_hyper_embeds = nn.Parameter(init(t.empty(self.embedding_size, self.hyper_num)))
 		self.item_hyper_embeds = nn.Parameter(init(t.empty(self.embedding_size, self.hyper_num)))
 
-		self.edge_drop = SpAdjEdgeDrop()
+		self.edge_drop = SpAdjEdgeDrop(resize_val=True)
 	
 	def _gcn_layer(self, adj, embeds):
 		return t.spmm(adj, embeds)
@@ -40,9 +40,7 @@ class HCCF(BaseModel):
 		embeds_list = [embeds]
 		gcn_embeds_list = []
 		hyper_embeds_list = []
-		# uu_hyper = self.user_embeds * self.mult
 		uu_hyper = self.user_embeds @ self.user_hyper_embeds * self.mult
-		# ii_hyper = self.item_embeds * self.mult
 		ii_hyper = self.item_embeds @ self.item_hyper_embeds * self.mult
 
 		for i in range(self.layer_num):
@@ -54,6 +52,15 @@ class HCCF(BaseModel):
 			embeds_list.append(tem_embeds + hyper_embeds_list[-1])
 		embeds = sum(embeds_list)
 		return embeds, gcn_embeds_list, hyper_embeds_list
+	
+	def contrastLoss(self, embeds1, embeds2, nodes, temp):
+		embeds1 = F.normalize(embeds1 + 1e-8, p=2)
+		embeds2 = F.normalize(embeds2 + 1e-8, p=2)
+		pckEmbeds1 = embeds1[nodes]
+		pckEmbeds2 = embeds2[nodes]
+		nume = t.exp(t.sum(pckEmbeds1 * pckEmbeds2, dim=-1) / temp)
+		deno = t.exp(pckEmbeds1 @ embeds2.T / temp).sum(-1) + 1e-8
+		return -t.log(nume / deno).mean()
 	
 	def cal_loss(self, batch_data):
 		ancs, poss, negs = batch_data

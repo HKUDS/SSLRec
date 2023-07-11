@@ -7,8 +7,9 @@ import torch.nn.functional as F
 import math
 
 class SpAdjEdgeDrop(nn.Module):
-	def __init__(self):
+	def __init__(self, resize_val=False):
 		super(SpAdjEdgeDrop, self).__init__()
+		self.resize_val = resize_val
 
 	def forward(self, adj, keep_rate):
 		if keep_rate == 1.0:
@@ -17,7 +18,7 @@ class SpAdjEdgeDrop(nn.Module):
 		idxs = adj._indices()
 		edgeNum = vals.size()
 		mask = (t.rand(edgeNum) + keep_rate).floor().type(t.bool)
-		newVals = vals[mask]# / keep_rate
+		newVals = vals[mask] / (keep_rate if self.resize_val else 1.0)
 		newIdxs = idxs[:, mask]
 		return t.sparse.FloatTensor(newIdxs, newVals, adj.shape)
 
