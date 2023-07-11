@@ -4,17 +4,20 @@ optimizer:
   weight_decay: 0
 
 train:
-  epoch: 100
+  epoch: 300
   batch_size: 4096
   save_model: false
   loss: pairwise
+  log_loss: false
   test_step: 3
-  #pretrain_path: ./checkpoint/xxxx.pth
+  patience: 5
+  reproducible: true
+  seed: 2023
 
 test:
   metrics: [recall, ndcg]
   k: [10, 20, 40]
-  batch_size: 256
+  batch_size: 1024
 
 data:
   type: general_cf # choose in {general_cf, multi_behavior, sequential, social}
@@ -28,4 +31,12 @@ model:
   cl_weight: 1.0e-2
   temperature: 0.1
   embedding_size: 32
-  eps: 0.2
+  eps: 0.9
+
+tune:
+  enable: false
+  hyperparameters: [layer_num, cl_weight, temperature, eps]
+  layer_num: [2, 3]
+  cl_weight: [1.0e-1, 1.0e-2, 1.0e-3]
+  temperature: [0.1, 0.2, 0.5, 1.0]
+  eps: [0.1, 0.2, 0.5, 0.9]

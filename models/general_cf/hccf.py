@@ -40,8 +40,10 @@ class HCCF(BaseModel):
 		embeds_list = [embeds]
 		gcn_embeds_list = []
 		hyper_embeds_list = []
-		uu_hyper = self.user_embeds * self.mult
-		ii_hyper = self.item_embeds * self.mult
+		# uu_hyper = self.user_embeds * self.mult
+		uu_hyper = self.user_embeds @ self.user_hyper_embeds * self.mult
+		# ii_hyper = self.item_embeds * self.mult
+		ii_hyper = self.item_embeds @ self.item_hyper_embeds * self.mult
 
 		for i in range(self.layer_num):
 			tem_embeds = self._gcn_layer(self.edge_drop(adj, keep_rate), embeds_list[-1])
