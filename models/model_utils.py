@@ -6,33 +6,36 @@ from config.configurator import configs
 import torch.nn.functional as F
 import math
 
-class SpAdjEdgeDrop(nn.Module):
-	def __init__(self, resize_val=False):
-		super(SpAdjEdgeDrop, self).__init__()
-		self.resize_val = resize_val
 
-	def forward(self, adj, keep_rate):
-		if keep_rate == 1.0:
-			return adj
-		vals = adj._values()
-		idxs = adj._indices()
-		edgeNum = vals.size()
-		mask = (t.rand(edgeNum) + keep_rate).floor().type(t.bool)
-		newVals = vals[mask] / (keep_rate if self.resize_val else 1.0)
-		newIdxs = idxs[:, mask]
-		return t.sparse.FloatTensor(newIdxs, newVals, adj.shape)
+class SpAdjEdgeDrop(nn.Module):
+    def __init__(self, resize_val=False):
+        super(SpAdjEdgeDrop, self).__init__()
+        self.resize_val = resize_val
+
+    def forward(self, adj, keep_rate):
+        if keep_rate == 1.0:
+            return adj
+        vals = adj._values()
+        idxs = adj._indices()
+        edgeNum = vals.size()
+        mask = (t.rand(edgeNum) + keep_rate).floor().type(t.bool)
+        newVals = vals[mask] / (keep_rate if self.resize_val else 1.0)
+        newIdxs = idxs[:, mask]
+        return t.sparse.FloatTensor(newIdxs, newVals, adj.shape)
+
 
 class NodeDrop(nn.Module):
-	def __init__(self):
-		super(NodeDrop, self).__init__()
+    def __init__(self):
+        super(NodeDrop, self).__init__()
 
-	def forward(self, embeds, keep_rate):
-		if keep_rate == 1.0:
-			return embeds
-		data_config = configs['data']
-		node_num = data_config['user_num'] + data_config['item_num']
-		mask = (t.rand(node_num) + keep_rate).floor().view([-1, 1])
-		return embeds * mask
+    def forward(self, embeds, keep_rate):
+        if keep_rate == 1.0:
+            return embeds
+        data_config = configs['data']
+        node_num = data_config['user_num'] + data_config['item_num']
+        mask = (t.rand(node_num) + keep_rate).floor().view([-1, 1])
+        return embeds * mask
+
 
 class GraphConv(nn.Module):
     def __init__(self,
@@ -62,10 +65,10 @@ class GraphConv(nn.Module):
         graph = graph.local_var()
 
         if self._norm == 'both':
-            degs = graph.out_degrees().to(feat.device).float().clamp(min=1) # outdegree of nodes
+            degs = graph.out_degrees().to(feat.device).float().clamp(min=1)  # outdegree of nodes
             norm = t.pow(degs, -0.5)
-            shp = norm.shape + (1,) * (feat.dim() - 1) # (n, 1)
-            norm = t.reshape(norm, shp) # (n, 1)
+            shp = norm.shape + (1,) * (feat.dim() - 1)  # (n, 1)
+            norm = t.reshape(norm, shp)  # (n, 1)
             # feat = feat * norm
 
         if weight is not None:
@@ -108,6 +111,7 @@ class GraphConv(nn.Module):
 
         return rst
 
+
 class GCN(nn.Module):
     def __init__(self,
                  g,
@@ -123,16 +127,18 @@ class GCN(nn.Module):
         h = self.layer(self.g, h)
         return h
 
+
 def message_func(edges):
-    return {'m' : edges.src['n_f'] + edges.data['e_f']}
+    return {'m': edges.src['n_f'] + edges.data['e_f']}
+
 
 class GCNLayer(nn.Module):
     def __init__(self,
-                in_feats,
-                out_feats,
-                weight=True,
-                bias=False,
-                activation=None):
+                 in_feats,
+                 out_feats,
+                 weight=True,
+                 bias=False,
+                 activation=None):
         super(GCNLayer, self).__init__()
         self.bias = bias
         self._in_feats = in_feats
@@ -144,7 +150,7 @@ class GCNLayer(nn.Module):
             init.xavier_uniform_(self.u_w)
             init.xavier_uniform_(self.v_w)
         self._activation = activation
-    
+
     def forward(self, graph, u_f, v_f, e_f):
         with graph.local_scope():
             if self.weight:
@@ -171,6 +177,7 @@ class GCNLayer(nn.Module):
 
             return rst
 
+
 class MultiHeadAttention(nn.Module):
     def __init__(self, num_heads, hidden_size, dropout=0.1):
         super().__init__()
@@ -183,7 +190,7 @@ class MultiHeadAttention(nn.Module):
         self.output_linear = nn.Linear(hidden_size, hidden_size)
 
         self.dropout = nn.Dropout(p=dropout)
-    
+
     def _cal_attention(self, query, key, value, mask=None, dropout=None):
         scores = t.matmul(query, key.transpose(-2, -1)) \
                  / math.sqrt(query.size(-1))
@@ -213,6 +220,7 @@ class MultiHeadAttention(nn.Module):
 
         return self.output_linear(x)
 
+
 class PositionwiseFeedForward(nn.Module):
     def __init__(self, hidden_size, d_ff, dropout=0.1):
         super(PositionwiseFeedForward, self).__init__()
@@ -224,6 +232,7 @@ class PositionwiseFeedForward(nn.Module):
     def forward(self, x):
         return self.w_2(self.dropout(self.activation(self.w_1(x))))
 
+
 class ResidualConnection(nn.Module):
     def __init__(self, hidden_size, dropout):
         super(ResidualConnection, self).__init__()
@@ -234,11 +243,13 @@ class ResidualConnection(nn.Module):
         "Apply residual connection to any sublayer with the same size."
         return x + self.dropout(sublayer(self.norm(x)))
 
+
 class TransformerLayer(nn.Module):
     def __init__(self, hidden_size, num_heads, feed_forward_size, dropout_rate):
         super().__init__()
         self.attention = MultiHeadAttention(num_heads=num_heads, hidden_size=hidden_size, dropout=dropout_rate)
-        self.feed_forward = PositionwiseFeedForward(hidden_size=hidden_size, d_ff=feed_forward_size, dropout=dropout_rate)
+        self.feed_forward = PositionwiseFeedForward(hidden_size=hidden_size, d_ff=feed_forward_size,
+                                                    dropout=dropout_rate)
         self.input_sublayer = ResidualConnection(hidden_size=hidden_size, dropout=dropout_rate)
         self.output_sublayer = ResidualConnection(hidden_size=hidden_size, dropout=dropout_rate)
         self.dropout = nn.Dropout(p=dropout_rate)
@@ -247,6 +258,7 @@ class TransformerLayer(nn.Module):
         x = self.input_sublayer(x, lambda _x: self.attention.forward(_x, _x, _x, mask=mask))
         x = self.output_sublayer(x, self.feed_forward)
         return self.dropout(x)
+
 
 class TransformerEmbedding(nn.Module):
     def __init__(self, item_num, emb_size, max_len, dropout=0.1):
@@ -268,6 +280,7 @@ class TransformerEmbedding(nn.Module):
         x = self.token_emb(batch_seqs) + pos_emb
         return self.dropout(x)
 
+
 class DGIEncoder(nn.Module):
     def __init__(self, g, in_feats, n_hidden, activation):
         super(DGIEncoder, self).__init__()
@@ -281,17 +294,18 @@ class DGIEncoder(nn.Module):
         features = self.conv(features)
         return features
 
+
 class DGIDiscriminator(nn.Module):
     def __init__(self, n_hidden):
         super(DGIDiscriminator, self).__init__()
         self.weight = nn.Parameter(nn.init.xavier_uniform_(t.empty(n_hidden, n_hidden)))
-        self.loss = nn.BCEWithLogitsLoss(reduction='none') # combines a Sigmoid layer and the BCELoss
+        self.loss = nn.BCEWithLogitsLoss(reduction='none')  # combines a Sigmoid layer and the BCELoss
 
-    def forward(self,node_embedding,graph_embedding, corrupt=False):
-        score = t.sum(node_embedding*graph_embedding,dim=1) 
-        
+    def forward(self, node_embedding, graph_embedding, corrupt=False):
+        score = t.sum(node_embedding * graph_embedding, dim=1)
+
         if corrupt:
-            res = self.loss(score,t.zeros_like(score))
+            res = self.loss(score, t.zeros_like(score))
         else:
-            res = self.loss(score,t.ones_like(score))
+            res = self.loss(score, t.ones_like(score))
         return res

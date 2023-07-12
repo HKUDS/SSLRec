@@ -4,12 +4,15 @@ optimizer:
   weight_decay: 0
 
 train:
-  epoch: 100
+  epoch: 500
   batch_size: 4096
   save_model: false
   loss: pairwise
+  log_loss: false
   test_step: 3
-  #pretrain_path: ./checkpoint/xxxx.pth
+  patience: 5
+  reproducible: true
+  seed: 2023
 
 test:
   metrics: [recall, ndcg]
@@ -17,11 +20,11 @@ test:
   batch_size: 256
 
 data:
-  type: general_cf # choose in {general_cf, multi_behavior, sequential, social}
+  type: general_cf
   name: gowalla
 
 model:
-  name: hccf # case-insensitive
+  name: hccf
   keep_rate: 0.5
   layer_num: 2
   reg_weight: 1.0e-7

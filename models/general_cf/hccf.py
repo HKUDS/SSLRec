@@ -72,23 +72,13 @@ class HCCF(BaseModel):
 		neg_embeds = item_embeds[negs]
 		score_diff = (anc_embeds * pos_embeds).sum(-1) - (anc_embeds * neg_embeds).sum(-1)
 		bpr_loss = -score_diff.sigmoid().log().mean()
-		# bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds) / anc_embeds.shape[0]
 
 		cl_loss = 0
 		for i in range(self.layer_num):
 			embeds1 = gcn_embeds_list[i].detach()
 			embeds2 = hyper_embeds_list[i]
 			cl_loss += self.contrastLoss(embeds1[:self.user_num], embeds2[:self.user_num], t.unique(ancs), self.temperature) + self.contrastLoss(embeds1[self.user_num:], embeds2[self.user_num:], t.unique(poss), self.temperature)
-		# for i in range(len(gcn_embeds_list)):
-		# 	embeds1 = gcn_embeds_list[i].detach()
-		# 	embeds2 = hyper_embeds_list[i]
-		# 	pck_user_embeds1 = embeds1[:self.user_num][ancs]
-		# 	pck_user_embeds2 = embeds2[:self.user_num][ancs]
-		# 	pck_item_embeds1 = embeds1[self.user_num:][poss]
-		# 	pck_item_embeds2 = embeds2[self.user_num:][poss]
-		# 	cl_loss += cal_infonce_loss(pck_user_embeds1, pck_user_embeds2, embeds2[:self.user_num], self.temperature) / pck_user_embeds1.shape[0]
-		# 	cl_loss += cal_infonce_loss(pck_item_embeds1, pck_item_embeds2, embeds2[self.user_num:], self.temperature) / pck_item_embeds1.shape[0]
-		
+
 		reg_loss = reg_params(self) * self.reg_weight
 		cl_loss *= self.cl_weight
 
