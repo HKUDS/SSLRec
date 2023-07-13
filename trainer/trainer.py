@@ -384,11 +384,11 @@ class DSLTrainer(Trainer):
 
 
 """
-Special Trainer for Knowledge Graph-enhanced Recommendation methods (KGCL, KGRec, ...)
+Special Trainer for KGCL
 """
-class KGTrainer(Trainer):
+class KGCLTrainer(Trainer):
     def __init__(self, data_handler, logger):
-        super(KGTrainer, self).__init__(data_handler, logger)
+        super(KGCLTrainer, self).__init__(data_handler, logger)
         self.train_trans = configs['model']['train_trans']
         if self.train_trans:
             self.triplet_dataloader = data_handler.triplet_dataloader
@@ -397,7 +397,7 @@ class KGTrainer(Trainer):
         optim_config = configs['optimizer']
         if optim_config['name'] == 'adam':
             self.optimizer = optim.Adam(model.parameters(), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
-            self.kg_optimizer = optim.Adam(model.parameters(), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
+            self.kgtrans_optimizer = optim.Adam(model.parameters(), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
 
     def train_epoch(self, model, epoch_idx):
         """ train in train mode """
@@ -430,12 +430,12 @@ class KGTrainer(Trainer):
             """ train KG trans """
             triplet_dataloader = self.triplet_dataloader
             for _, tem in tqdm(enumerate(triplet_dataloader), desc='Training KG Trans', total=len(triplet_dataloader)):
-                self.kg_optimizer.zero_grad()
+                self.kgtrans_optimizer.zero_grad()
                 batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
                 # feed batch_seqs into model.forward()
                 kg_loss = model.cal_kg_loss(batch_data)
                 kg_loss.backward()
-                self.kg_optimizer.step()
+                self.kgtrans_optimizer.step()
 
                 if 'kg_loss' not in loss_log_dict:
                     loss_log_dict['kg_loss'] = float(kg_loss) / len(triplet_dataloader)

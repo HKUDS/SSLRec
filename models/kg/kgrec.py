@@ -8,6 +8,9 @@ import math
 import torch.nn.functional as F
 from torch_scatter import scatter_sum, scatter_mean
 from torch_geometric.utils import softmax as scatter_softmax
+from config.configurator import configs
+import scipy.sparse as sp
+from models.base_model import BaseModel
 
 
 class AttnHGCN(nn.Module):
@@ -313,67 +316,40 @@ def _sparse_dropout(i, v, keep_rate=0.5):
     return i, v
 
 
-class KGRec(nn.Module):
-    def __init__(self, data_config, args_config, graph, adj_mat, hp_dict=None):
-        super(KGRec, self).__init__()
-        self.args_config = args_config
+class KGRec(BaseModel):
+    def __init__(self, data_handler):
+        super(KGRec, self).__init__(data_handler)
         self.logger = getLogger()
 
-        self.n_users = data_config['n_users']
-        self.n_items = data_config['n_items']
-        self.n_relations = data_config['n_relations']
-        self.n_entities = data_config['n_entities']  # include items
-        self.n_nodes = data_config['n_nodes']  # n_users + n_entities
+        self.n_users = configs['data']['user_num']
+        self.n_items = configs['data']['item_num']
+        self.n_relations = configs['data']['relation_num']
+        self.n_entities = configs['data']['entity_num']  # include items
+        self.n_nodes = configs['data']['node_num']  # n_users + n_entities
 
-        self.decay = args_config.l2
-        self.emb_size = args_config.dim
-        self.context_hops = args_config.context_hops
-        self.node_dropout = args_config.node_dropout
-        self.node_dropout_rate = args_config.node_dropout_rate
-        self.mess_dropout = args_config.mess_dropout
-        self.mess_dropout_rate = args_config.mess_dropout_rate
-        self.device = torch.device("cuda:" + str(args_config.gpu_id)) if args_config.cuda \
-            else torch.device("cpu")
+        self.decay = configs['model']['decay_weight']
+        self.emb_size = configs['model']['embedding_size']
+        self.context_hops = configs['model']['layer_num']
+        self.node_dropout = configs['model']['node_dropout']
+        self.node_dropout_rate = configs['model']['node_dropout_rate']
+        self.mess_dropout = configs['model']['mess_dropout']
+        self.mess_dropout_rate = configs['model']['mess_dropout_rate']
+        self.device = configs['device']
         
-        self.ablation = args_config.ab
+        self.mae_coef = configs['model']['mae_coef']
+        self.mae_msize = configs['model']['mae_msize']
+        self.cl_coef = configs['model']['cl_coef']
+        self.tau = configs['model']['tau']
+        self.cl_drop = configs['model']['cl_drop_ratio']
 
-        self.mae_coef = args_config.mae_coef
-        self.mae_msize = args_config.mae_msize
-        self.cl_coef = args_config.cl_coef
-        self.tau = args_config.cl_tau
-        self.cl_drop = args_config.cl_drop_ratio
+        self.samp_func = configs['model']['samp_func']
 
-        self.samp_func = "torch"
-
-        if args_config.dataset == 'last-fm':
-            self.mae_coef = 0.1
-            self.mae_msize = 256
-            self.cl_coef = 0.01
-            self.tau = 1.0
-            self.cl_drop = 0.5
-        elif args_config.dataset == 'mind-f':
-            self.mae_coef = 0.1
-            self.mae_msize = 256
-            self.cl_coef = 0.001
-            self.tau = 0.1
-            self.cl_drop = 0.6
-            self.samp_func = "np"
-        elif args_config.dataset == 'alibaba-fashion':
-            self.mae_coef = 0.1
-            self.mae_msize = 256
-            self.cl_coef = 0.001
-            self.tau = 0.2
-            self.cl_drop = 0.5
+        self.adj_mat = self._make_si_norm_adj(data_handler.ui_mat)
         
-        # update hps
-        if hp_dict is not None:
-            for k,v in hp_dict.items():
-                setattr(self, k, v)
-
         self.inter_edge, self.inter_edge_w = self._convert_sp_mat_to_tensor(
-            adj_mat)
+            self.adj_mat)
 
-        self.edge_index, self.edge_type = self._get_edges(graph)
+        self.edge_index, self.edge_type = self._get_edges(data_handler.kg_edges)
 
         self._init_weight()
         self.all_embed = nn.Parameter(self.all_embed)
@@ -391,6 +367,17 @@ class KGRec(nn.Module):
     def _init_weight(self):
         initializer = nn.init.xavier_uniform_
         self.all_embed = initializer(torch.empty(self.n_nodes, self.emb_size))
+    
+    def _make_si_norm_adj(self, adj_mat):
+        # D^{-1}A
+        rowsum = np.array(adj_mat.sum(1))
+
+        d_inv = np.power(rowsum, -1).flatten()
+        d_inv[np.isinf(d_inv)] = 0.
+        d_mat_inv = sp.diags(d_inv)
+
+        norm_adj = d_mat_inv.dot(adj_mat)
+        return norm_adj.tocoo()
 
     def _convert_sp_mat_to_tensor(self, X):
         coo = X.tocoo()
@@ -402,17 +389,15 @@ class KGRec(nn.Module):
         coo = X.tocoo()
         return torch.LongTensor([coo.row, coo.col]).t()  # [-1, 2]
 
-    def _get_edges(self, graph):
-        graph_tensor = torch.tensor(list(graph.edges))  # [-1, 3]
+    def _get_edges(self, kg_edges):
+        graph_tensor = torch.tensor(kg_edges)  # [-1, 3]
         index = graph_tensor[:, :-1]  # [-1, 2]
         type = graph_tensor[:, -1]  # [-1, 1]
         return index.t().long().to(self.device), type.long().to(self.device)
 
-    def forward(self, batch=None):
-        user = batch['users']
-        pos_item = batch['pos_items']
-        neg_item = batch['neg_items']
-        epoch_start = batch['batch_start'] == 0
+    def cal_loss(self, batch_data):
+        user, pos_item, neg_item = batch_data[:3]
+        epoch_start = 0 in user.cpu().tolist()
 
         user_emb = self.all_embed[:self.n_users, :]
         item_emb = self.all_embed[self.n_users:, :]
@@ -421,7 +406,7 @@ class KGRec(nn.Module):
         """node dropout"""
         # 1. graph sprasification;
         edge_index, edge_type = _relation_aware_edge_sampling(
-            self.edge_index, self.edge_type, self.n_relations, self.node_dropout_rate)
+            self.edge_index, self.edge_type, self.n_relations, 1-self.node_dropout_rate)
         # 2. compute rationale scores;
         edge_attn_score, edge_attn_logits = self.gcn.norm_attn_computer(
             item_emb, edge_index, edge_type, print=epoch_start, return_logits=True)
@@ -442,7 +427,7 @@ class KGRec(nn.Module):
         enc_edge_index, enc_edge_type, masked_edge_index, masked_edge_type, mask_bool = _mae_edge_mask_adapt_mixed(edge_index, edge_type, topk_attn_edge_id)
 
         inter_edge, inter_edge_w = _sparse_dropout(
-            self.inter_edge, self.inter_edge_w, self.node_dropout_rate)
+            self.inter_edge, self.inter_edge_w, 1-self.node_dropout_rate)
 
         # rec task
         entity_gcn_emb, user_gcn_emb = self.gcn(user_emb,
@@ -500,16 +485,23 @@ class KGRec(nn.Module):
     def generate(self):
         user_emb = self.all_embed[:self.n_users, :]
         item_emb = self.all_embed[self.n_users:, :]
-        return self.gcn(user_emb,
+        entity_emb, user_emb = self.gcn(user_emb,
                         item_emb,
                         self.edge_index,
                         self.edge_type,
                         self.inter_edge,
                         self.inter_edge_w,
                         mess_dropout=False)[:2]
+        return user_emb, entity_emb[:self.n_items]
 
-    def rating(self, u_g_embeddings, i_g_embeddings):
-        return torch.matmul(u_g_embeddings, i_g_embeddings.t())
+    def rating(self, u_emb, i_emb):
+        return torch.matmul(u_emb, i_emb.t())
+    
+    def full_predict(self, batch_data):
+        users = batch_data[0]
+        user_emb, item_emb = self.generate()
+        batch_u = user_emb[users]
+        return batch_u.mm(item_emb.t())
 
     # @TimeCounter.count_time(warmup_interval=4)
     def create_bpr_loss(self, users, pos_items, neg_items):
@@ -542,8 +534,6 @@ class KGRec(nn.Module):
         return scores
 
     def print_shapes(self):
-        self.logger.info("########## Ablation ##########")
-        self.logger.info("ablation: {}".format(self.ablation))
         self.logger.info("########## Model HPs ##########")
         self.logger.info("tau: {}".format(self.contrast_fn.tau))
         self.logger.info("cL_drop: {}".format(self.cl_drop))

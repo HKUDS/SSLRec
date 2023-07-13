@@ -21,7 +21,7 @@ class DataHandlerKG:
         self.trn_file = path.join(predir, 'train.txt')
         self.val_file = path.join(predir, 'test.txt')
         self.tst_file = path.join(predir, 'test.txt') 
-        self.kg_file = path.join(predir, 'kg_final_kgcl.txt')   
+        self.kg_file = path.join(predir, 'kg_final.txt')   
         self.train_user_dict = defaultdict(list)
         self.test_user_dict = defaultdict(list)
 
@@ -86,6 +86,7 @@ class DataHandlerKG:
 
         print("Begin to load knowledge graph triples ...")
         for h_id, r_id, t_id in tqdm(triplets, ascii=True):
+            # h,t,r
             kg_edges.append([h_id, t_id, r_id])
             kg_dict[h_id].append((r_id, t_id))
 

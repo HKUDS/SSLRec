@@ -80,6 +80,10 @@ class Metric(object):
         return result
 
     def eval(self, model, test_dataloader):
+        # for most GNN models, you can have all embeddings ready at one forward
+        if 'eval_at_one_forward' in configs['test'] and configs['test']['eval_at_one_forward']:
+            return self.eval_at_one_forward(model, test_dataloader)
+
         result = {}
         for metric in self.metrics:
             result[metric] = np.zeros(len(self.k))
@@ -129,3 +133,52 @@ class Metric(object):
             pos_list = test_dataloader.dataset.user_history_lists[user_idx]
             batch_rate[i, pos_list] = -1e8
         return batch_rate
+    
+    def eval_at_one_forward(self, model, test_dataloader):
+        result = {}
+        for metric in self.metrics:
+            result[metric] = np.zeros(len(self.k))
+
+        batch_ratings = []
+        ground_truths = []
+        test_user_count = 0
+        test_user_num = len(test_dataloader.dataset.test_users)
+
+        with torch.no_grad():
+            user_emb, item_emb = model.generate()
+
+        for _, tem in enumerate(test_dataloader):
+            if not isinstance(tem, list):
+                tem = [tem]
+            test_user = tem[0].numpy().tolist()
+            batch_data = list(
+                map(lambda x: x.long().to(configs['device']), tem))
+            # predict result
+            batch_u, batch_i = batch_data[:2]
+            batch_u_emb, batch_i_emb = user_emb[batch_u], item_emb[batch_i]
+            with torch.no_grad():
+                batch_pred = model.rating(batch_u_emb, batch_i_emb)
+            test_user_count += batch_pred.shape[0]
+            # filter out history items
+            batch_pred = self._mask_history_pos(
+                batch_pred, test_user, test_dataloader)
+            _, batch_rate = torch.topk(batch_pred, k=max(self.k))
+            batch_ratings.append(batch_rate.cpu())
+            # ground truth
+            ground_truth = []
+            for user_idx in test_user:
+                ground_truth.append(
+                    list(test_dataloader.dataset.user_pos_lists[user_idx]))
+            ground_truths.append(ground_truth)
+        assert test_user_count == test_user_num
+
+        # calculate metrics
+        data_pair = zip(batch_ratings, ground_truths)
+        eval_results = []
+        for _data in data_pair:
+            eval_results.append(self.eval_batch(_data, self.k))
+        for batch_result in eval_results:
+            for metric in self.metrics:
+                result[metric] += batch_result[metric] / test_user_num
+
+        return result
