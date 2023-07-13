@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from config.configurator import configs
 
 """
-Graph Related Data Augmentation
+Graph Related Augmentation
 """
 class EdgeDrop(nn.Module):
     """ Drop edges in a graph.
@@ -49,3 +49,17 @@ class NodeDrop(nn.Module):
         node_num = data_config['user_num'] + data_config['item_num']
         mask = (t.rand(node_num) + keep_rate).floor().view([-1, 1])
         return embeds * mask
+
+
+"""
+Feature-based Augmentation
+"""
+def perturb_embedding(embeds, eps):
+    """
+    :param embeds: embedding matrix
+    :param eps: hyperparameters that control the degree of perturbation
+    :return: perturbed embedding matrix
+    """
+    noise = (F.normalize(t.rand(embeds.shape).cuda(), p=2) * t.sign(embeds)) * eps
+    embeds = embeds + noise
+    return embeds

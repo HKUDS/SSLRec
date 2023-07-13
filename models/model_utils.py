@@ -1,10 +1,10 @@
+import math
 import torch as t
 from torch import nn
 from torch.nn import init
 import dgl.function as fn
 from config.configurator import configs
 import torch.nn.functional as F
-import math
 
 
 class SpAdjEdgeDrop(nn.Module):
@@ -131,7 +131,6 @@ class GCN(nn.Module):
 def message_func(edges):
     return {'m': edges.src['n_f'] + edges.data['e_f']}
 
-
 class GCNLayer(nn.Module):
     def __init__(self,
                  in_feats,
@@ -192,8 +191,7 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def _cal_attention(self, query, key, value, mask=None, dropout=None):
-        scores = t.matmul(query, key.transpose(-2, -1)) \
-                 / math.sqrt(query.size(-1))
+        scores = t.matmul(query, key.transpose(-2, -1)) / math.sqrt(query.size(-1))
 
         if mask is not None:
             scores = scores.masked_fill(mask == 0, -1e9)
@@ -248,8 +246,7 @@ class TransformerLayer(nn.Module):
     def __init__(self, hidden_size, num_heads, feed_forward_size, dropout_rate):
         super().__init__()
         self.attention = MultiHeadAttention(num_heads=num_heads, hidden_size=hidden_size, dropout=dropout_rate)
-        self.feed_forward = PositionwiseFeedForward(hidden_size=hidden_size, d_ff=feed_forward_size,
-                                                    dropout=dropout_rate)
+        self.feed_forward = PositionwiseFeedForward(hidden_size=hidden_size, d_ff=feed_forward_size, dropout=dropout_rate)
         self.input_sublayer = ResidualConnection(hidden_size=hidden_size, dropout=dropout_rate)
         self.output_sublayer = ResidualConnection(hidden_size=hidden_size, dropout=dropout_rate)
         self.dropout = nn.Dropout(p=dropout_rate)
@@ -275,8 +272,7 @@ class TransformerEmbedding(nn.Module):
 
     def forward(self, batch_seqs):
         batch_size = batch_seqs.size(0)
-        pos_emb = self.position_emb.weight.unsqueeze(
-            0).repeat(batch_size, 1, 1)
+        pos_emb = self.position_emb.weight.unsqueeze(0).repeat(batch_size, 1, 1)
         x = self.token_emb(batch_seqs) + pos_emb
         return self.dropout(x)
 

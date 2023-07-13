@@ -1,7 +1,7 @@
 import torch as t
 from torch import nn
-import torch.nn.functional as F
 from config.configurator import configs
+from models.aug_utils import perturb_embedding
 from models.general_cf.lightgcn import LightGCN
 from models.loss_utils import cal_bpr_loss, reg_params, cal_infonce_loss
 
@@ -15,10 +15,6 @@ class SimGCL(LightGCN):
 		self.cl_weight = configs['model']['cl_weight']
 		self.temperature = configs['model']['temperature']
 		self.eps = configs['model']['eps']
-
-	def _perturb_embedding(self, embeds):
-		noise = (F.normalize(t.rand(embeds.shape).cuda(), p=2) * t.sign(embeds)) * self.eps
-		return embeds + noise
 	
 	def forward(self, adj, perturb=False):
 		if not perturb:
@@ -27,9 +23,9 @@ class SimGCL(LightGCN):
 		embeds_list = [embeds]
 		for i in range(self.layer_num):
 			embeds = self._propagate(adj, embeds_list[-1])
-			embeds = self._perturb_embedding(embeds)
+			embeds = perturb_embedding(embeds)
 			embeds_list.append(embeds)
-		embeds = sum(embeds_list)# / len(embeds_list)
+		embeds = sum(embeds_list)
 		return embeds[:self.user_num], embeds[self.user_num:]
 	
 	def _pick_embeds(self, user_embeds, item_embeds, batch_data):
