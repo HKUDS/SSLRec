@@ -1,10 +1,10 @@
 import torch as t
 from torch import nn
-import torch.nn.functional as F
+from models.aug_utils import EdgeDrop
+from models.base_model import BaseModel
 from config.configurator import configs
 from models.loss_utils import cal_bpr_loss, reg_params
-from models.base_model import BaseModel
-from models.model_utils import SpAdjEdgeDrop
+# from models.model_utils import SpAdjEdgeDrop
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -22,7 +22,7 @@ class LightGCN(BaseModel):
 		self.user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
 		self.item_embeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))
 
-		self.edge_dropper = SpAdjEdgeDrop()
+		self.edge_dropper = EdgeDrop()
 		self.is_training = True
 		self.final_embeds = None
 	
