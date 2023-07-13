@@ -8,6 +8,7 @@ from config.configurator import configs
 import random
 import scipy.sparse as sp
 from loss_utils import cal_bpr_loss
+from models.base_model import BaseModel
 
 
 def _L2_loss_mean(x):
@@ -83,7 +84,7 @@ class RGAT(nn.Module):
         return entity_emb
 
 
-class KGCL(nn.Module):
+class KGCL(BaseModel):
     def __init__(self, data_handler):
         super(KGCL, self).__init__()
         self.n_users = configs['data']['user_num']
@@ -300,6 +301,13 @@ class KGCL(nn.Module):
         user_emb, item_emb = torch.split(all_emb, [self.n_users, self.n_items])
         return user_emb, item_emb
 
+    def generate(self):
+        return self.forward(
+            self.edge_index, self.edge_type, self.norm_adj)
+    
+    def rating(self, u_emb, i_emb):
+        return torch.matmul(u_emb, i_emb.t())
+    
     def full_predict(self, batch_data):
         users = batch_data[0]
         user_emb, item_emb = self.forward(

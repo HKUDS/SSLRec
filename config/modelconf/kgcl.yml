@@ -4,7 +4,7 @@ optimizer:
   weight_decay: 0
 
 train:
-  trainer: kg_trainer
+  trainer: kgcl_trainer
   epoch: 100
   batch_size: 2048
   kg_batch_size: 4096
@@ -19,15 +19,16 @@ test:
   metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
   k: [10, 20] # top-k
   batch_size: 1024 # How many users per batch during validation
+  eval_at_one_forward: true
 
 data:
   type: kg # choose in {general_cf, multi_behavior, sequential, social, kg}
-  name: mind
+  name: last-fm
 
 model:
   name: kgcl # case-insensitive
   train_trans: false
-  layer_num: 3
+  layer_num: 2
   layer_num_kg: 2
   decay_weight: 1.0e-4
   embedding_size: 64
@@ -36,6 +37,10 @@ model:
   node_dropout_rate_ui: 0.2
   mess_dropout: true
   mess_dropout_rate: 0.1
+
+  tau: 0.1
+  cl_weight: 0.1
+  mu: 0.5
 
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
