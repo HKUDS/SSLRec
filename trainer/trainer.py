@@ -339,8 +339,11 @@ class ICLRecTrainer(Trainer):
                 else:
                     loss_log_dict[loss_name] += _loss_val
 
-        # log
-        self.logger.log_loss(epoch_idx, loss_log_dict)
+        # log loss
+        if configs['train']['log_loss']:
+            self.logger.log_loss(epoch_idx, loss_log_dict)
+        else:
+            self.logger.log_loss(epoch_idx, loss_log_dict, save_to_log=False)
 
 
 """
@@ -379,8 +382,12 @@ class DSLTrainer(Trainer):
                 else:
                     loss_log_dict[loss_name] += _loss_val
         writer.add_scalar('Loss/train', ep_loss / steps, epoch_idx)
-        # log
-        self.logger.log_loss(epoch_idx, loss_log_dict)
+
+        # log loss
+        if configs['train']['log_loss']:
+            self.logger.log_loss(epoch_idx, loss_log_dict)
+        else:
+            self.logger.log_loss(epoch_idx, loss_log_dict, save_to_log=False)
 
 
 """
@@ -442,11 +449,16 @@ class KGTrainer(Trainer):
                 else:
                     loss_log_dict['kg_loss'] += float(kg_loss) / len(triplet_dataloader)
 
-        # log
-        self.logger.log_loss(epoch_idx, loss_log_dict)
+        # log loss
+        if configs['train']['log_loss']:
+            self.logger.log_loss(epoch_idx, loss_log_dict)
+        else:
+            self.logger.log_loss(epoch_idx, loss_log_dict, save_to_log=False)
 
 
-
+"""
+Special Trainer for Knowledge Graph-enhanced Recommendation methods (CML, MMCLR, KMCLR, MBGMN, ...)
+"""
 class CMLTrainer(Trainer):
     def __init__(self, data_handler, logger):
         from models.multi_behavior.cml import MetaWeightNet
@@ -816,22 +828,17 @@ class CMLTrainer(Trainer):
                     neg_score = neg_score_pre
                 else:
                     neg_score = torch.cat((neg_score, neg_score_pre), 0)
-            con_loss = - \
-                torch.log(1e-8 + torch.div(pos_score, neg_score + 1e-8))  #
+            con_loss = - torch.log(1e-8 + torch.div(pos_score, neg_score + 1e-8))  #
             assert not torch.any(torch.isnan(con_loss))
             assert not torch.any(torch.isinf(con_loss))
             return torch.where(torch.isnan(con_loss), torch.full_like(con_loss, 0 + 1e-8), con_loss)
 
         user_con_loss_list = []
-        item_con_loss_list = []
         SSL_len = int(user_step_index.shape[0] / 10)
-        user_step_index = torch.as_tensor(np.random.choice(
-            user_step_index.cpu(), size=SSL_len, replace=False, p=None)).cuda()
+        user_step_index = torch.as_tensor(np.random.choice(user_step_index.cpu(), size=SSL_len, replace=False, p=None)).cuda()
         for i in range(len(self.data_handler.behaviors)):
-            user_con_loss_list.append(single_infoNCE_loss_one_by_one(
-                user_embeddings[-1], user_embeddings[i], user_step_index))
-        user_con_losss = torch.stack(user_con_loss_list, dim=0)
-        return user_con_loss_list, user_step_index  #
+            user_con_loss_list.append(single_infoNCE_loss_one_by_one(user_embeddings[-1], user_embeddings[i], user_step_index))
+        return user_con_loss_list, user_step_index
 
 
 class MMCLRTrainer(Trainer):
@@ -839,25 +846,18 @@ class MMCLRTrainer(Trainer):
         super(MMCLRTrainer, self).__init__(data_handler, logger)
 
     def train_epoch(self, model, epoch_idx):
-
         model.train()
         for input_nodes, pos_graph, neg_graph, blocks, block_src_nodes, seq_tensors, neg_user_ids in tqdm(
                 self.data_handler.train_dataloader):
             if block_src_nodes is not None:
-                block_src_nodes = [{k: v.to(configs['train']['device'])
-                                    for k, v in nodes.items()} for nodes in block_src_nodes]
-                input_nodes = {k: v.to(configs['train']['device'])
-                               for k, v in input_nodes.items()}
+                block_src_nodes = [{k: v.to(configs['train']['device']) for k, v in nodes.items()} for nodes in block_src_nodes]
+                input_nodes = {k: v.to(configs['train']['device']) for k, v in input_nodes.items()}
                 pos_graph = pos_graph.to(configs['train']['device'])
                 neg_graph = neg_graph.to(configs['train']['device'])
-                blocks = [block.to(configs['train']['device'])
-                          for block in blocks]
-            seq_tensors = [seq.to(configs['train']['device'])
-                           for seq in seq_tensors]
-            graph_data = (input_nodes, pos_graph, neg_graph,
-                          blocks, block_src_nodes)
-            loss, link_loss, seq_cl_loss, graph_cl_loss, cross_constra_loss, graph_inner_loss, seq_inner_loss = model(
-                graph_data, seq_tensors, is_eval=False)
+                blocks = [block.to(configs['train']['device']) for block in blocks]
+            seq_tensors = [seq.to(configs['train']['device']) for seq in seq_tensors]
+            graph_data = (input_nodes, pos_graph, neg_graph, blocks, block_src_nodes)
+            loss, link_loss, seq_cl_loss, graph_cl_loss, cross_constra_loss, graph_inner_loss, seq_inner_loss = model(graph_data, seq_tensors, is_eval=False)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
