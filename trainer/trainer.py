@@ -391,7 +391,7 @@ class DSLTrainer(Trainer):
 
 
 """
-Special Trainer for KGCL
+Special Trainer for Knowledge Graph-enhanced Recommendation methods (KGCL, ...)
 """
 class KGCLTrainer(Trainer):
     def __init__(self, data_handler, logger):
@@ -457,7 +457,7 @@ class KGCLTrainer(Trainer):
 
 
 """
-Special Trainer for Knowledge Graph-enhanced Recommendation methods (CML, MMCLR, KMCLR, MBGMN, ...)
+Special Trainer for Multi-behavior Recommendation methods (CML, MMCLR, KMCLR, MBGMN, ...)
 """
 class CMLTrainer(Trainer):
     def __init__(self, data_handler, logger):
