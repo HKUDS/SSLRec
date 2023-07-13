@@ -1,11 +1,9 @@
 import torch as t
 import numpy as np
 from torch import nn
-import torch.nn.functional as F
-from config.configurator import configs
-from models.loss_utils import cal_bpr_loss, reg_pick_embeds
 from models.base_model import BaseModel
-from models.model_utils import SpAdjEdgeDrop
+from config.configurator import configs
+from models.loss_utils import cal_bpr_loss
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform

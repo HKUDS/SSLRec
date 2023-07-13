@@ -3,7 +3,6 @@ from torch import nn
 import torch.nn.functional as F
 from config.configurator import configs
 from models.base_model import BaseModel
-from models.model_utils import SpAdjEdgeDrop
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform

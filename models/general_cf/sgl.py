@@ -1,10 +1,9 @@
 import torch as t
 from torch import nn
-import torch.nn.functional as F
+from models.aug_utils import NodeDrop
 from config.configurator import configs
 from models.general_cf.lightgcn import LightGCN
 from models.loss_utils import cal_bpr_loss, reg_params, cal_infonce_loss
-from models.model_utils import NodeDrop
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform

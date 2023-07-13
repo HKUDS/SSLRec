@@ -3,8 +3,6 @@ import numpy as np
 import torch_sparse
 import torch.nn as nn
 import scipy.sparse as sp
-import torch.nn.functional as F
-
 from config.configurator import configs
 from models.general_cf.lightgcn import BaseModel
 from models.loss_utils import cal_bpr_loss, reg_params, cal_infonce_loss

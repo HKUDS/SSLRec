@@ -1,11 +1,11 @@
 import torch
-import torch as t
-from torch import nn
-import scipy.sparse as sp
-import numpy as np
-import networkx as nx
-import multiprocessing as mp
 import random
+import torch as t
+import numpy as np
+from torch import nn
+import networkx as nx
+import scipy.sparse as sp
+import multiprocessing as mp
 from models.base_model import BaseModel
 from config.configurator import configs
 

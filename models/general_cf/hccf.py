@@ -1,10 +1,10 @@
 import torch as t
 from torch import nn
 import torch.nn.functional as F
-from config.configurator import configs
-from models.loss_utils import cal_bpr_loss, cal_infonce_loss, reg_params
+from models.aug_utils import EdgeDrop
 from models.base_model import BaseModel
-from models.model_utils import SpAdjEdgeDrop
+from config.configurator import configs
+from models.loss_utils import reg_params
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -30,7 +30,7 @@ class HCCF(BaseModel):
 		self.user_hyper_embeds = nn.Parameter(init(t.empty(self.embedding_size, self.hyper_num)))
 		self.item_hyper_embeds = nn.Parameter(init(t.empty(self.embedding_size, self.hyper_num)))
 
-		self.edge_drop = SpAdjEdgeDrop(resize_val=True)
+		self.edge_drop = EdgeDrop(resize_val=True)
 	
 	def _gcn_layer(self, adj, embeds):
 		return t.spmm(adj, embeds)
