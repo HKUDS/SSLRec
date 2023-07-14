@@ -9,11 +9,13 @@ def cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds):
 	neg_preds = (anc_embeds * neg_embeds).sum(-1)
 	return t.sum(F.softplus(neg_preds - pos_preds))
 
+
 def reg_pick_embeds(embeds_list):
 	reg_loss = 0
 	for embeds in embeds_list:
 		reg_loss += embeds.square().sum()
 	return reg_loss
+
 
 def reg_params(model):
 	reg_loss = 0
@@ -35,6 +37,7 @@ def cal_infonce_loss(embeds1, embeds2, all_embeds2, temp=1.0):
 	deno_term = t.log(t.sum(t.exp(normed_embeds1 @ normed_all_embeds2.T / temp), dim=-1))
 	cl_loss = (nume_term + deno_term).sum()
 	return cl_loss
+
 
 def cal_infonce_loss_spec_nodes(embeds1, embeds2, nodes, temp):
 	""" InfoNCE Loss (specify nodes for contrastive learning)
@@ -83,5 +86,37 @@ def uniformity(x):
 	return t.pdist(x, p=2).pow(2).mul(-2).exp().mean().log()
 
 
+def kl_divergence(p, q, is_prob, reduce='mean'):
+	""" KL Divergence
+	"""
+	if not is_prob:
+		p = F.log_softmax(p, dim=-1)
+		q = F.log_softmax(q, dim=-1)
+	res = (p.exp() * (p - q)).sum(dim=-1)
+	if reduce is 'mean':
+		return res.mean()
+	elif reduce is 'sum':
+		return res.sum()
+	elif reduce is 'none':
+		return res
+	else:
+		raise NotImplementedError
+
+
+def js_divergence(p, q, is_prob, reduce='mean'):
+	""" JS Divergence
+	"""
+	if not is_prob:
+		p = F.log_softmax(p, dim=-1)
+		q = F.log_softmax(q, dim=-1)
+	res = (p.exp() * (p - q)).sum(dim=-1) + (q.exp() * (q - p)).sum(dim=-1)
+	if reduce is 'mean':
+		return res.mean()
+	elif reduce is 'sum':
+		return res.sum()
+	elif reduce is 'none':
+		return res
+	else:
+		raise NotImplementedError
 
 
