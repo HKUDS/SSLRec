@@ -4,7 +4,6 @@ from models.aug_utils import EdgeDrop
 from models.base_model import BaseModel
 from config.configurator import configs
 from models.loss_utils import cal_bpr_loss, reg_params
-# from models.model_utils import SpAdjEdgeDrop
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform

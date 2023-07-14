@@ -62,16 +62,6 @@ class DCCF(BaseModel):
         G_indices, G_values = torch_sparse.spspmm(G_indices, G_values, self.D_indices, D_values, self.A_in_shape[0], self.A_in_shape[1], self.A_in_shape[1])
         return G_indices, G_values
 
-    # def _adaptive_mask(self, head_embeddings, tail_embeddings):
-    #     head_embeddings = torch.nn.functional.normalize(head_embeddings)
-    #     tail_embeddings = torch.nn.functional.normalize(tail_embeddings)
-    #     edge_alpha = (torch.sum(head_embeddings * tail_embeddings, dim=1).view(-1) + 1) / 2
-    #     A_tensor = torch_sparse.SparseTensor(row=self.all_h_list, col=self.all_t_list, value=edge_alpha, sparse_sizes=self.A_in_shape).cuda()
-    #     D_scores_inv = A_tensor.sum(dim=1).pow(-1).nan_to_num(0, 0, 0).view(-1)
-    #     G_indices = torch.stack([self.all_h_list, self.all_t_list], dim=0)
-    #     G_values = D_scores_inv[self.all_h_list] * edge_alpha
-    #     return G_indices, G_values
-
     def forward(self):
         if not self.is_training and self.final_embeds is not None:
             return self.final_embeds[:self.user_num], self.final_embeds[self.user_num:], None, None, None, None

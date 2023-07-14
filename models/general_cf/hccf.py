@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from models.aug_utils import EdgeDrop
 from models.base_model import BaseModel
 from config.configurator import configs
-from models.loss_utils import reg_params
+from models.loss_utils import reg_params, cal_infonce_loss_spec_nodes
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -53,14 +53,14 @@ class HCCF(BaseModel):
 		embeds = sum(embeds_list)
 		return embeds, gcn_embeds_list, hyper_embeds_list
 	
-	def contrastLoss(self, embeds1, embeds2, nodes, temp):
-		embeds1 = F.normalize(embeds1 + 1e-8, p=2)
-		embeds2 = F.normalize(embeds2 + 1e-8, p=2)
-		pckEmbeds1 = embeds1[nodes]
-		pckEmbeds2 = embeds2[nodes]
-		nume = t.exp(t.sum(pckEmbeds1 * pckEmbeds2, dim=-1) / temp)
-		deno = t.exp(pckEmbeds1 @ embeds2.T / temp).sum(-1) + 1e-8
-		return -t.log(nume / deno).mean()
+	# def contrastLoss(self, embeds1, embeds2, nodes, temp):
+	# 	embeds1 = F.normalize(embeds1 + 1e-8, p=2)
+	# 	embeds2 = F.normalize(embeds2 + 1e-8, p=2)
+	# 	pckEmbeds1 = embeds1[nodes]
+	# 	pckEmbeds2 = embeds2[nodes]
+	# 	nume = t.exp(t.sum(pckEmbeds1 * pckEmbeds2, dim=-1) / temp)
+	# 	deno = t.exp(pckEmbeds1 @ embeds2.T / temp).sum(-1) + 1e-8
+	# 	return -t.log(nume / deno).mean()
 	
 	def cal_loss(self, batch_data):
 		ancs, poss, negs = batch_data
@@ -77,7 +77,8 @@ class HCCF(BaseModel):
 		for i in range(self.layer_num):
 			embeds1 = gcn_embeds_list[i].detach()
 			embeds2 = hyper_embeds_list[i]
-			cl_loss += self.contrastLoss(embeds1[:self.user_num], embeds2[:self.user_num], t.unique(ancs), self.temperature) + self.contrastLoss(embeds1[self.user_num:], embeds2[self.user_num:], t.unique(poss), self.temperature)
+			cl_loss += cal_infonce_loss_spec_nodes(embeds1[:self.user_num], embeds2[:self.user_num], t.unique(ancs), self.temperature) + \
+					   cal_infonce_loss_spec_nodes(embeds1[self.user_num:], embeds2[self.user_num:], t.unique(poss), self.temperature)
 
 		reg_loss = reg_params(self) * self.reg_weight
 		cl_loss *= self.cl_weight

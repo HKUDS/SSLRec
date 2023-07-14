@@ -1,8 +1,8 @@
 import torch as t
 from torch import nn
-import torch.nn.functional as F
 from config.configurator import configs
 from models.base_model import BaseModel
+from models.loss_utils import alignment, uniformity
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -36,22 +36,14 @@ class DirectAU(BaseModel):
 		self.final_embeds = embeds
 		return embeds[:self.user_num], embeds[self.user_num:]
 
-	def alignment(self, x, y, alpha=2):
-		x, y = F.normalize(x, dim=-1), F.normalize(y, dim=-1)
-		return (x - y).norm(p=2, dim=1).pow(alpha).mean()
-
-	def uniformity(self, x):
-		x = F.normalize(x, dim=-1)
-		return t.pdist(x, p=2).pow(2).mul(-2).exp().mean().log()
-
 	def cal_loss(self, batch_data):
 		self.is_training = True
 		user_embeds, item_embeds = self.forward(self.adj)
 		ancs, poss, _ = batch_data
 		anc_embeds = user_embeds[ancs]
 		pos_embeds = item_embeds[poss]
-		align_loss = self.alignment(anc_embeds, pos_embeds)
-		uniform_loss = self.gamma * (self.uniformity(anc_embeds) + self.uniformity(pos_embeds)) / 2
+		align_loss = alignment(anc_embeds, pos_embeds)
+		uniform_loss = self.gamma * (uniformity(anc_embeds) + uniformity(pos_embeds)) / 2
 		loss = align_loss + uniform_loss
 		losses = {'align_loss': align_loss, 'uniform_loss': uniform_loss}
 		return loss, losses
