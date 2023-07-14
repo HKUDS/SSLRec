@@ -1,6 +1,7 @@
 import torch as t
 from torch import nn
 from config.configurator import configs
+from models.aug_utils import KMeansClustering
 from models.general_cf.lightgcn import LightGCN
 from models.loss_utils import cal_bpr_loss, reg_params, cal_infonce_loss
 
@@ -14,14 +15,18 @@ class NCL(LightGCN):
 		self.proto_weight = configs['model']['proto_weight']
 		self.struct_weight = configs['model']['struct_weight']
 		self.temperature = configs['model']['temperature']
-		self.kmeans = KMeans()
 		self.layer_num = configs['model']['layer_num']
 		self.high_order = configs['model']['high_order']
-	
+
+		self.kmeans = KMeansClustering(
+			cluster_num=configs['model']['cluster_num'],
+			embedding_size=configs['model']['embedding_size']
+		)
+
 	def _cluster(self):
 		self.user_centroids, self.user2cluster, _ = self.kmeans(self.user_embeds.detach())
 		self.item_centroids, self.item2cluster, _ = self.kmeans(self.item_embeds.detach())
-	
+
 	def forward(self, adj):
 		if not self.is_training:
 			embeds_list = self.final_embeds_list
@@ -35,14 +40,14 @@ class NCL(LightGCN):
 		self.final_embeds_list = embeds_list
 		embeds = sum(embeds_list[:self.layer_num + 1])
 		return embeds, embeds_list
-	
+
 	def _pick_embeds(self, embeds, ancs, poss, negs):
 		user_embeds, item_embeds = embeds[:self.user_num], embeds[self.user_num:]
 		anc_embeds = user_embeds[ancs]
 		pos_embeds = item_embeds[poss]
 		neg_embeds = item_embeds[negs]
 		return anc_embeds, pos_embeds, neg_embeds
-	
+
 	def _cal_struct_loss(self, context_embeds, ego_embeds, ancs, poss):
 		user_embeds1, item_embeds1 = context_embeds[:self.user_num], context_embeds[self.user_num:]
 		user_embeds2, item_embeds2 = ego_embeds[:self.user_num], ego_embeds[self.user_num:]
@@ -51,7 +56,7 @@ class NCL(LightGCN):
 		pck_item_embeds1 = item_embeds1[poss]
 		pck_item_embeds2 = item_embeds2[poss]
 		return (cal_infonce_loss(pck_user_embeds1, pck_user_embeds2, user_embeds2, self.temperature) + cal_infonce_loss(pck_item_embeds1, pck_item_embeds2, item_embeds2, self.temperature)) / pck_user_embeds1.shape[0]
-	
+
 	def _cal_proto_loss(self, ego_embeds, ancs, poss):
 		user_embeds, item_embeds = ego_embeds[:self.user_num], ego_embeds[self.user_num:]
 		user_clusters = self.user2cluster[ancs]
@@ -61,11 +66,11 @@ class NCL(LightGCN):
 		pck_item_embeds1 = item_embeds[poss]
 		pck_item_embeds2 = self.item_centroids[item_clusters]
 		return (cal_infonce_loss(pck_user_embeds1, pck_user_embeds2, self.user_centroids, self.temperature) + cal_infonce_loss(pck_item_embeds1, pck_item_embeds2, self.item_centroids, self.temperature)) / pck_user_embeds1.shape[0]
-	
+
 	def cal_loss(self, batch_data):
 		self.is_training = True
 		ancs, poss, negs, kmeans_flags = batch_data
-		if t.sum(kmeans_flags) != 0 or hasattr(self,'user2cluster')==False:
+		if t.sum(kmeans_flags) != 0 or hasattr(self, 'user2cluster') == False:
 			self._cluster()
 		embeds, embeds_list = self.forward(self.adj)
 		ego_embeds = embeds_list[0]
@@ -79,7 +84,7 @@ class NCL(LightGCN):
 		loss = bpr_loss + struct_loss + proto_loss + reg_loss
 		losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'struct_loss': struct_loss, 'proto_loss': proto_loss}
 		return loss, losses
-	
+
 	def full_predict(self, batch_data):
 		embeds, _ = self.forward(self.adj)
 		self.is_training = False
@@ -90,22 +95,3 @@ class NCL(LightGCN):
 		full_preds = pck_user_embeds @ item_embeds.T
 		full_preds = self._mask_predict(full_preds, train_mask)
 		return full_preds
-
-class KMeans(nn.Module):
-	def __init__(self):
-		super(KMeans, self).__init__()
-		self.cluster_num = configs['model']['cluster_num']
-		self.embedding_size = configs['model']['embedding_size']
-	
-	def forward(self, x):
-		centroids = t.rand([self.cluster_num, self.embedding_size]).cuda()
-		ones = t.ones([x.shape[0], 1]).cuda()
-		for i in range(1000):
-			dists = (x.view([-1, 1, self.embedding_size]) - centroids.view([1, -1, self.embedding_size])).square().sum(-1)
-			_, idxs = t.min(dists, dim=1)
-			newCents = t.zeros_like(centroids)
-			newCents.index_add_(0, idxs, x)
-			clustNums = t.zeros([centroids.shape[0], 1]).cuda()
-			clustNums.index_add_(0, idxs, ones)
-			centroids = newCents / (clustNums + 1e-6)
-		return centroids, idxs, clustNums

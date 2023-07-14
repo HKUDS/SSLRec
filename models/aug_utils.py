@@ -132,3 +132,27 @@ class EmbedPerturb(nn.Module):
         embeds = embeds + noise
         return embeds
 
+class KMeansClustering(nn.Module):
+    """ Use KMeans to calculate cluster centers of embeddings (used in NCL)
+    """
+    def __init__(self, cluster_num, embedding_size):
+        super(KMeansClustering, self).__init__()
+        self.cluster_num = cluster_num
+        self.embedding_size = embedding_size
+
+    def forward(self, embeds):
+        """
+        :param embeds: embedding matrix
+        :return: cluster information obtained by KMeans
+        """
+        centroids = t.rand([self.cluster_num, self.embedding_size]).cuda()
+        ones = t.ones([embeds.shape[0], 1]).cuda()
+        for i in range(1000):
+            dists = (embeds.view([-1, 1, self.embedding_size]) - centroids.view([1, -1, self.embedding_size])).square().sum(-1)
+            _, idxs = t.min(dists, dim=1)
+            newCents = t.zeros_like(centroids)
+            newCents.index_add_(0, idxs, embeds)
+            clustNums = t.zeros([centroids.shape[0], 1]).cuda()
+            clustNums.index_add_(0, idxs, ones)
+            centroids = newCents / (clustNums + 1e-6)
+        return centroids, idxs, clustNums

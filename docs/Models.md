@@ -3,14 +3,15 @@
 | ----- | ---------- | ----- |
 | LightGCN | SIGIR'20 | [LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation](https://arxiv.org/pdf/2002.02126.pdf) |
 | SGL   | SIGIR'21   | [Self-supervised Graph Learning for Recommendation](https://arxiv.org/pdf/2010.10783.pdf)|
-|  HCCF | SIGIR'22   | [Hypergraph Contrastive Collaborative Filtering](https://arxiv.org/pdf/2204.12200.pdf)   |
+| HCCF | SIGIR'22   | [Hypergraph Contrastive Collaborative Filtering](https://arxiv.org/pdf/2204.12200.pdf)   |
 | SimGCL| SIGIR'22   | [Are Graph Augmentations Necessary? Simple Graph Contrastive Learning for Recommendation](https://www.researchgate.net/profile/Junliang-Yu/publication/359788233_Are_Graph_Augmentations_Necessary_Simple_Graph_Contrastive_Learning_for_Recommendation/links/624e802ad726197cfd426f81/Are-Graph-Augmentations-Necessary-Simple-Graph-Contrastive-Learning-for-Recommendation.pdf?ref=https://githubhelp.com)|
 | NCL   | WWW'22     | [Improving Graph Collaborative Filtering with Neighborhood-enriched Contrastive Learning](https://arxiv.org/pdf/2202.06200.pdf)|
 | DirectAU| KDD'22 | [Towards Representation Alignment and Uniformity in Collaborative Filtering](https://dl.acm.org/doi/pdf/10.1145/3534678.3539253)|
 | LightGCL| ICLR'22  | [LightGCL: Simple yet Effective Graph Contrastive Learning for Recommendation](https://arxiv.org/pdf/2302.08191.pdf)|
 | AutoCF| WWW'23 | [Automated Self-Supervised Learning for Recommendation](https://arxiv.org/pdf/2303.07797.pdf)
-| GFormer| SIGIR'23 | [Graph Transformer for Recommendation](https://arxiv.org/pdf/2306.02330.pdf)
 | DCCF| SIGIR'23 | [Disentangled Contrastive Collaborative Filtering](https://arxiv.org/pdf/2305.02759.pdf)
+| GFormer| SIGIR'23 | [Graph Transformer for Recommendation](https://arxiv.org/pdf/2306.02330.pdf)
+
 
 
 ### Sequential Recommendation
