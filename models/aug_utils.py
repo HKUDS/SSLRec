@@ -32,7 +32,7 @@ class EdgeDrop(nn.Module):
         return t.sparse.FloatTensor(newIdxs, newVals, adj.shape)
 
 class NodeDrop(nn.Module):
-    """ Drop nodes in a graph
+    """ Drop nodes in a graph.
         It is implemented by replace the embeddings of dropped nodes with random embeddings.
     """
     def __init__(self):
@@ -50,16 +50,85 @@ class NodeDrop(nn.Module):
         mask = (t.rand(node_num) + keep_rate).floor().view([-1, 1])
         return embeds * mask
 
+class AdaptiveMask(nn.Module):
+    """ Adaptively masking edges with learned weight (used in DCCF)
+    """
+    def __init__(self, head_list, tail_list, matrix_shape):
+        """
+        :param head_list: list of id about head nodes
+        :param tail_list: list of id about tail nodes
+        :param matrix_shape: shape of the matrix
+        """
+        super(AdaptiveMask, self).__init__()
+        self.head_list = head_list
+        self.tail_list = tail_list
+        self.matrix_shape = matrix_shape
+
+    def forward(self, head_embeds, tail_embeds):
+        """
+        :param head_embeds: embeddings of head nodes
+        :param tail_embeds: embeddings of tail nodes
+        :return: indices and values (representing a augmented graph in torch_sparse fashion)
+        """
+        import torch_sparse
+        head_embeddings = t.nn.functional.normalize(head_embeds)
+        tail_embeddings = t.nn.functional.normalize(tail_embeds)
+        edge_alpha = (t.sum(head_embeddings * tail_embeddings, dim=1).view(-1) + 1) / 2
+        A_tensor = torch_sparse.SparseTensor(row=self.head_list, col=self.tail_list, value=edge_alpha, sparse_sizes=self.matrix_shape).cuda()
+        D_scores_inv = A_tensor.sum(dim=1).pow(-1).nan_to_num(0, 0, 0).view(-1)
+        G_indices = t.stack([self.head_list, self.tail_list], dim=0)
+        G_values = D_scores_inv[self.head_list] * edge_alpha
+        return G_indices, G_values
+
+class SvdDecomposition(nn.Module):
+    """ Utilize SVD to decompose matrix (used in LightGCL)
+    """
+    def __init__(self, svd_q):
+        super(SvdDecomposition, self).__init__()
+        self.svd_q = svd_q
+
+    def forward(self, adj):
+        """
+        :param adj: torch sparse matrix
+        :return: matrices obtained by SVD decomposition
+        """
+        svd_u, s, svd_v = t.svd_lowrank(adj, q=self.svd_q)
+        u_mul_s = svd_u @ t.diag(s)
+        v_mul_s = svd_v @ t.diag(s)
+        del s
+        return svd_u.T, svd_v.T, u_mul_s, v_mul_s
 
 """
 Feature-based Augmentation
 """
-def perturb_embedding(embeds, eps):
+class EmbedDrop(nn.Module):
+    """ Drop embeddings by nn.Dropout
     """
-    :param embeds: embedding matrix
-    :param eps: hyperparameters that control the degree of perturbation
-    :return: perturbed embedding matrix
+    def __init__(self, p=0.2):
+        super(EdgeDrop, self).__init__()
+        self.dropout = nn.Dropout(p=p)
+
+    def forward(self, embeds):
+        """
+        :param embeds: embedding matrix
+        :return: embedding matrix after dropping
+        """
+        embeds = self.dropout(embeds)
+        return embeds
+
+class EmbedPerturb(nn.Module):
+    """ Perturb embeddings
     """
-    noise = (F.normalize(t.rand(embeds.shape).cuda(), p=2) * t.sign(embeds)) * eps
-    embeds = embeds + noise
-    return embeds
+    def __init__(self, eps):
+        super(EmbedPerturb, self).__init__()
+        self.eps = eps
+
+    def forward(self, embeds):
+        """ Perturbing embeddings with noise
+        :param embeds: embedding matrix
+        :return: perturbed embedding matrix
+        """
+        noise = (F.normalize(t.rand(embeds.shape).cuda(), p=2) * t.sign(embeds)) * self.eps
+        embeds = embeds + noise
+        return embeds
+

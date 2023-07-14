@@ -4,6 +4,7 @@ import torch_sparse
 import torch.nn as nn
 import scipy.sparse as sp
 from config.configurator import configs
+from models.aug_utils import AdaptiveMask
 from models.general_cf.lightgcn import BaseModel
 from models.loss_utils import cal_bpr_loss, reg_params, cal_infonce_loss
 
@@ -28,6 +29,7 @@ class DCCF(BaseModel):
         self.all_h_list = torch.LongTensor(self.all_h_list).cuda()
         self.all_t_list = torch.LongTensor(self.all_t_list).cuda()
         self.G_indices, self.G_values = self._cal_sparse_adj()
+        self.adaptive_masker = AdaptiveMask(head_list=self.all_h_list, tail_list=self.all_t_list, matrix_shape=self.A_in_shape)
 
         # hyper parameters
         self.layer_num = configs['model']['layer_num']
@@ -60,15 +62,15 @@ class DCCF(BaseModel):
         G_indices, G_values = torch_sparse.spspmm(G_indices, G_values, self.D_indices, D_values, self.A_in_shape[0], self.A_in_shape[1], self.A_in_shape[1])
         return G_indices, G_values
 
-    def _adaptive_mask(self, head_embeddings, tail_embeddings):
-        head_embeddings = torch.nn.functional.normalize(head_embeddings)
-        tail_embeddings = torch.nn.functional.normalize(tail_embeddings)
-        edge_alpha = (torch.sum(head_embeddings * tail_embeddings, dim=1).view(-1) + 1) / 2
-        A_tensor = torch_sparse.SparseTensor(row=self.all_h_list, col=self.all_t_list, value=edge_alpha, sparse_sizes=self.A_in_shape).cuda()
-        D_scores_inv = A_tensor.sum(dim=1).pow(-1).nan_to_num(0, 0, 0).view(-1)
-        G_indices = torch.stack([self.all_h_list, self.all_t_list], dim=0)
-        G_values = D_scores_inv[self.all_h_list] * edge_alpha
-        return G_indices, G_values
+    # def _adaptive_mask(self, head_embeddings, tail_embeddings):
+    #     head_embeddings = torch.nn.functional.normalize(head_embeddings)
+    #     tail_embeddings = torch.nn.functional.normalize(tail_embeddings)
+    #     edge_alpha = (torch.sum(head_embeddings * tail_embeddings, dim=1).view(-1) + 1) / 2
+    #     A_tensor = torch_sparse.SparseTensor(row=self.all_h_list, col=self.all_t_list, value=edge_alpha, sparse_sizes=self.A_in_shape).cuda()
+    #     D_scores_inv = A_tensor.sum(dim=1).pow(-1).nan_to_num(0, 0, 0).view(-1)
+    #     G_indices = torch.stack([self.all_h_list, self.all_t_list], dim=0)
+    #     G_values = D_scores_inv[self.all_h_list] * edge_alpha
+    #     return G_indices, G_values
 
     def forward(self):
         if not self.is_training and self.final_embeds is not None:
@@ -92,8 +94,8 @@ class DCCF(BaseModel):
             gnn_tail_embeds = torch.index_select(gnn_layer_embeds, 0, self.all_t_list)
             int_head_embeds = torch.index_select(int_layer_embeds, 0, self.all_h_list)
             int_tail_embeds = torch.index_select(int_layer_embeds, 0, self.all_t_list)
-            G_graph_indices, G_graph_values = self._adaptive_mask(gnn_head_embeds, gnn_tail_embeds)
-            G_inten_indices, G_inten_values = self._adaptive_mask(int_head_embeds, int_tail_embeds)
+            G_graph_indices, G_graph_values = self.adaptive_masker(gnn_head_embeds, gnn_tail_embeds)
+            G_inten_indices, G_inten_values = self.adaptive_masker(int_head_embeds, int_tail_embeds)
             gaa_layer_embeds = torch_sparse.spmm(G_graph_indices, G_graph_values, self.A_in_shape[0], self.A_in_shape[1], all_embeds[i])
             iaa_layer_embeds = torch_sparse.spmm(G_inten_indices, G_inten_values, self.A_in_shape[0], self.A_in_shape[1], all_embeds[i])
 

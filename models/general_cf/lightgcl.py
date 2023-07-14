@@ -4,6 +4,7 @@ from torch import nn
 from models.base_model import BaseModel
 from config.configurator import configs
 from models.loss_utils import cal_bpr_loss
+from models.aug_utils import SvdDecomposition
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -18,18 +19,17 @@ class LightGCL(BaseModel):
         for i in range(len(train_mat.data)):
             train_mat.data[i] = train_mat.data[i] / pow(rowD[train_mat.row[i]] * colD[train_mat.col[i]], 0.5)
         adj_norm = self._scipy_sparse_mat_to_torch_sparse_tensor(train_mat)
-
         self.adj = adj_norm.coalesce().cuda()
-        self.ut, self.vt, self.u_mul_s, self.v_mul_s = self._svd_reconstruction(self.adj)
+
+        self.svd_decompose = SvdDecomposition(svd_q=configs['model']['svd_q'])
+        self.ut, self.vt, self.u_mul_s, self.v_mul_s = self.svd_decompose(self.adj)
 
         self.layer_num = configs['model']['layer_num']
         self.cl_weight = configs['model']['cl_weight']
         self.dropout = configs['model']['dropout']
         self.temp = configs['model']['temp']
-
         self.user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
         self.item_embeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))
-
         self.E_u_list = [None] * (self.layer_num+1)
         self.E_i_list = [None] * (self.layer_num+1)
         self.E_u_list[0] = self.user_embeds
@@ -38,27 +38,11 @@ class LightGCL(BaseModel):
         self.Z_i_list = [None] * (self.layer_num+1)
         self.G_u_list = [None] * (self.layer_num+1)
         self.G_i_list = [None] * (self.layer_num+1)
-
         self.E_u = None
         self.E_i = None
-
         self.act = nn.LeakyReLU(0.5)
-
         self.Ws = nn.ModuleList([W_contrastive(self.embedding_size) for i in range(self.layer_num)])
-
         self.is_training = True
-
-    def _svd_reconstruction(self,train_mat):
-        # adj = self._scipy_sparse_mat_to_torch_sparse_tensor(train_mat).coalesce().cuda()
-        adj = train_mat
-        print('Performing svd...')
-        svd_u, s, svd_v = t.svd_lowrank(adj, q=configs['model']['svd_q'])
-        u_mul_s = svd_u @ t.diag(s)
-        v_mul_s = svd_v @ t.diag(s)
-        # del adj
-        del s
-        print('svd done.')
-        return svd_u.T, svd_v.T, u_mul_s, v_mul_s
 
     def _scipy_sparse_mat_to_torch_sparse_tensor(self, sparse_mx):
         sparse_mx = sparse_mx.tocoo().astype(np.float32)
@@ -77,7 +61,7 @@ class LightGCL(BaseModel):
         result.index_add_(0, rows, col_segs)
         return result
 
-    def _sparse_dropout(self,mat, dropout):
+    def _sparse_dropout(self, mat, dropout):
         indices = mat.indices()
         values = nn.functional.dropout(mat.values(), p=dropout)
         size = mat.size()

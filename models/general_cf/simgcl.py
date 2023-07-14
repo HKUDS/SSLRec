@@ -1,7 +1,7 @@
 import torch as t
 from torch import nn
 from config.configurator import configs
-from models.aug_utils import perturb_embedding
+from models.aug_utils import EmbedPerturb
 from models.general_cf.lightgcn import LightGCN
 from models.loss_utils import cal_bpr_loss, reg_params, cal_infonce_loss
 
@@ -15,6 +15,7 @@ class SimGCL(LightGCN):
 		self.cl_weight = configs['model']['cl_weight']
 		self.temperature = configs['model']['temperature']
 		self.eps = configs['model']['eps']
+		self.embed_perturb = EmbedPerturb(eps=self.eps)
 	
 	def forward(self, adj, perturb=False):
 		if not perturb:
@@ -23,7 +24,7 @@ class SimGCL(LightGCN):
 		embeds_list = [embeds]
 		for i in range(self.layer_num):
 			embeds = self._propagate(adj, embeds_list[-1])
-			embeds = perturb_embedding(embeds)
+			embeds = self.embed_perturb(embeds)
 			embeds_list.append(embeds)
 		embeds = sum(embeds_list)
 		return embeds[:self.user_num], embeds[self.user_num:]

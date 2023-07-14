@@ -33,7 +33,7 @@ class NCL(LightGCN):
 				embeds = self._propagate(adj, embeds_list[-1])
 				embeds_list.append(embeds)
 		self.final_embeds_list = embeds_list
-		embeds = sum(embeds_list[:self.layer_num + 1])# / (self.layer_num + 1)
+		embeds = sum(embeds_list[:self.layer_num + 1])
 		return embeds, embeds_list
 	
 	def _pick_embeds(self, embeds, ancs, poss, negs):
