@@ -1,29 +1,29 @@
 optimizer:
   name: adam
-  lr: 1.0e-3 # not 1e-3
+  lr: 1.0e-3
   weight_decay: 0
 
 train:
-  epoch: 200
+  epoch: 30
   batch_size: 512
   save_model: true
-  test_step: 1 # evaluate per {test_step} epochs
-  #pretrain_path: ./checkpoint/xxxx.pth
+  log_loss: false
+  test_step: 1
   reproducible: true
   seed: 2023
 
 test:
-  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
-  k: [5, 10] # top-k
-  batch_size: 512 # How many users per batch during validation
+  metrics: [recall, ndcg]
+  k: [5, 10, 20]
+  batch_size: 512
 
 data:
-  type: sequential # choose in {general_cf, multi_behavior, sequential, social}
+  type: sequential
   name: ml-20m
   seq_aug: true
 
 model:
-  name: cl4srec # case-insensitive
+  name: cl4srec
   dropout_rate: 0.1
   n_layers: 2
   embedding_size: 64
@@ -33,8 +33,8 @@ model:
   tau: 1
 
 tune:
-  enable: true # Whether to enable grid search to search for optimal hyperparameters
-  hyperparameters: [dropout_rate, lmb, tau] # The name of the hyperparameter
-  dropout_rate: [0.1, 0.3, 0.5] # Use a list to store the search range
+  enable: false
+  hyperparameters: [dropout_rate, lmb, tau]
+  dropout_rate: [0.1, 0.3, 0.5]
   lmb: [0.05, 0.1, 0.2]
   tau: [0.5, 0.7, 0.9]
