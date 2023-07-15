@@ -39,7 +39,7 @@ model:
 
 tune:
   enable: false
-  hyperparameters: [layer_num, reg_weight, ssl_reg]
-  layer_num: [2, 3]
+  hyperparameters: [gcn_layer, reg_weight, ssl_reg]
+  gcn_layer: [2, 3]
   reg_weight: [1.0e-6, 1.0e-7, 1.0e-8]
   ssl_reg: [1.0e-1, 1, 2, 5]

@@ -1,31 +1,31 @@
 optimizer:
   name: adam
-  lr: 1.0e-3 # not 1e-3
+  lr: 1.0e-3
   weight_decay: 0
 
 train:
-  trainer: iclrec_trainer
-  epoch: 200
+  epoch: 90
   batch_size: 512
   save_model: true
-  test_step: 1 # evaluate per {test_step} epochs
-  #pretrain_path: ./checkpoint/xxxx.pth
+  log_loss: False
+  test_step: 1
   reproducible: true
   seed: 2023
+  trainer: iclrec_trainer
 
 test:
-  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
-  k: [5, 10] # top-k
-  batch_size: 512 # How many users per batch during validation
+  metrics: [recall, ndcg]
+  k: [5, 10, 20]
+  batch_size: 512
 
 data:
-  type: sequential # choose in {general_cf, multi_behavior, sequential, social}
+  type: sequential
   name: ml-20m
   seq_aug: true
   neg_samp: true
 
 model:
-  name: iclrec # case-insensitive
+  name: iclrec
   dropout_rate: 0.1
   n_layers: 2
   embedding_size: 64
@@ -37,7 +37,7 @@ model:
   num_intent_clusters: 256
 
 tune:
-  enable: false # Whether to enable grid search to search for optimal hyperparameters
-  hyperparameters: [] # The name of the hyperparameter
-  layer_num: [] # Use a list to store the search range
+  enable: false
+  hyperparameters: []
+  layer_num: []
   reg_weight: []
