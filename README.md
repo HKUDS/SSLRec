@@ -1,4 +1,6 @@
-# SSLRec🚀: A Self-Supervised Learning Library for Recommendation
+<p align="center">
+<img src="logo.png" alt="SSLRec" />
+</p>
 
 
 
@@ -13,7 +15,7 @@ It's user-friendly and contains commonly-used datasets, code scripts for data pr
 **SSLRec** offers a vast array of utility functions and an easy-to-use interface that simplifies the development and evaluation of recommendation models.
 
 <p align="center">
-<img src="sslrec.png" alt="SSLRec" />
+<img src="sslrec.png" alt="Framework" />
 </p>
 
 Our library includes various self-supervised learning recommendation algorithms, covering five major categories:
