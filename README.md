@@ -31,7 +31,7 @@ Our framework offers a unified training, validation, and testing process for eac
 ## Highlighted Features
 
 + 🧩**Flexible Modular Architecture.** The SSLRec library features a modular architecture that allows for effortless customization and combination of modules. This enables users to create personalized recommendation models that fit their specific needs and requirements.
-
+===
 
 + 🌟**Diverse Recommendation Scenarios.** The SSLRec library is a versatile tool for researchers and practitioners who are interested in building effective recommendation models across diverse recommender system research lines.
 
