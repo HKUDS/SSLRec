@@ -31,15 +31,14 @@ model:
   reg_weight: 1.0e-7
   proto_weight: 1.0e-4
   struct_weight: 1.0e-3
-  temperature: 0.3
+  temperature: 0.1
   embedding_size: 32
   epoch_period: 3
   cluster_num: 50
 
 tune:
-  enable: false
-  hyperparameters: [layer_num, reg_weight, proto_weight, struct_weight]
-  layer_num: [2, 3]
-  reg_weight: [1.0e-5, 1.0e-6, 1.0e-7]
+  enable: true
+  hyperparameters: [temperature, proto_weight, struct_weight]
+  temperature: [0.1, 0.2, 0.3, 0.5, 1.0]
   proto_weight: [1.0e-2, 1.0e-3, 1.0e-4]
   struct_weight: [1.0e-1, 1.0e-2, 1.0e-3]
