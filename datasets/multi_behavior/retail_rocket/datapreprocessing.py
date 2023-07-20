@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 from scipy.sparse import csr_matrix
 
-predir = '/home/weiw/Code/HKUDS/SSLRec/datasets/retail_rocket/'
+predir = ''
 
 trn_buy = pickle.load(open(predir+'trn_buy','rb'))
 trn_cart = pickle.load(open(predir+'trn_cart','rb'))
@@ -95,7 +95,7 @@ print(cart_kg.shape)
 print(buy_kg.shape)
 kg = np.vstack((view_kg, cart_kg, buy_kg)).astype(int) 
 kg_df = pd.DataFrame(kg)
-kg_df.to_csv(predir+'kg.txt', sep=' ', header=None, index=None)
+# kg_df.to_csv(predir+'kg.txt', sep=' ', header=None, index=None)
 
 
 

@@ -46,7 +46,7 @@ model:
   layer: 3
   kg_lr: 1.e-3
   decay: 1.e-4
-  dropout: 1
+  dropout: true
   keepprob: 0.7
   a_fold: 100
   testbatch: 4096
@@ -59,7 +59,7 @@ model:
   bpr_batch_size: 2048
   latent_dim_rec: 32
   lightGCN_n_layers: 3
-  dropout: 0.7
+  # dropout: 0.7
   keep_prob: 0.7
   A_n_fold: 100
   test_u_batch_size: 4096

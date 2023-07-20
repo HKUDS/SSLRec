@@ -560,10 +560,10 @@ class CMLTrainer(Trainer):
             user_embed, item_embed, user_embeds, item_embeds = meta_model()
             for index in range(len(self.data_handler.behaviors)):
                 user_id, item_id_pos, item_id_neg = self._sampleTrainBatch(torch.as_tensor(self.meta_user), self.data_handler.behaviors_data[i])
-                user_index_list[index] = user_id
-                userEmbed = user_embed[user_id]
-                posEmbed = item_embed[item_id_pos]
-                negEmbed = item_embed[item_id_neg]
+                user_index_list[index] = user_id.long()
+                userEmbed = user_embed[user_id.long()]
+                posEmbed = item_embed[item_id_pos.long()]
+                negEmbed = item_embed[item_id_neg.long()]
                 pred_i, pred_j = self._innerProduct(userEmbed, posEmbed, negEmbed)
                 behavior_loss_list[index] = - (pred_i.view(-1) - pred_j.view(-1)).sigmoid().log()
             self.infoNCELoss_list, SSL_user_step_index = self._SSL(user_embeds, item_embeds, user_embed, item_embed, self.meta_user)
@@ -815,12 +815,14 @@ class KMCLRTrainer(Trainer):
         contrast_views = self.contrast_model.get_ui_kg_view()
         model.BPR_train_contrast(self.Kg_model.dataset, self.Kg_model, self.bpr, self.contrast_model, contrast_views, self.optimizer, neg_k=1)
         train_loader = self.data_handler.train_dataloader
+        train_loader.dataset.ng_sample()
 
         epoch_loss = 0
         self.behavior_loss_list = [None] * len(self.data_handler.behaviors)
         self.user_id_list = [None] * len(self.data_handler.behaviors)
         self.item_id_pos_list = [None] * len(self.data_handler.behaviors)
         self.item_id_neg_list = [None] * len(self.data_handler.behaviors)
+
         for user, item_i, item_j in tqdm(train_loader):
             user = user.long().cuda()
             self.user_step_index = user
