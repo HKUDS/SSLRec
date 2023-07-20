@@ -4,7 +4,7 @@ optimizer:
   weight_decay: 0
 
 train:
-  epoch: 50
+  epoch: 15
   batch_size: 4096
   save_model: true
   loss: pairwise
@@ -25,7 +25,7 @@ data:
 model:
   name: smbrec
   keep_rate: 0.5
-  layer_num: 3
+  layer_num: 2
   reg_weight: 1.0e-2
   cl_weight: 0.1
   embedding_size: 32
@@ -36,11 +36,9 @@ model:
   tau: 0.5
 
 tune:
-  enable: true
-  hyperparameters: [layer_num, cl_weight, reg_weight, tau]
+  enable: false
+  hyperparameters: [layer_num, reg_weight]
   layer_num: [2, 3]
-  cl_weight: [1.0e-2, 1.0e-1, 1.0]
   reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
-  tau: [0.1, 0.2, 0.5, 1.0]
 
 

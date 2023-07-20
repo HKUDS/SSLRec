@@ -460,7 +460,7 @@ class KGCLTrainer(Trainer):
 
 
 """
-Special Trainer for Multi-behavior Recommendation methods (CML, MMCLR, KMCLR, MBGMN, ...)
+Special Trainer for Multi-behavior Recommendation methods (CML, KMCLR, MBGMN, ...)
 """
 class CMLTrainer(Trainer):
     def __init__(self, data_handler, logger):
@@ -780,28 +780,6 @@ class CMLTrainer(Trainer):
         for i in range(len(self.data_handler.behaviors)):
             user_con_loss_list.append(single_infoNCE_loss_one_by_one(user_embeddings[-1], user_embeddings[i], user_step_index))
         return user_con_loss_list, user_step_index
-
-
-class MMCLRTrainer(Trainer):
-    def __init__(self, data_handler, logger):
-        super(MMCLRTrainer, self).__init__(data_handler, logger)
-
-    def train_epoch(self, model, epoch_idx):
-        model.train()
-        for input_nodes, pos_graph, neg_graph, blocks, block_src_nodes, seq_tensors, neg_user_ids in tqdm(
-                self.data_handler.train_dataloader):
-            if block_src_nodes is not None:
-                block_src_nodes = [{k: v.to(configs['train']['device']) for k, v in nodes.items()} for nodes in block_src_nodes]
-                input_nodes = {k: v.to(configs['train']['device']) for k, v in input_nodes.items()}
-                pos_graph = pos_graph.to(configs['train']['device'])
-                neg_graph = neg_graph.to(configs['train']['device'])
-                blocks = [block.to(configs['train']['device']) for block in blocks]
-            seq_tensors = [seq.to(configs['train']['device']) for seq in seq_tensors]
-            graph_data = (input_nodes, pos_graph, neg_graph, blocks, block_src_nodes)
-            loss, link_loss, seq_cl_loss, graph_cl_loss, cross_constra_loss, graph_inner_loss, seq_inner_loss = model(graph_data, seq_tensors, is_eval=False)
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
 
 
 class KMCLRTrainer(Trainer):

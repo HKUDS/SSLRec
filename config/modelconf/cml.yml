@@ -12,7 +12,7 @@ optimizer:
   decay: 0.96
 
 train:
-  epoch: 100
+  epoch: 30
   batch_size: 4096
   save_model: true
   loss: pairwise
@@ -22,7 +22,7 @@ train:
   sampNum: 10
   meta_batch: 128
   SSL_batch: 30
-  reg: 1.e-3
+  reg: 1.0e-3
   beta: 0.005
   patience: 100
   trainer: cml_trainer
