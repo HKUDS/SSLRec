@@ -35,8 +35,7 @@ class SMBRec(BaseModel):
     def _sim(self, z1, z2, tau=None):
         z1 = F.normalize(z1)  
         z2 = F.normalize(z2)
-
-        return -(torch.exp(torch.mm(z1, z2.t())/tau)+1e-8).log()
+        return - (torch.exp(torch.mm(z1, z2.t()) / tau) + 1e-8).log()
 
     def _batched_contrastive_loss(self, embed, sample_mat=None, batch_size=128):
         device = embed.device
@@ -51,8 +50,8 @@ class SMBRec(BaseModel):
 
         for i in range(num_batches):
             tmp_i = indices[i * batch_size:(i + 1) * batch_size]
-            pos_row_list, pos_col_list, neg_row_list, neg_col_list = self._dgl_sample(dgl_g_pos, dgl_g_neg, configs['model']['sample_num_pos'], configs['model']['sample_num_pos'], tmp_i)  #, node_type, edge_type)            
-            losses += (self._sim(embed[pos_row_list], embed[pos_col_list], tau=configs['model']['tau']) - self._sim(embed[neg_row_list], embed[neg_col_list], tau=configs['model']['tau']) ).sum()  # todo move 
+            pos_row_list, pos_col_list, neg_row_list, neg_col_list = self._dgl_sample(dgl_g_pos, dgl_g_neg, configs['model']['sample_num_pos'], configs['model']['sample_num_pos'], tmp_i)
+            losses += (self._sim(embed[pos_row_list], embed[pos_col_list], tau=configs['model']['tau']) - self._sim(embed[neg_row_list], embed[neg_col_list], tau=configs['model']['tau'])).sum()
         return losses
     
     def _dgl_sample(self, g_pos, g_neg, samp_num, samp_num_neg, anchor_id):     
@@ -61,7 +60,6 @@ class SMBRec(BaseModel):
         row_pos, col_pos = sub_g_pos.edges()
         row_neg, col_neg = sub_g_neg.edges()
         return row_pos, col_pos, row_neg, col_neg
-
 
     def forward(self):
         self.embed_list_user, self.embed_list_item = [], []
@@ -88,7 +86,7 @@ class SMBRec(BaseModel):
         co_item = self.data_handler.trainLabel.T*self.data_handler.trainLabel
         for i in range(len(self.data_handler.behaviors)):     
             cl_loss += self._batched_contrastive_loss(self.embed_list_user[i], co_user) 
-        loss = bpr_loss + configs['model']['cl_weight']*cl_loss  + configs['model']['reg_weight'] * reg_loss
+        loss = bpr_loss + configs['model']['cl_weight'] * cl_loss + configs['model']['reg_weight'] * reg_loss
         losses = {'bpr_loss': bpr_loss, 'cl_loss': cl_loss}
         return loss, losses
 

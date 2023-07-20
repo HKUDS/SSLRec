@@ -48,7 +48,6 @@ class KMCLR(BaseModel):
 
     def forward(self):
         user_embed, item_embed, user_embeds, item_embeds = self.gcn()
-
         return user_embed, item_embed, user_embeds, item_embeds 
 
 
@@ -422,17 +421,6 @@ class Contrast(nn.Module):
         return contrast_views
 
 
-
-
-
-
-# import Kg_Par     
-# import torch
-# from torch import nn
-# from GAT import GAT
-# from utils import _L2_loss_mean
-
-
 class KGModel(nn.Module):
     def __init__(self, dataset, kg_dataset):
         super(KGModel, self).__init__()
@@ -447,9 +435,7 @@ class KGModel(nn.Module):
         self.num_items = self.dataset.m_items
         self.num_entities = self.kg_dataset.entity_count
         self.num_relations = self.kg_dataset.relation_count
-        print("user:{}, item:{}, entity:{}".format(self.num_users,
-                                                   self.num_items,
-                                                   self.num_entities))
+        print("user:{}, item:{}, entity:{}".format(self.num_users, self.num_items, self.num_entities))
         self.latent_dim = configs['model']['latent_dim_rec']
         self.n_layers = configs['model']['lightGCN_n_layers']
         self.keep_prob = configs['model']['keep_prob']
@@ -759,8 +745,6 @@ class GraphAttentionLayer(nn.Module):
 
     def __repr__(self):
         return self.__class__.__name__ + ' (' + str(self.in_features) + ' -> ' + str(self.out_features) + ')'
-
-
 
 
 class BPRLoss:

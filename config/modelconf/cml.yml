@@ -1,6 +1,6 @@
 optimizer:
   name: adam
-  lr: 3.e-3 # not 1e-3
+  lr: 3.0e-3
   weight_decay: 0
   opt_base_lr: 1.e-3
   opt_max_lr: 3.e-3
@@ -12,33 +12,32 @@ optimizer:
   decay: 0.96
 
 train:
-  epoch: 100  # 300
+  epoch: 100
   batch_size: 4096
   save_model: true
-  loss: pairwise # bpr
-  test_step: 5 # evaluate per {test_step} epochs
-  #pretrain_path: ./checkpoint/xxxx.pth
-  reproducible: true
+  loss: pairwise
+  test_step: 1
   seed: 2023
+  reproducible: true
   sampNum: 10
   meta_batch: 128
   SSL_batch: 30
   reg: 1.e-3
   beta: 0.005
-  patience: 100  #early stop
+  patience: 100
   trainer: cml_trainer
 
 test:
-  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
-  k: [10, 20, 40] # top-k, i.e., shoot
-  batch_size: 1024 # How many users per batch during validation
+  metrics: [recall, ndcg]
+  k: [10, 20, 40]
+  batch_size: 1024
 
 data:
-  type: multi_behavior # choose in {general_cf, multi_behavior, sequential, social}
-  name: retail_rocket  ## choose in {tmall, ijcai_15, retail_rocket}
+  type: multi_behavior
+  name: retail_rocket
 
 model:
-  name: cml # case-insensitive
+  name: cml
   keep_rate: 0.5
   layer_num: 2
   reg_weight: 1.0e-2
@@ -52,12 +51,10 @@ model:
   head_num: 4
   inner_product_mult: 1
 
-device: cuda:1
-
 tune:
-  enable: false # Whether to enable grid search to search for optimal hyperparameters
-  hyperparameters: [layer_num, reg_weight, embedding_size] # The name of the hyperparameter
-  layer_num: [2, 3, 4] # Use a list to store the search range
+  enable: false
+  hyperparameters: [layer_num, reg_weight, embedding_size]
+  layer_num: [2, 3, 4]
   reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
   embedding_size: [16, 32, 64]
 

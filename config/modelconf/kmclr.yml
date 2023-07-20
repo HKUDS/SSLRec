@@ -1,6 +1,6 @@
 optimizer:
   name: adam
-  lr: 3.e-4 # not 1e-3
+  lr: 3.0e-4
   weight_decay: 1.e-3
   opt_base_lr: 1.e-3
   opt_max_lr: 5.e-3
@@ -9,28 +9,26 @@ optimizer:
 train:
   epoch: 1000
   batch_size: 8192
-  save_model: true
+  save_model: false
   tensorboard: 0
-  loss: pairwise # bpr
-  test_step: 5 # evaluate per {test_step} epochs
-  #pretrain_path: ./checkpoint/xxxx.pth
-  reproducible: true
+  loss: pairwise
+  test_step: 1
   seed: 2023
+  reproducible: true
   SSL_batch: 18
   trainer: kmclr_trainer
 
 test:
-  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
-  k: [10, 20, 40] # top-k
-  batch_size: 1024 # How many users per batch during validation
+  metrics: [recall, ndcg]
+  k: [10, 20, 40]
+  batch_size: 1024
 
 data:
-  type: multi_behavior # choose in {general_cf, multi_behavior, sequential, social}
+  type: multi_behavior
   name: retail_rocket
 
-
 model:
-  name: kmclr # case-insensitive
+  name: kmclr
   keep_rate: 0.5
   layer_num: 3
   reg_weight: 1.0e-2
@@ -71,19 +69,13 @@ model:
   kg_p_drop: 0.5
   path: /home/weiw/Code/KMCLR/KMCLR/KMCLR/datasets/
   isJustTest: False
-  device: cuda:0
 
-device: cuda:1
 
 tune:
-  enable: false # Whether to enable grid search to search for optimal hyperparameters
-  hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
-  layer_num: [1, 2, 3] # Use a list to store the search range
+  enable: false
+  hyperparameters: [layer_num, reg_weight]
+  layer_num: [1, 2, 3]
   reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
-
-# configs['model']['layer_num']
-# configs['train']['epoch']
-# configs['optimizer']['weight_decay']
 
 
 

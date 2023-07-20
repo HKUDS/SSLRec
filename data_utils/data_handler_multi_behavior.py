@@ -27,9 +27,6 @@ class DataHandlerMultiBehavior:
             self.predir = './datasets/multi_behavior/retail_rocket/'
             self.behaviors = ['view', 'cart', 'buy']
             self.beh_meta_path = ['buy', 'view_buy', 'view_cart_buy']
-        elif configs['data']['name'] == 'tima':
-            self.predir = './datasets/multi_behavior/tima/'
-            # self.behaviors = ['view','cart', 'buy']
 
         self.train_file = self.predir + 'train_mat_'
         self.val_file = self.predir + 'test_mat.pkl'
@@ -50,7 +47,7 @@ class DataHandlerMultiBehavior:
         for i in range(0, len(self.behaviors)):
             with open(self.train_file + self.behaviors[i] + '.pkl', 'rb') as fs:
                 data = pickle.load(fs)
-                self.behaviors_data[i] = 1*(data!=0)
+                self.behaviors_data[i] = 1*(data != 0)
                 if data.get_shape()[0] > self.user_num:
                     self.user_num = data.get_shape()[0]
                 if data.get_shape()[1] > self.item_num:
@@ -61,7 +58,7 @@ class DataHandlerMultiBehavior:
                     self.t_min = data.data.min()
                 if self.behaviors[i] == configs['model']['target']:
                     self.train_mat = data
-                    self.trainLabel = 1*(self.train_mat != 0)
+                    self.trainLabel = 1 * (self.train_mat != 0)
                     self.labelP = np.squeeze(np.array(np.sum(self.trainLabel, axis=0)))
         self.test_mat = pickle.load(open(self.test_file, 'rb'))
         self.userNum = self.behaviors_data[0].shape[0]
@@ -73,7 +70,7 @@ class DataHandlerMultiBehavior:
             self.beh_meta_path_data = {}
             self.beh_meta_path_mats = {}
             for i in range(0, len(self.beh_meta_path)):
-                self.beh_meta_path_data[i] = 1*(pickle.load(open(self.train_file + self.beh_meta_path[i] + '.pkl','rb')) != 0)
+                self.beh_meta_path_data[i] = 1*(pickle.load(open(self.train_file + self.beh_meta_path[i] + '.pkl', 'rb')) != 0)
             time = datetime.datetime.now()
             print("Start building:  ", time)
             for i in range(0, len(self.behaviors_data)):
@@ -89,7 +86,7 @@ class DataHandlerMultiBehavior:
         time = datetime.datetime.now()
         print("Start building:  ", time)
         for i in range(0, len(self.behaviors_data)):
-            self.behaviors_data[i] = 1*(self.behaviors_data[i]!=0)
+            self.behaviors_data[i] = 1*(self.behaviors_data[i] != 0)
             self.behavior_mats[i] = self._get_use(self.behaviors_data[i])
         time = datetime.datetime.now()
         print("End building:", time)
@@ -127,34 +124,29 @@ class DataHandlerMultiBehavior:
 
         if configs['model']['name'] == 'cml':
             train_u, train_v = self.train_mat.nonzero()
-            train_data = np.hstack((train_u.reshape(-1,1), train_v.reshape(-1,1))).tolist()
+            train_data = np.hstack((train_u.reshape(-1,1), train_v.reshape(-1, 1))).tolist()
             train_dataset = CMLData(self.behaviors, train_data, self.item_num, self.behaviors_data, True)
-            self.train_dataloader = dataloader.DataLoader(train_dataset, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=4, pin_memory=True)
-            return
-        elif configs['model']['name'] == 'HMGCR' or configs['model']['name']=='SMBRec':
-            train_u, train_v = self.train_mat.nonzero()
-            train_data = np.hstack((train_u.reshape(-1,1), train_v.reshape(-1,1))).tolist()
+            self.train_dataloader = dataloader.DataLoader(train_dataset, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0, pin_memory=True)
+        elif configs['model']['name'] == 'hmgcr' or configs['model']['name'] == 'smbrec':
             train_dataset = PairwiseTrnData(self.trainLabel.tocoo())
-            self.train_dataloader = dataloader.DataLoader(train_dataset, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=4, pin_memory=True)
-            return
+            self.train_dataloader = dataloader.DataLoader(train_dataset, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0, pin_memory=True)
         elif configs['model']['name'] == 'kmclr':
             train_u, train_v = self.train_mat.nonzero()
             train_data = np.hstack((train_u.reshape(-1, 1), train_v.reshape(-1, 1))).tolist()
-            train_dataset = KMCLRData(self.behaviors, train_data, self.item_num, self.behaviors_data, True)  #TODO
-            self.train_loader = dataloader.DataLoader(train_dataset, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0, pin_memory=True)
+            train_dataset = KMCLRData(self.behaviors, train_data, self.item_num, self.behaviors_data, True)
+            self.train_dataloader = dataloader.DataLoader(train_dataset, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0, pin_memory=True)
             self.test_dataloader = dataloader.DataLoader(test_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
             #kg habdler
             self.raw_kg_dataset = UIDataset(path=self.predir)
             self.kg_dataset = KGDataset(self.raw_kg_dataset.m_item)
-            self.Kg_model = KGModel(self.raw_kg_dataset, self.kg_dataset).to( configs['device'] ).to(configs['device'])
+            self.Kg_model = KGModel(self.raw_kg_dataset, self.kg_dataset).to(configs['device']).to(configs['device'])
             self.contrast_model = Contrast(self.Kg_model, configs['model']['kgc_temp'])
-            self.kg_optimizer = optim.Adam(self.Kg_model.parameters(), lr= configs['model']['kg_lr'])
+            self.kg_optimizer = optim.Adam(self.Kg_model.parameters(), lr=configs['model']['kg_lr'])
             self.bpr = BPRLoss(self.Kg_model, self.kg_optimizer)
-            return
         else:
             if configs['train']['loss'] == 'pairwise':
                 trn_data = PairwiseTrnData(self.train_mat.tocoo())
-        self.train_dataloader = dataloader.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
+            self.train_dataloader = dataloader.DataLoader(trn_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
 
 
 class DataHandlerMF(DataHandlerMultiBehavior):
@@ -183,11 +175,11 @@ class DataHandlerMMCLR(DataHandlerMultiBehavior):
             self.test_file = self.predir + 'test_mat.pkl'
 
     def _load_MMCLR_data(self):
-        self.train_graph,self.item_ids,self.item_set=self._get_TIMA_Fllow_He(self.train_file_graph)
-        self.test_graph,self.item_ids,self.item_set=self._get_TIMA_Fllow_He(self.test_file_graph)
+        self.train_graph, self.item_ids, self.item_set = self._get_TIMA_Fllow_He(self.train_file_graph)
+        self.test_graph, self.item_ids, self.item_set = self._get_TIMA_Fllow_He(self.test_file_graph)
         # return train_graph,test_graph,item_ids,item_set
-        self.g=self.train_graph.to(configs['device'])
-        self.test_g=self.test_graph.to(configs['device'])
+        self.g = self.train_graph.to(configs['device'])
+        self.test_g = self.test_graph.to(configs['device'])
         configs['model']['item_ids'] = self.item_ids
         configs['model']['item_set'] = self.item_set
         self.train_mat = pickle.load(open(self.train_file, 'rb'))
@@ -195,41 +187,36 @@ class DataHandlerMMCLR(DataHandlerMultiBehavior):
 
     def _get_TIMA_Fllow_He(self, file):
         ## floow the create dataset method of He Xiangnan
-        graph=dgl.load_graphs(file)
-        graph=graph[0][0]
-        test_set=dgl.data.utils.load_info(file+'.info')['testSet']
-        for etype in ['buy','click','cart']:
-            graph.nodes['item'].data[etype+'_dg']=graph.in_degrees(v='__ALL__',etype=etype)
-            graph.nodes['user'].data[etype+'_dg']=graph.out_degrees(u='__ALL__',etype=etype)
-        graph.nodes['item'].data['dg']=graph.in_degrees(v='__ALL__',etype='buy')+graph.in_degrees(v='__ALL__',etype='cart')+graph.in_degrees(v='__ALL__',etype='click')
-        graph.nodes['user'].data['dg']=graph.out_degrees(u='__ALL__',etype='buy')+graph.out_degrees(u='__ALL__',etype='cart')+graph.out_degrees(u='__ALL__',etype='click')
+        graph = dgl.load_graphs(file)
+        graph = graph[0][0]
+        # test_set = dgl.data.utils.load_info(file+'.info')['testSet']
+        for etype in ['buy', 'click', 'cart']:
+            graph.nodes['item'].data[etype+'_dg'] = graph.in_degrees(v='__ALL__', etype=etype)
+            graph.nodes['user'].data[etype+'_dg'] = graph.out_degrees(u='__ALL__', etype=etype)
+        graph.nodes['item'].data['dg'] = graph.in_degrees(v='__ALL__', etype='buy')+graph.in_degrees(v='__ALL__', etype='cart') + graph.in_degrees(v='__ALL__', etype='click')
+        graph.nodes['user'].data['dg'] = graph.out_degrees(u='__ALL__', etype='buy')+graph.out_degrees(u='__ALL__', etype='cart') + graph.out_degrees(u='__ALL__', etype='click')
 
-        _,i=graph.edges(etype='buy')
-        i=i.unique()
-        in_dg=graph.in_degrees(i,etype='buy')
-        i=i[in_dg>=1]
-        item_ids=i.tolist()
-        item_set=set(item_ids)
-        return graph,item_ids,item_set
+        _, i = graph.edges(etype='buy')
+        i = i.unique()
+        in_dg = graph.in_degrees(i, etype='buy')
+        i = i[in_dg >= 1]
+        item_ids = i.tolist()
+        item_set = set(item_ids)
+        return graph, item_ids, item_set
 
     def load_data(self):
-        # self._load_data()
         self._load_MMCLR_data()
-        train_dataset=MMCLRData(root_dir=self.train_file_seq)
-        train_sampler=MMCLRNeighborSampler(self.train_graph, num_layers=configs['model']['n_gcn_layers'])
-        # train_sampler=NeighborSamplerForMGIR(train_graph, num_layers=configs['model']['n_gcn_layers'],args=args)
-        # print(len(train_dataset))
-        self.train_dataloader=dataloader.DataLoader(train_dataset, batch_size=configs['model']['batch_size'],collate_fn=train_sampler.sample_from_item_pairs
-        , shuffle=True, num_workers=8)
-        eval_sampler = MMCLRNeighborSampler(self.train_graph, num_layers=configs['model']['n_gcn_layers'], neg_sample_num=configs['train']['neg_sample_num'],is_eval=True)
-        # eval_sampler=NeighborSamplerForMGIR(train_graph, num_layers=configs['model']['n_gcn_layers'], args=args,neg_sample_num=configs['train']['neg_sample_num'],is_eval=True)
-        vaild_dataset = MMCLRData(root_dir=self.train_file_seq,eval='test',neg_sample_num=configs['train']['neg_sample_num'])
-        vaild_dataloader = dataloader.DataLoader(vaild_dataset,batch_size=256,collate_fn=eval_sampler.sample_from_item_pairs,shuffle=True,num_workers=8)
-        test_dataset = MMCLRData(root_dir=self.train_file_seq,eval='test',neg_sample_num=configs['train']['neg_sample_num'])
-        test_dataloader = dataloader.DataLoader(test_dataset,batch_size=256,collate_fn=eval_sampler.sample_from_item_pairs,shuffle=True,num_workers=8)  #TODO
-        cold_start_dataset = MMCLRData(root_dir=self.train_file_seq,eval='cold_start',neg_sample_num=configs['train']['neg_sample_num'])
-        cold_start_dataloader = dataloader.DataLoader(cold_start_dataset,batch_size=256,collate_fn=eval_sampler.sample_from_item_pairs,shuffle=True,num_workers=8)
-
+        train_dataset = MMCLRData(root_dir=self.train_file_seq)
+        train_sampler = MMCLRNeighborSampler(self.train_graph, num_layers=configs['model']['n_gcn_layers'])
+        # train_sampler = NeighborSamplerForMGIR(train_graph, num_layers=configs['model']['n_gcn_layers'],args=args)
+        self.train_dataloader = dataloader.DataLoader(train_dataset, batch_size=configs['model']['batch_size'], collate_fn=train_sampler.sample_from_item_pairs, shuffle=True, num_workers=8)
+        # eval_sampler = MMCLRNeighborSampler(self.train_graph, num_layers=configs['model']['n_gcn_layers'], neg_sample_num=configs['train']['neg_sample_num'], is_eval=True)
+        # vaild_dataset = MMCLRData(root_dir=self.train_file_seq,eval='test',neg_sample_num=configs['train']['neg_sample_num'])
+        # vaild_dataloader = dataloader.DataLoader(vaild_dataset,batch_size=256,collate_fn=eval_sampler.sample_from_item_pairs,shuffle=True,num_workers=8)
+        # test_dataset = MMCLRData(root_dir=self.train_file_seq,eval='test',neg_sample_num=configs['train']['neg_sample_num'])
+        # test_dataloader = dataloader.DataLoader(test_dataset,batch_size=256,collate_fn=eval_sampler.sample_from_item_pairs,shuffle=True,num_workers=8)
+        # cold_start_dataset = MMCLRData(root_dir=self.train_file_seq,eval='cold_start',neg_sample_num=configs['train']['neg_sample_num'])
+        # cold_start_dataloader = dataloader.DataLoader(cold_start_dataset,batch_size=256,collate_fn=eval_sampler.sample_from_item_pairs,shuffle=True,num_workers=8)
         configs['data']['user_num'], configs['data']['item_num'] = self.train_mat.shape
         test_data = AllRankTestData(self.test_mat, self.train_mat)
         self.test_dataloader = dataloader.DataLoader(test_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)

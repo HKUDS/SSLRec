@@ -1,30 +1,29 @@
 optimizer:
   name: adam
-  lr: 1.0e-3 # not 1e-3
+  lr: 1.0e-4
   weight_decay: 0
 
 train:
-  epoch: 80
+  epoch: 50
   batch_size: 4096
   save_model: true
-  loss: pairwise # bpr
-  test_step: 5 # evaluate per {test_step} epochs
-  #pretrain_path: ./checkpoint/xxxx.pth
+  loss: pairwise
+  log_loss: false
+  test_step: 1
   reproducible: ture
   seed: 2023
 
 test:
-  metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
-  k: [10, 20, 40] # top-k
-  batch_size: 1024 # How many users per batch during validation
+  metrics: [recall, ndcg]
+  k: [10, 20, 40]
+  batch_size: 1024
 
 data:
-  type: multi_behavior # choose in {general_cf, multi_behavior, sequential, social}
+  type: multi_behavior
   name: retail_rocket
 
-
 model:
-  name: smbrec # case-insensitive
+  name: smbrec
   keep_rate: 0.5
   layer_num: 3
   reg_weight: 1.0e-2
@@ -36,13 +35,12 @@ model:
   sample_num_neg: 5
   tau: 0.5
 
-device: cuda:1
-
 tune:
-  enable: false # Whether to enable grid search to search for optimal hyperparameters
-  hyperparameters: [layer_num, lr, reg_weight] # The name of the hyperparameter
-  layer_num: [2, 3, 4] # Use a list to store the search range
-  lr: [ 0.0001, 0.001, 0.01, 0.1, 0.03, 0.005, 0.007 ]
+  enable: true
+  hyperparameters: [layer_num, cl_weight, reg_weight, tau]
+  layer_num: [2, 3]
+  cl_weight: [1.0e-2, 1.0e-1, 1.0]
   reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
+  tau: [0.1, 0.2, 0.5, 1.0]
 
 
