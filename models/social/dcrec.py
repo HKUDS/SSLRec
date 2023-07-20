@@ -213,8 +213,8 @@ class DcRec(BaseModel):
         indices = t.arange(0, num_nodes).to(z1.device)
         losses = []
 
-        # for i in range(num_batches):
-        for i in range(3): # TODO: out of memory problem
+        for i in range(num_batches):
+        # for i in range(3): # TODO: out of memory problem
             mask = indices[i * batch_size: (i + 1) * batch_size]
             refl_sim = f(self.sim(z1[mask], z1)) # [b, n]
             between_sim = f(self.sim(z1[mask], z2)) # [b, n]
