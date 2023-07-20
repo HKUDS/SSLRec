@@ -37,12 +37,11 @@ data:
   name: retail_rocket
 
 model:
-  name: mbgmn # case-insensitive
+  name: mbgmn
   keep_rate: 0.5
   layer_num: 2
   reg_weight: 1.0e-2
   embedding_size: 32
-  # hidden_dim: 16
   gnn_layer: 
   drop_rate: 0.8
   drop_rate1: 0.5
@@ -55,7 +54,6 @@ model:
   sampNum: 40
   att_head: 2
   trnNum: 100
-  target: buy
   deep_layer: 0
   mult: 100
   keepRate: 0.7
@@ -65,12 +63,9 @@ model:
   subUsrSize: 10
   subUsrDcy: 0.9
 
-device: cuda:1
-
 tune:
-  enable: false # Whether to enable grid search to search for optimal hyperparameters
-  hyperparameters: [layer_num, reg_weight] # The name of the hyperparameter
-  layer_num: [2, 3, 4] # Use a list to store the search range
+  enable: false
+  hyperparameters: [layer_num, reg_weight]
+  layer_num: [2, 3, 4]
   reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
-  # embedding_size: [16, 32, 64]
 

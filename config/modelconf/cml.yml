@@ -12,7 +12,7 @@ optimizer:
   decay: 0.96
 
 train:
-  epoch: 30
+  epoch: 95
   batch_size: 4096
   save_model: true
   loss: pairwise

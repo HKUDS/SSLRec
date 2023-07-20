@@ -114,7 +114,7 @@ class MBGMN(BaseModel):
       return params
 
     def specialize(self, uEmbed, iEmbed, params):
-      retUEmbed = torch.sum( uEmbed.unsqueeze(-1) * params['uW1'], dim=1)  #TODO: check
+      retUEmbed = torch.sum( uEmbed.unsqueeze(-1) * params['uW1'], dim=1)
       retUEmbed = torch.sum( retUEmbed.unsqueeze(-1) * params['uW2'], dim=1)
       retUEmbed = torch.cat([retUEmbed, uEmbed], axis=-1)
       retIEmbed = torch.sum( iEmbed.unsqueeze(-1) * params['iW1'], dim=1)

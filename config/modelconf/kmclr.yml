@@ -7,7 +7,7 @@ optimizer:
   opt_weight_decay: 1.e-4
 
 train:
-  epoch: 1000
+  epoch: 200
   batch_size: 8192
   save_model: false
   tensorboard: 0
@@ -38,7 +38,6 @@ model:
   inner_product_mult: 1
   drop_rate: 0.8
   slope: 0.1
-  patience: 100
   target: buy
   #kg
   bpr_batch: 2048
@@ -67,8 +66,6 @@ model:
   entity_num_per_item: 10
   kgc_temp: 0.2
   kg_p_drop: 0.5
-  path: /home/weiw/Code/KMCLR/KMCLR/KMCLR/datasets/
-  isJustTest: False
 
 
 tune:

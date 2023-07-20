@@ -6,9 +6,9 @@ import numpy as np
 import scipy.sparse as sp
 import torch.optim as optim
 import torch.utils.data as dataloader
-from data_utils.datasets_multi_behavior import CMLData, MMCLRData, KMCLRData, KGDataset, UIDataset, PairwiseTrnData, AllRankTestData, MMCLRNeighborSampler
-from models.multi_behavior.kmclr import KGModel, Contrast, BPRLoss
 from config.configurator import configs
+from data_utils.datasets_multi_behavior import *
+from models.multi_behavior.kmclr import KGModel, Contrast, BPRLoss
 
 
 class DataHandlerMultiBehavior:
