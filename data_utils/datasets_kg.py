@@ -27,9 +27,10 @@ class KGTrainDataset(data.Dataset):
 
 
 class KGTestDataset(data.Dataset):
-    def __init__(self, test_user_dict) -> None:
+    def __init__(self, test_user_dict, train_user_dict) -> None:
         self.user_pos_lists = test_user_dict
         self.test_users = np.array(list(test_user_dict.keys()))
+        self.user_history_lists = train_user_dict
 
     def __len__(self):
         return len(self.test_users)

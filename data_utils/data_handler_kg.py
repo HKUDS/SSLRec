@@ -108,7 +108,7 @@ class DataHandlerKG:
         self.kg_edges, ui_edges, self.kg_dict = self._build_graphs(train_cf, kg_triplets)
         self.ui_mat = self._build_ui_mat(ui_edges)
 
-        test_data = KGTestDataset(self.test_user_dict)
+        test_data = KGTestDataset(self.test_user_dict, self.train_user_dict)
         self.test_dataloader = data.DataLoader(test_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
         train_data = KGTrainDataset(train_cf, self.train_user_dict)
         self.train_dataloader = data.DataLoader(train_data, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)

@@ -12,3 +12,4 @@ checkpoint/
 runs/
 amazon-book_kg/
 last-fm_kg/
+only_test.py

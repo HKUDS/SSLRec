@@ -154,10 +154,10 @@ class Metric(object):
             batch_data = list(
                 map(lambda x: x.long().to(configs['device']), tem))
             # predict result
-            batch_u, batch_i = batch_data[:2]
-            batch_u_emb, batch_i_emb = user_emb[batch_u], item_emb[batch_i]
+            batch_u = batch_data[0]
+            batch_u_emb, all_i_emb = user_emb[batch_u], item_emb
             with torch.no_grad():
-                batch_pred = model.rating(batch_u_emb, batch_i_emb)
+                batch_pred = model.rating(batch_u_emb, all_i_emb)
             test_user_count += batch_pred.shape[0]
             # filter out history items
             batch_pred = self._mask_history_pos(

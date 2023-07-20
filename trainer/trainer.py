@@ -185,10 +185,13 @@ class Trainer(object):
 
     def load_model(self, model):
         if 'pretrain_path' in configs['train']:
-            pretrain_path = configs['train']['pretrian_path']
+            pretrain_path = configs['train']['pretrain_path']
             model.load_state_dict(torch.load(pretrain_path))
             self.logger.log(
                 "Load model parameters from {}".format(pretrain_path))
+            return model
+        else:
+            raise KeyError("No pretrain_path in configs['train']")
 
 """
 Special Trainer for General Collaborative Filtering methods (AutoCF, GFormer, ...)

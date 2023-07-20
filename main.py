@@ -45,6 +45,27 @@ def tune():
     # Fifth Step: Start grid search
     tuner.grid_search(data_handler, trainer)
 
+def test():
+    # First Step: Create data_handler
+    init_seed()
+    data_handler = build_data_handler()
+    data_handler.load_data()
+
+    # Second Step: Create model
+    model = build_model(data_handler).to(configs['device'])
+
+    # Third Step: Create logger
+    logger = Logger()
+
+    # Fourth Step: Create trainer
+    trainer = build_trainer(data_handler, logger)
+
+    # Fifth Step: load model from pretrain_path
+    best_model = trainer.load(model)
+
+    # Sixth Step: test
+    trainer.test(best_model)
+
 if not configs['tune']['enable']:
     main()
 else:

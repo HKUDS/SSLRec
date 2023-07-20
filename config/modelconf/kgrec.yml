@@ -10,7 +10,7 @@ train:
   save_model: true
   loss: pairwise # bpr
   test_step: 10 # evaluate per {test_step} epochs
-  #pretrain_path: ./checkpoint/xxxx.pth
+  pretrain_path: checkpoint/kgrec/kgrec-last-fm-1689594554.pth
   reproducible: true
   seed: 2020
 
@@ -45,3 +45,5 @@ tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
   hyperparameters: [layer_num] # The name of the hyperparameter
   layer_num: [1, 2, 3] # Use a list to store the search range
+
+only_test: true
