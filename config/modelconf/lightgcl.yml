@@ -1,7 +1,7 @@
 optimizer:
   name: adam
-  lr: 1.0e-4
-  weight_decay: 1.0e-4
+  lr: 1.0e-3
+  weight_decay: 0
 
 train:
   epoch: 300
@@ -27,15 +27,15 @@ model:
   name: lightgcl
   dropout: 0
   layer_num: 2
-  cl_weight: 1.0
+  cl_weight: 0.2
   reg_weight: 1.0e-7
-  temp: 0.5
+  temp: 0.2
   embedding_size: 32
   svd_q: 5
 
 tune:
-  enable: true
+  enable: false
   hyperparameters: [layer_num, temp, cl_weight]
   layer_num: [2, 3]
   temp: [0.2, 0.5, 1]
-  cl_weight: [0.1, 1, 2, 5]}
+  cl_weight: [0.1, 1, 2, 5]

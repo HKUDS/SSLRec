@@ -3,8 +3,8 @@ import numpy as np
 from torch import nn
 from models.base_model import BaseModel
 from config.configurator import configs
-from models.loss_utils import cal_bpr_loss
 from models.aug_utils import SvdDecomposition
+from models.loss_utils import cal_bpr_loss, reg_params
 
 init = nn.init.xavier_uniform_
 uniformInit = nn.init.uniform
@@ -24,10 +24,12 @@ class LightGCL(BaseModel):
         self.svd_decompose = SvdDecomposition(svd_q=configs['model']['svd_q'])
         self.ut, self.vt, self.u_mul_s, self.v_mul_s = self.svd_decompose(self.adj)
 
+        self.temp = configs['model']['temp']
+        self.dropout = configs['model']['dropout']
         self.layer_num = configs['model']['layer_num']
         self.cl_weight = configs['model']['cl_weight']
-        self.dropout = configs['model']['dropout']
-        self.temp = configs['model']['temp']
+        self.reg_weight = configs['model']['reg_weight']
+
         self.user_embeds = nn.Parameter(init(t.empty(self.user_num, self.embedding_size)))
         self.item_embeds = nn.Parameter(init(t.empty(self.item_num, self.embedding_size)))
         self.E_u_list = [None] * (self.layer_num+1)
@@ -38,6 +40,8 @@ class LightGCL(BaseModel):
         self.Z_i_list = [None] * (self.layer_num+1)
         self.G_u_list = [None] * (self.layer_num+1)
         self.G_i_list = [None] * (self.layer_num+1)
+        self.G_u_list[0] = self.user_embeds
+        self.G_i_list[0] = self.item_embeds
         self.E_u = None
         self.E_i = None
         self.act = nn.LeakyReLU(0.5)
@@ -46,8 +50,7 @@ class LightGCL(BaseModel):
 
     def _scipy_sparse_mat_to_torch_sparse_tensor(self, sparse_mx):
         sparse_mx = sparse_mx.tocoo().astype(np.float32)
-        indices = t.from_numpy(
-            np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
+        indices = t.from_numpy(np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
         values = t.from_numpy(sparse_mx.data)
         shape = t.Size(sparse_mx.shape)
         return t.sparse.FloatTensor(indices, values, shape)
@@ -72,20 +75,22 @@ class LightGCL(BaseModel):
             return self.E_u, self.E_i
         for layer in range(1, self.layer_num+1):
             # GNN propagation
-            self.Z_u_list[layer] = self.act(self._spmm(self._sparse_dropout(self.adj,self.dropout), self.E_i_list[layer-1]))
-            self.Z_i_list[layer] = self.act(self._spmm(self._sparse_dropout(self.adj,self.dropout).transpose(0,1), self.E_u_list[layer-1]))
+            self.Z_u_list[layer] = self._spmm(self._sparse_dropout(self.adj,self.dropout), self.E_i_list[layer-1])
+            self.Z_i_list[layer] = self._spmm(self._sparse_dropout(self.adj,self.dropout).transpose(0,1), self.E_u_list[layer-1])
 
             # svd_adj propagation
             vt_ei = self.vt @ self.E_i_list[layer-1]
-            self.G_u_list[layer] = self.act(self.u_mul_s @ vt_ei)
+            self.G_u_list[layer] = (self.u_mul_s @ vt_ei)
             ut_eu = self.ut @ self.E_u_list[layer-1]
-            self.G_i_list[layer] = self.act(self.v_mul_s @ ut_eu)
+            self.G_i_list[layer] = (self.v_mul_s @ ut_eu)
 
             # aggregate
             self.E_u_list[layer] = self.Z_u_list[layer]  # + self.E_u_list[layer-1]
             self.E_i_list[layer] = self.Z_i_list[layer]  # + self.E_i_list[layer-1]
 
         # aggregate across layers
+        self.G_u = sum(self.G_u_list)
+        self.G_i = sum(self.G_i_list)
         self.E_u = sum(self.E_u_list)
         self.E_i = sum(self.E_i_list)
 
@@ -100,33 +105,43 @@ class LightGCL(BaseModel):
         neg_embeds = item_embeds[negs]
         bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
 
-        iids = t.cat((poss,negs))
+        iids = t.cat((poss, negs))
+        G_u_norm = self.G_u
+        E_u_norm = self.E_u
+        G_i_norm = self.G_i
+        E_i_norm = self.E_i
+        neg_score = t.log(t.exp(G_u_norm[ancs] @ E_u_norm.T / self.temp).sum(1) + 1e-8).mean()
+        neg_score += t.log(t.exp(G_i_norm[iids] @ E_i_norm.T / self.temp).sum(1) + 1e-8).mean()
+        pos_score = (t.clamp((G_u_norm[ancs] * E_u_norm[ancs]).sum(1) / self.temp, -5.0, 5.0)).mean() + \
+                    (t.clamp((G_i_norm[iids] * E_i_norm[iids]).sum(1) / self.temp, -5.0, 5.0)).mean()
+        cl_loss = -pos_score + neg_score
 
-        cl_loss = 0
-        for l in range(1,self.layer_num+1):
-            u_mask = (t.rand(len(ancs))>0.5).float().cuda()
+        # for l in range(1,self.layer_num+1):
+        #     u_mask = (t.rand(len(ancs))>0.5).float().cuda()
+        #
+        #     gnn_u = nn.functional.normalize(self.Z_u_list[l][ancs], p=2, dim=1)
+        #     hyper_u = nn.functional.normalize(self.G_u_list[l][ancs], p=2, dim=1)
+        #     hyper_u = self.Ws[l-1](hyper_u)
+        #     pos_score = t.exp((gnn_u*hyper_u).sum(1)/self.temp)
+        #     neg_score = t.exp(gnn_u @ hyper_u.T/self.temp).sum(1)
+        #     loss_s_u = ((-1 * t.log(pos_score/(neg_score+1e-8) + 1e-8))*u_mask).sum()
+        #     cl_loss = cl_loss + loss_s_u
+        #
+        #     i_mask = (t.rand(len(iids))>0.5).float().cuda()
+        #
+        #     gnn_i = nn.functional.normalize(self.Z_i_list[l][iids], p=2, dim=1)
+        #     hyper_i = nn.functional.normalize(self.G_i_list[l][iids], p=2, dim=1)
+        #     hyper_i = self.Ws[l-1](hyper_i)
+        #     pos_score = t.exp((gnn_i*hyper_i).sum(1)/self.temp)
+        #     neg_score = t.exp(gnn_i @ hyper_i.T/self.temp).sum(1)
+        #     loss_s_i = ((-1 * t.log(pos_score/(neg_score+1e-8) + 1e-8))*i_mask).sum()
+        #     cl_loss = cl_loss + loss_s_i
 
-            gnn_u = nn.functional.normalize(self.Z_u_list[l][ancs], p=2, dim=1)
-            hyper_u = nn.functional.normalize(self.G_u_list[l][ancs], p=2, dim=1)
-            hyper_u = self.Ws[l-1](hyper_u)
-            pos_score = t.exp((gnn_u*hyper_u).sum(1)/self.temp)
-            neg_score = t.exp(gnn_u @ hyper_u.T/self.temp).sum(1)
-            loss_s_u = ((-1 * t.log(pos_score/(neg_score+1e-8) + 1e-8))*u_mask).sum()
-            cl_loss = cl_loss + loss_s_u
-
-            i_mask = (t.rand(len(iids))>0.5).float().cuda()
-
-            gnn_i = nn.functional.normalize(self.Z_i_list[l][iids], p=2, dim=1)
-            hyper_i = nn.functional.normalize(self.G_i_list[l][iids], p=2, dim=1)
-            hyper_i = self.Ws[l-1](hyper_i)
-            pos_score = t.exp((gnn_i*hyper_i).sum(1)/self.temp)
-            neg_score = t.exp(gnn_i @ hyper_i.T/self.temp).sum(1)
-            loss_s_i = ((-1 * t.log(pos_score/(neg_score+1e-8) + 1e-8))*i_mask).sum()
-            cl_loss = cl_loss + loss_s_i
+        reg_loss = reg_params(self) * self.reg_weight
 
         cl_loss = self.cl_weight * cl_loss
-        loss = bpr_loss + cl_loss
-        losses = {'bpr_loss': bpr_loss, 'cl_loss': cl_loss}
+        loss = bpr_loss + cl_loss + reg_loss
+        losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'cl_loss': cl_loss}
         return loss, losses
 
     def full_predict(self, batch_data):
