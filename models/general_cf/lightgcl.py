@@ -107,8 +107,6 @@ class LightGCL(BaseModel):
         neg_scores = (anc_embeds * neg_embeds).sum(-1)
         bpr_loss = -(pos_scores - neg_scores).sigmoid().log().mean()
 
-        # bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
-
         iids = t.cat((poss, negs))
         G_u_norm = self.G_u
         E_u_norm = self.E_u
@@ -119,27 +117,6 @@ class LightGCL(BaseModel):
         pos_score = (t.clamp((G_u_norm[ancs] * E_u_norm[ancs]).sum(1) / self.temp, -5.0, 5.0)).mean() + \
                     (t.clamp((G_i_norm[iids] * E_i_norm[iids]).sum(1) / self.temp, -5.0, 5.0)).mean()
         cl_loss = -pos_score + neg_score
-
-        # for l in range(1,self.layer_num+1):
-        #     u_mask = (t.rand(len(ancs))>0.5).float().cuda()
-        #
-        #     gnn_u = nn.functional.normalize(self.Z_u_list[l][ancs], p=2, dim=1)
-        #     hyper_u = nn.functional.normalize(self.G_u_list[l][ancs], p=2, dim=1)
-        #     hyper_u = self.Ws[l-1](hyper_u)
-        #     pos_score = t.exp((gnn_u*hyper_u).sum(1)/self.temp)
-        #     neg_score = t.exp(gnn_u @ hyper_u.T/self.temp).sum(1)
-        #     loss_s_u = ((-1 * t.log(pos_score/(neg_score+1e-8) + 1e-8))*u_mask).sum()
-        #     cl_loss = cl_loss + loss_s_u
-        #
-        #     i_mask = (t.rand(len(iids))>0.5).float().cuda()
-        #
-        #     gnn_i = nn.functional.normalize(self.Z_i_list[l][iids], p=2, dim=1)
-        #     hyper_i = nn.functional.normalize(self.G_i_list[l][iids], p=2, dim=1)
-        #     hyper_i = self.Ws[l-1](hyper_i)
-        #     pos_score = t.exp((gnn_i*hyper_i).sum(1)/self.temp)
-        #     neg_score = t.exp(gnn_i @ hyper_i.T/self.temp).sum(1)
-        #     loss_s_i = ((-1 * t.log(pos_score/(neg_score+1e-8) + 1e-8))*i_mask).sum()
-        #     cl_loss = cl_loss + loss_s_i
 
         reg_loss = reg_params(self) * self.reg_weight
 
