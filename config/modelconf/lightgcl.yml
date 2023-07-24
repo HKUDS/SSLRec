@@ -27,15 +27,13 @@ model:
   name: lightgcl
   dropout: 0
   layer_num: 2
-  cl_weight: 0.2
-  reg_weight: 1.0e-6
+  cl_weight: 0.1
+  reg_weight: 1.0e-9
   temp: 0.1
   embedding_size: 32
   svd_q: 5
 
 tune:
   enable: false
-  hyperparameters: [temp, cl_weight, reg_weight]
-  temp: [0.1, 0.2, 0.5, 1]
-  cl_weight: [0.1, 0.2, 0.5, 1]
-  reg_weight: [1.0e-6, 1.0e-7, 1.0e-8]
+  hyperparameters: [reg_weight]
+  reg_weight: [1.0e-08, 1.0e-09, 1.0e-10]
