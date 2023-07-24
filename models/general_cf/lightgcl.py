@@ -103,7 +103,11 @@ class LightGCL(BaseModel):
         anc_embeds = user_embeds[ancs]
         pos_embeds = item_embeds[poss]
         neg_embeds = item_embeds[negs]
-        bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
+        pos_scores = (anc_embeds * pos_embeds).sum(-1)
+        neg_scores = (anc_embeds * neg_embeds).sum(-1)
+        bpr_loss = -(pos_scores - neg_scores).sigmoid().log().mean()
+
+        # bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
 
         iids = t.cat((poss, negs))
         G_u_norm = self.G_u
