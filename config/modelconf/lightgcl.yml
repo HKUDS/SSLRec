@@ -35,5 +35,5 @@ model:
 
 tune:
   enable: false
-  hyperparameters: [reg_weight]
-  reg_weight: [1.0e-08, 1.0e-09, 1.0e-10]
+  hyperparameters: [dropout]
+  dropout: [0, 0.1, 0.2, 0.3, 0.4]
