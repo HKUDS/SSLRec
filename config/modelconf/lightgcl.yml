@@ -1,6 +1,6 @@
 optimizer:
   name: adam
-  lr: 1.0e-3
+  lr: 2.0e-3
   weight_decay: 0
 
 train:
