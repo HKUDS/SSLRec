@@ -139,11 +139,11 @@ class Trainer(object):
         model.eval()
         if hasattr(self.data_handler, 'valid_dataloader'):
             eval_result = self.metric.eval(model, self.data_handler.valid_dataloader)
-            # writer.add_scalar('HR/test', eval_result['recall'][2], epoch_idx)
+            writer.add_scalar('HR/test', eval_result[configs['test']['metrics'][0]][0], epoch_idx)
             self.logger.log_eval(eval_result, configs['test']['k'], data_type='Validation set', epoch_idx=epoch_idx)
         elif hasattr(self.data_handler, 'test_dataloader'):
             eval_result = self.metric.eval(model, self.data_handler.test_dataloader)
-            # writer.add_scalar('HR/test', eval_result['recall'][2], epoch_idx)
+            writer.add_scalar('HR/test', eval_result[configs['test']['metrics'][0]][0], epoch_idx)
             self.logger.log_eval(eval_result, configs['test']['k'], data_type='Test set', epoch_idx=epoch_idx)
         else:
             raise NotImplemented

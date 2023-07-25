@@ -4,22 +4,24 @@ optimizer:
   weight_decay: 0.0
 
 train:
-  trainer: dsl_trainer
   epoch: 200
   batch_size: 4096
   s_batch: 2048
   save_model: true
   loss: pairwise # bpr
-  test_step: 1 # evaluate per {test_step} epochs
+  test_step: 5 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
   reproducible: true
   seed: 2023
   tensorboard: true
+  early_stop: true
+  patience: 20
+  
 
 test:
   metrics: [recall, ndcg] # choose in {ndcg, recall, precision, mrr}
   k: [10, 20, 40] # top-k
-  batch_size: 2048 # How many users per batch during validation
+  batch_size: 4096 # How many users per batch during validation
 
 data:
   type: social # choose in {general_cf, multi_behavior, sequential, social}
