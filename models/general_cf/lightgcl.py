@@ -107,7 +107,6 @@ class LightGCL(BaseModel):
         neg_scores = (anc_embeds * neg_embeds).sum(-1)
         bpr_loss = -(pos_scores - neg_scores).sigmoid().log().mean()
 
-        iids = t.cat((poss, negs))
         G_u_norm = self.G_u
         E_u_norm = self.E_u
         G_i_norm = self.G_i
