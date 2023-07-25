@@ -11,7 +11,7 @@
 </p>
 
 
-**SSLRec** is a PyTorch-based deep learning framework for recommender systems enhanced by self-supervised learning techniques. 
+**SSLRec** is a PyTorch-based open-source deep learning framework for recommender systems enhanced by self-supervised learning techniques. 
 It's user-friendly and contains commonly-used datasets, code scripts for data processing, training, testing, evaluation, and state-of-the-art research models. 
 **SSLRec** offers a vast array of utility functions and an easy-to-use interface that simplifies the development and evaluation of recommendation models.
 
