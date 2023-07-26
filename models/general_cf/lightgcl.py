@@ -107,15 +107,14 @@ class LightGCL(BaseModel):
         neg_scores = (anc_embeds * neg_embeds).sum(-1)
         bpr_loss = -(pos_scores - neg_scores).sigmoid().log().mean()
 
-        iids = t.cat((poss, negs))
         G_u_norm = self.G_u
         E_u_norm = self.E_u
         G_i_norm = self.G_i
         E_i_norm = self.E_i
         neg_score = t.log(t.exp(G_u_norm[ancs] @ E_u_norm.T / self.temp).sum(1) + 1e-8).mean()
-        neg_score += t.log(t.exp(G_i_norm[iids] @ E_i_norm.T / self.temp).sum(1) + 1e-8).mean()
+        neg_score += t.log(t.exp(G_i_norm[poss] @ E_i_norm.T / self.temp).sum(1) + 1e-8).mean()
         pos_score = (t.clamp((G_u_norm[ancs] * E_u_norm[ancs]).sum(1) / self.temp, -5.0, 5.0)).mean() + \
-                    (t.clamp((G_i_norm[iids] * E_i_norm[iids]).sum(1) / self.temp, -5.0, 5.0)).mean()
+                    (t.clamp((G_i_norm[poss] * E_i_norm[poss]).sum(1) / self.temp, -5.0, 5.0)).mean()
         cl_loss = -pos_score + neg_score
 
         reg_loss = reg_params(self) * self.reg_weight

@@ -1,6 +1,6 @@
 optimizer:
   name: adam
-  lr: 1.0e-3
+  lr: 2.0e-3
   weight_decay: 0
 
 train:
@@ -35,5 +35,5 @@ model:
 
 tune:
   enable: false
-  hyperparameters: [reg_weight]
-  reg_weight: [1.0e-08, 1.0e-09, 1.0e-10]
+  hyperparameters: []
+  dropout: []
