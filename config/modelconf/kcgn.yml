@@ -1,6 +1,6 @@
 optimizer:
   name: adam
-  lr: 1.0e-3 # 5e-6 too big, 1e-6 too small
+  lr: 1.0e-3
   weight_decay: 0
 
 train:
