@@ -4,7 +4,7 @@ optimizer:
   weight_decay: 0.0
 
 train:
-  epoch: 500
+  epoch: 330
   batch_size: 4096
   s_batch: 2048
   save_model: true
