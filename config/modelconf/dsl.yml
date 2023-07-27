@@ -4,10 +4,11 @@ optimizer:
   weight_decay: 0.0
 
 train:
-  epoch: 200
+  epoch: 500
   batch_size: 4096
   s_batch: 2048
   save_model: true
+  log_loss: true
   loss: pairwise # bpr
   test_step: 5 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
@@ -15,7 +16,7 @@ train:
   seed: 2023
   tensorboard: true
   early_stop: true
-  patience: 20
+  patience: 4
   
 
 test:
@@ -30,16 +31,17 @@ data:
 model:
   name: dsl # case-insensitive
   embedding_size: 64
-  gnn_layer: 2
+  gnn_layer: 3
   uugnn_layer: 2
+  dropout_rate: 0.5
   leaky: 0.5
   reg_weight: 1.0e-2
   soc_weight: 1.0e-2
   sal_weight: 1.0e-3
-  dropout_rate: 0.5
 
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
-  hyperparameters: [gnn_layer, reg_weight] # The name of the hyperparameter
-  gnn_layer: [1, 2, 3] # Use a list to store the search range
-  reg_weight: [1.0e-1, 1.0e-2, 1.0e-3]
+  hyperparameters: [gnn_layer, uugnn_layer] # The name of the hyperparameter
+  gnn_layer: [1, 2, 3]
+  uugnn_layer: [1, 2, 3]
+
