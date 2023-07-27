@@ -102,9 +102,9 @@ class DCCF(BaseModel):
         self.final_embeds = all_embeds
         return user_embeds, item_embeds, gnn_embeds, int_embeds, gaa_embeds, iaa_embeds
 
-    def _cal_cl_loss(self, users, items, gnn_emb, int_emb, gaa_emb, iaa_emb):
+    def _cal_cl_loss(self, users, positems, negitems, gnn_emb, int_emb, gaa_emb, iaa_emb):
         users = torch.unique(users)
-        items = torch.unique(items)
+        items = torch.unique(torch.concat([positems, negitems]))
         cl_loss = 0.0
         for i in range(len(gnn_emb)):
             u_gnn_embs, i_gnn_embs = torch.split(gnn_emb[i], [self.user_num, self.item_num], 0)
@@ -128,6 +128,7 @@ class DCCF(BaseModel):
             cl_loss += cal_infonce_loss(i_gnn_embs, i_int_embs, i_int_embs, self.temperature) / u_gnn_embs.shape[0]
             cl_loss += cal_infonce_loss(i_gnn_embs, i_gaa_embs, i_gaa_embs, self.temperature) / u_gnn_embs.shape[0]
             cl_loss += cal_infonce_loss(i_gnn_embs, i_iaa_embs, i_iaa_embs, self.temperature) / u_gnn_embs.shape[0]
+        
         return cl_loss
 
     def cal_loss(self, batch_data):
@@ -139,7 +140,7 @@ class DCCF(BaseModel):
         neg_embeds = item_embeds[negs]
         bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds) / anc_embeds.shape[0]
         reg_loss = self.reg_weight * reg_params(self)
-        cl_loss = self.cl_weight * self._cal_cl_loss(ancs, poss, gnn_embeds, int_embeds, gaa_embeds, iaa_embeds)
+        cl_loss = self.cl_weight * self._cal_cl_loss(ancs, poss, negs, gnn_embeds, int_embeds, gaa_embeds, iaa_embeds)
         loss = bpr_loss + reg_loss + cl_loss
         losses = {'bpr_loss': bpr_loss, 'reg_loss': reg_loss, 'cl_loss': cl_loss}
         return loss, losses
