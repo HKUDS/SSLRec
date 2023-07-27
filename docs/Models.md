@@ -29,7 +29,6 @@
 |MHCN|WWW'21|[Self-Supervised Multi-Channel Hypergraph Convolutional Network for Social Recommendation](https://arxiv.org/pdf/2101.06448.pdf)|
 |KCGN|AAAI'21|[Knowledge-aware Coupled Graph Neural Network for Social Recommendation](https://par.nsf.gov/servlets/purl/10220297)|
 |SMIN|CIKM'21|[Social Recommendation with Self-Supervised Metagraph Informax Network](https://arxiv.org/pdf/2110.03958.pdf)|
-|DcRec|CIKM'22|[Disentangled Contrastive Learning for Social Recommendation](https://arxiv.org/pdf/2208.08723.pdf)|
 |DSL|IJCAI'23|[Denoised Self-Augmented Learning for Social Recommendation](https://arxiv.org/pdf/2305.12685.pdf)|
 
 ### Knowledge-aware Recommendation
