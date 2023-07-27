@@ -12,8 +12,8 @@ class DataHandlerKG:
     def __init__(self) -> None:
         if configs['data']['name'] == 'mind':
             predir = './datasets/kg/mind_kg/'
-        elif configs['data']['name'] == 'amazon-book':
-            predir = './datasets/kg/amazon-book_kg/'
+        elif configs['data']['name'] == 'alibaba-fashion':
+            predir = './datasets/kg/alibaba-fashion_kg/'
         elif configs['data']['name'] == 'last-fm':
             predir = './datasets/kg/last-fm_kg/'
 
