@@ -7,7 +7,7 @@ from logging import getLogger
 from config.configurator import configs
 import random
 import scipy.sparse as sp
-from loss_utils import cal_bpr_loss
+from models.loss_utils import cal_bpr_loss
 from models.base_model import BaseModel
 
 
@@ -86,7 +86,7 @@ class RGAT(nn.Module):
 
 class KGCL(BaseModel):
     def __init__(self, data_handler):
-        super(KGCL, self).__init__()
+        super(KGCL, self).__init__(data_handler)
         self.n_users = configs['data']['user_num']
         self.n_items = configs['data']['item_num']
         self.n_relations = configs['data']['relation_num']
@@ -103,7 +103,6 @@ class KGCL(BaseModel):
         self.layer_num = configs['model']['layer_num']
         self.node_dropout = configs['model']['node_dropout']
         self.node_dropout_rate = configs['model']['node_dropout_rate']
-        self.ui_dropout_rate = configs['model']['node_dropout_rate_ui']
         self.mess_dropout = configs['model']['mess_dropout']
         self.mess_dropout_rate = configs['model']['mess_dropout_rate']
         self.device = configs['device']
@@ -253,7 +252,7 @@ class KGCL(BaseModel):
         kg_view_1, kg_view_2, ui_view_1, ui_view_2 = batch_data[3:7]
 
         if self.node_dropout:
-            g_droped = _sparse_dropout(self.norm_adj, self.ui_dropout_rate)
+            g_droped = _sparse_dropout(self.norm_adj, self.node_dropout_rate)
             edge_index, edge_type = _edge_sampling(
                 self.edge_index, self.edge_type, 1-self.node_dropout_rate)
         else:

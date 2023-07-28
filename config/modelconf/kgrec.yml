@@ -6,11 +6,11 @@ optimizer:
 train:
   trainer: trainer
   epoch: 500
-  batch_size: 2048
+  batch_size: 1024
   save_model: true
   loss: pairwise # bpr
   test_step: 10 # evaluate per {test_step} epochs
-  pretrain_path: checkpoint/kgrec/kgrec-last-fm-1689594554.pth
+  # pretrain_path: checkpoint/kgrec/kgrec-last-fm-1689594554.pth
   reproducible: true
   seed: 2020
 
@@ -36,8 +36,8 @@ model:
 
   mae_coef: 0.1
   mae_msize: 256
-  cl_coef: 0.01
-  tau: 1.0
+  cl_coef: 0.001
+  tau: 0.2
   cl_drop_ratio: 0.5
   samp_func: torch
 
