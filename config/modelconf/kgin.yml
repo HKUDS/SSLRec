@@ -1,17 +1,16 @@
 optimizer:
   name: adam
-  lr: 1.0e-3 # not 1e-3
+  lr: 1.0e-4 # not 1e-3
   weight_decay: 0
 
 train:
-  trainer: kgcl_trainer
+  trainer: trainer
   epoch: 500
   batch_size: 1024
-  kg_batch_size: 4096
   save_model: true
   loss: pairwise # bpr
-  test_step: 1 # evaluate per {test_step} epochs
-  #pretrain_path: ./checkpoint/xxxx.pth
+  test_step: 10 # evaluate per {test_step} epochs
+  # pretrain_path: checkpoint/kgrec/kgrec-last-fm-1689594554.pth
   reproducible: true
   seed: 2020
 
@@ -26,10 +25,8 @@ data:
   name: last-fm
 
 model:
-  name: kgcl # case-insensitive
-  train_trans: false
+  name: kgin # case-insensitive
   layer_num: 2
-  layer_num_kg: 2
   decay_weight: 1.0e-5
   embedding_size: 64
   node_dropout: true
@@ -37,11 +34,13 @@ model:
   mess_dropout: true
   mess_dropout_rate: 0.1
 
-  tau: 0.2
-  cl_weight: 0.1
-  mu: 0.7
+  n_factors: 4
+  ind: distance
+  sim_regularity: 1.0e-4
 
 tune:
   enable: false # Whether to enable grid search to search for optimal hyperparameters
   hyperparameters: [layer_num] # The name of the hyperparameter
   layer_num: [1, 2, 3] # Use a list to store the search range
+
+only_test: true
