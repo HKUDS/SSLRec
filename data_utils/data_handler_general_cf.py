@@ -33,7 +33,7 @@ class DataHandlerGeneralCF:
 		if type(mat) != coo_matrix:
 			mat = coo_matrix(mat)
 		return mat
-	
+
 	def _normalize_adj(self, mat):
 		"""Laplacian normalization for mat in coo_matrix
 
@@ -43,7 +43,8 @@ class DataHandlerGeneralCF:
 		Returns:
 			scipy.sparse.coo_matrix: normalized adjacent matrix
 		"""
-		degree = np.array(mat.sum(axis=-1))
+		# Add epsilon to avoid divide by zero
+		degree = np.array(mat.sum(axis=-1)) + 1e-10
 		d_inv_sqrt = np.reshape(np.power(degree, -0.5), [-1])
 		d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.0
 		d_inv_sqrt_mat = sp.diags(d_inv_sqrt)
