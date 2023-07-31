@@ -93,11 +93,11 @@ def kl_divergence(p, q, is_prob, reduce='mean'):
 		p = F.log_softmax(p, dim=-1)
 		q = F.log_softmax(q, dim=-1)
 	res = (p.exp() * (p - q)).sum(dim=-1)
-	if reduce is 'mean':
+	if reduce == 'mean':
 		return res.mean()
-	elif reduce is 'sum':
+	elif reduce == 'sum':
 		return res.sum()
-	elif reduce is 'none':
+	elif reduce == 'none':
 		return res
 	else:
 		raise NotImplementedError
@@ -110,11 +110,11 @@ def js_divergence(p, q, is_prob, reduce='mean'):
 		p = F.log_softmax(p, dim=-1)
 		q = F.log_softmax(q, dim=-1)
 	res = (p.exp() * (p - q)).sum(dim=-1) + (q.exp() * (q - p)).sum(dim=-1)
-	if reduce is 'mean':
+	if reduce == 'mean':
 		return res.mean()
-	elif reduce is 'sum':
+	elif reduce == 'sum':
 		return res.sum()
-	elif reduce is 'none':
+	elif reduce == 'none':
 		return res
 	else:
 		raise NotImplementedError
