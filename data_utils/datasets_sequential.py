@@ -159,7 +159,7 @@ class SequentialDataset(data.Dataset):
 
     def _pad_seq(self, seq):
         if len(seq) >= self.max_seq_len:
-            seq = seq[:self.max_seq_len]
+            seq = seq[-self.max_seq_len:]
         else:
             # pad at the head
             seq = [0] * (self.max_seq_len - len(seq)) + seq
