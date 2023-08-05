@@ -57,10 +57,10 @@ class CL4SRec(BaseModel):
             num_left = math.floor(length * eta)
             crop_begin = random.randint(0, length - num_left)
             croped_item_seq = np.zeros_like(seq)
-            if crop_begin + num_left < seq.shape[0]:
-                croped_item_seq[-num_left:] = seq[-(crop_begin + 1 + num_left):-(crop_begin + 1)]
+            if crop_begin != 0:
+                croped_item_seq[-num_left:] = seq[-(crop_begin + num_left):-crop_begin]
             else:
-                croped_item_seq[-num_left:] = seq[-(crop_begin + 1):]
+                croped_item_seq[-num_left:] = seq[-(crop_begin + num_left):]
             return croped_item_seq.tolist(), num_left
 
         def item_mask(seq, length, gamma=0.3):
