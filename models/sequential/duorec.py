@@ -74,6 +74,14 @@ class DuoRec(BaseModel):
                 pre_idx = idx
         return same_target_index
 
+    def _pad_seq(self, seq):
+        if len(seq) >= self.max_len:
+            seq = seq[-self.max_len:]
+        else:
+            # pad at the head
+            seq = [0] * (self.max_len - len(seq)) + seq
+        return seq
+
     def _duorec_aug(self, batch_seqs, batch_last_items):
         # last_items = batch_seqs[:, -1].tolist()
         last_items = batch_last_items.tolist()
@@ -86,7 +94,7 @@ class DuoRec(BaseModel):
             else:
                 sampled_pos_seqs.append(batch_seqs[i].tolist())
         # padding 0 at the left
-        sampled_pos_seqs = [[0] * (self.max_len - len(seq)) + seq for seq in sampled_pos_seqs]
+        sampled_pos_seqs = [self._pad_seq(seq) for seq in sampled_pos_seqs]
         sampled_pos_seqs = torch.tensor(sampled_pos_seqs, dtype=torch.long, device=batch_seqs.device)
         return sampled_pos_seqs
 
