@@ -74,8 +74,9 @@ class DuoRec(BaseModel):
                 pre_idx = idx
         return same_target_index
 
-    def _duorec_aug(self, batch_seqs):
-        last_items = batch_seqs[:, -1].tolist()
+    def _duorec_aug(self, batch_seqs, batch_last_items):
+        # last_items = batch_seqs[:, -1].tolist()
+        last_items = batch_last_items.tolist()
         train_seqs = self.data_handler.train_dataloader.dataset.seqs
         sampled_pos_seqs = []
         for i, item in enumerate(last_items):
@@ -139,7 +140,7 @@ class DuoRec(BaseModel):
 
         # NCE
         seq_output1 = self.forward(batch_seqs)
-        sem_aug_seqs = self._duorec_aug(batch_seqs)
+        sem_aug_seqs = self._duorec_aug(batch_seqs, batch_last_items)
         seq_output2 = self.forward(sem_aug_seqs)
 
         cl_loss = self.lmd_sem * self._info_nce(
