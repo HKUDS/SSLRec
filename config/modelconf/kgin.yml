@@ -43,4 +43,4 @@ tune:
   hyperparameters: [layer_num] # The name of the hyperparameter
   layer_num: [1, 2, 3] # Use a list to store the search range
 
-only_test: true
+# only_test: true

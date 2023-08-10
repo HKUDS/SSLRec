@@ -6,7 +6,9 @@ from config.configurator import configs
 from os import path
 from collections import defaultdict
 from tqdm import tqdm
-from .datasets_kg import KGTrainDataset, KGTestDataset, KGTripletDataset
+from .datasets_kg import KGTrainDataset, KGTestDataset, KGTripletDataset, generate_kg_batch
+import random
+
 
 class DataHandlerKG:
     def __init__(self) -> None:
@@ -70,6 +72,7 @@ class DataHandlerKG:
         configs['data']['entity_num'] = n_entities
         configs['data']['node_num'] = n_nodes
         configs['data']['relation_num'] = n_relations
+        configs['data']['triplet_num'] = len(triplets)
 
         return triplets
 
@@ -117,3 +120,6 @@ class DataHandlerKG:
             triplet_data = KGTripletDataset(kg_triplets, self.kg_dict)
             # no shuffle because of randomness
             self.triplet_dataloader = data.DataLoader(triplet_data, batch_size=configs['train']['kg_batch_size'], shuffle=False, num_workers=0)
+    
+    def generate_kg_batch(self):
+        return generate_kg_batch(self.kg_dict, configs['train']['kg_batch_size'], configs['data']['entity_num'])

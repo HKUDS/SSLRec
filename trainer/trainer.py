@@ -400,8 +400,8 @@ class KGCLTrainer(Trainer):
     def __init__(self, data_handler, logger):
         super(KGCLTrainer, self).__init__(data_handler, logger)
         self.train_trans = configs['model']['train_trans']
-        if self.train_trans:
-            self.triplet_dataloader = data_handler.triplet_dataloader
+        # if self.train_trans:
+        #     self.triplet_dataloader = data_handler.triplet_dataloader
 
     def create_optimizer(self, model):
         optim_config = configs['optimizer']
@@ -420,11 +420,12 @@ class KGCLTrainer(Trainer):
         # start this epoch
         kg_view_1, kg_view_2, ui_view_1, ui_view_2 = model.get_aug_views()
         for _, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
-            self.optimizer.zero_grad()
             batch_data = list(
                 map(lambda x: x.long().to(configs['device']), tem))
             batch_data.extend([kg_view_1, kg_view_2, ui_view_1, ui_view_2])
             loss, loss_dict = model.cal_loss(batch_data)
+
+            self.optimizer.zero_grad(set_to_none=True)
             loss.backward()
             self.optimizer.step()
 
@@ -438,19 +439,38 @@ class KGCLTrainer(Trainer):
 
         if self.train_trans:
             """ train KG trans """
-            triplet_dataloader = self.triplet_dataloader
-            for _, tem in tqdm(enumerate(triplet_dataloader), desc='Training KG Trans', total=len(triplet_dataloader)):
-                self.kgtrans_optimizer.zero_grad()
-                batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
+            n_kg_batch = configs['data']['triplet_num'] // configs['train']['kg_batch_size']
+            for iter in tqdm(range(n_kg_batch), desc='Training KG Trans', total=n_kg_batch):
+                batch_data = self.data_handler.generate_kg_batch()
+                batch_data = list(map(lambda x: x.long().to(configs['device']), batch_data))
                 # feed batch_seqs into model.forward()
                 kg_loss = model.cal_kg_loss(batch_data)
+
+                self.kgtrans_optimizer.zero_grad(set_to_none=True)
                 kg_loss.backward()
                 self.kgtrans_optimizer.step()
 
                 if 'kg_loss' not in loss_log_dict:
-                    loss_log_dict['kg_loss'] = float(kg_loss) / len(triplet_dataloader)
+                    loss_log_dict['kg_loss'] = float(kg_loss) / n_kg_batch
                 else:
-                    loss_log_dict['kg_loss'] += float(kg_loss) / len(triplet_dataloader)
+                    loss_log_dict['kg_loss'] += float(kg_loss) / n_kg_batch
+
+        # if self.train_trans:
+        #     """ train KG trans """
+        #     triplet_dataloader = self.triplet_dataloader
+        #     for _, tem in tqdm(enumerate(triplet_dataloader), desc='Training KG Trans', total=len(triplet_dataloader)):
+        #         batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
+        #         # feed batch_seqs into model.forward()
+        #         kg_loss = model.cal_kg_loss(batch_data)
+
+        #         self.kgtrans_optimizer.zero_grad(set_to_none=True)
+        #         kg_loss.backward()
+        #         self.kgtrans_optimizer.step()
+
+        #         if 'kg_loss' not in loss_log_dict:
+        #             loss_log_dict['kg_loss'] = float(kg_loss) / len(triplet_dataloader)
+        #         else:
+        #             loss_log_dict['kg_loss'] += float(kg_loss) / len(triplet_dataloader)
 
         # log loss
         if configs['train']['log_loss']:

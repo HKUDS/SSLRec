@@ -299,14 +299,15 @@ class KGIN(BaseModel):
     def generate(self):
         user_emb = self.all_embed[:self.n_users, :]
         item_emb = self.all_embed[self.n_users:, :]
-        entity_emb, user_emb = self.gcn(user_emb,
-                        item_emb,
-                        self.edge_index,
-                        self.edge_type,
-                        self.inter_edge,
-                        self.inter_edge_w,
-                        mess_dropout=False)[:2]
-        return user_emb, entity_emb[:self.n_items]
+        entity_gcn_emb, user_gcn_emb, _ = self.gcn(user_emb,
+                                                     item_emb,
+                                                     self.latent_emb,
+                                                     self.edge_index,
+                                                     self.edge_type,
+                                                     self.interact_mat,
+                                                     mess_dropout=self.mess_dropout,
+                                                     node_dropout=self.node_dropout)
+        return user_gcn_emb, entity_gcn_emb[:self.n_items]
 
     def rating(self, u_emb, i_emb):
         return torch.matmul(u_emb, i_emb.t())
