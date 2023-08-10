@@ -34,6 +34,7 @@
 ### Knowledge-aware Recommendation
 | Model | Conference | Paper |
 | ----- | ---------- | ----- |
+|KGIN|WWW'22|[Learning Intents behind Interactions with Knowledge Graph for Recommendation](https://dl.acm.org/doi/pdf/10.1145/3442381.3450133)|
 |KGCL|SIGIR'22|[Knowledge Graph Contrastive Learning for Recommendation](https://arxiv.org/pdf/2205.00976.pdf)|
 |KGRec|KDD'23|[Knowledge Graph Self-Supervised Rationalization for Recommendation](https://arxiv.org/pdf/2307.02759.pdf)|
 
