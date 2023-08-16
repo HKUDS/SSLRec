@@ -244,8 +244,7 @@ class DataHandlerSocial:
 
 		return data
 
-	def _create_category_dict(self, trn_mat, category_mat):
-		assert category_mat.shape[0] == trn_mat.shape[1]
+	def _create_category_dict(self, category_mat):
 		category_dict = {}
 		category_data = category_mat.toarray().reshape(-1)
 		for i in range(category_data.size):
@@ -360,10 +359,10 @@ class DataHandlerSocial:
 		trn_mat = self._load(self.trn_file)
 		tst_mat = self._load(self.tst_file)
 		trust_mat = self._load(self.trust_file)
+		category_mat = self._load(self.category_file)
 		self.trn_mat = trn_mat
 		self.trust_mat = trust_mat
-		category_mat = self._load(self.category_file)
-		category_dict = self._create_category_dict(trn_mat, category_mat)
+		category_dict = self._create_category_dict(category_mat)
 		configs['data']['user_num'], configs['data']['item_num'] = trn_mat.shape
 		
 		if configs['train']['loss'] == 'pairwise':
