@@ -104,3 +104,14 @@ and so on.
 If you come across any bugs or have suggestions for improvement, please feel free to let us know by [filing an issue](https://github.com/HKUDS/SSLRec/issues). 
 
 We warmly welcome contributions of all kinds, from bug fixes to new features and extensions. 🙌
+
+## Citation
+If you want to use our codes and datasets in your research, please cite:
+```
+@article{ren2023sslrec,
+  title={SSLRec: A Self-Supervised Learning Library for Recommendation},
+  author={Ren, Xubin and Xia, Lianghao and Yang, Yuhao and Wei, Wei and Wang, Tianle and Cai, Xuheng and Huang, Chao},
+  journal={arXiv preprint arXiv:2308.05697},
+  year={2023}
+}
+```
