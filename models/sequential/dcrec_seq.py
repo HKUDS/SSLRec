@@ -11,6 +11,11 @@ import dgl
 from dgl.nn.pytorch import GraphConv
 from copy import deepcopy
 
+def cal_kl_1(target, input):
+    target[target<1e-8] = 1e-8
+    target = torch.log(target + 1e-8)
+    input = torch.log_softmax(input + 1e-8, dim=0)
+    return F.kl_div(input, target, reduction='batchmean', log_target=True)
 
 class CLLayer(torch.nn.Module):
     def __init__(self, num_hidden: int, tau: float = 0.5):
@@ -64,7 +69,7 @@ class CLLayer(torch.nn.Module):
         def f(x): return torch.exp(x / self.tau)
         pos_pairs = f(self.sim(z1, z2)).diag()
         neg_pairs = f(self.sim(z1, z2)).sum(1)
-        return -torch.log(pos_pairs / neg_pairs)
+        return -torch.log(1e-8 + pos_pairs / neg_pairs)
 
     def vanilla_loss_with_one_negative(self, z1: torch.Tensor, z2: torch.Tensor):
         def f(x): return torch.exp(x / self.tau)
@@ -174,9 +179,10 @@ class GCN(nn.Module):
         super(GCN, self).__init__()
         self.dropout_prob = dropout_prob
         self.layer = GraphConv(in_dim, out_dim, weight=False,
-                               bias=False, allow_zero_in_degree=True)
+                               bias=False, allow_zero_in_degree=False)
 
     def forward(self, graph, feature):
+        graph = dgl.add_self_loop(graph)
         origin_w, graph = graph_dropout(graph, 1-self.dropout_prob)
         embs = [feature]
         for i in range(2):
@@ -329,16 +335,18 @@ class DCRec_seq(BaseModel):
         seq_lens = batch_seqs.ne(0).sum(dim=1)
         mainstream_weights[seq_lens == 1] = 0.5
 
-        expected_weights_distribution = torch.normal(
-            self.weight_mean, 0.1, size=mainstream_weights.size()).sort()[0].to(self.device)
-        kl_loss = self.kl_weight * F.kl_div(F.log_softmax(
-            mainstream_weights, dim=0).sort()[0], expected_weights_distribution, reduction="batchmean")
+        expected_weights_distribution = torch.normal(self.weight_mean, 0.1, size=mainstream_weights.size()).to(self.device)
+        # kl_loss = self.config["kl_weight"] * cal_kl(expected_weights_distribution.sort()[0], mainstream_weights.sort()[0])
+
+        # apply log_softmax for input
+        kl_loss = self.kl_weight * cal_kl_1(expected_weights_distribution.sort()[0], mainstream_weights.sort()[0])
+
         personlization_weights = mainstream_weights.max() - mainstream_weights
 
         # contrastive learning
-        cl_loss_adj = self.contrastive_learning_layer.grace_loss(
+        cl_loss_adj = self.contrastive_learning_layer.vanilla_loss(
             aug_seq_output, adj_graph_emb_last_items)
-        cl_loss_a2s = self.contrastive_learning_layer.grace_loss(
+        cl_loss_a2s = self.contrastive_learning_layer.vanilla_loss(
             adj_graph_emb_last_items, sim_graph_emb_last_items)
         cl_loss = (self.cl_lambda * (mainstream_weights *
                                      cl_loss_adj + personlization_weights * cl_loss_a2s)).mean()
@@ -354,7 +362,7 @@ class DCRec_seq(BaseModel):
         # [item_num, H]
         test_item_emb = self.emb_layer.token_emb.weight
         logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
-        loss = self.loss_fct(logits, batch_pos_items)
+        loss = self.loss_fct(logits+1e-8, batch_pos_items)
 
         loss_dict = {
             "loss": loss.item(),
