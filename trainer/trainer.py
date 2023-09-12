@@ -116,8 +116,10 @@ class Trainer(object):
                         best_epoch = epoch_idx
                         best_metric = eval_result[configs['test']['metrics'][0]][0]
                         best_state_dict = deepcopy(model.state_dict())
+                        self.logger.log("Validation score increased.  Copying the best model ...")
                     else:
                         now_patience += 1
+                        self.logger.log(f"Early stop counter: {now_patience} out of {configs['train']['patience']}")
 
                     # early stop
                     if now_patience == configs['train']['patience']:
