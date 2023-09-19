@@ -31,22 +31,22 @@ Our framework offers a unified training, validation, and testing process for eac
 
 ## Highlighted Features
 
-+ 🧩**Flexible Modular Architecture.** The SSLRec library features a modular architecture that allows for effortless customization and combination of modules. This enables users to create personalized recommendation models that fit their specific needs and requirements.
++ 🧩 **Flexible Modular Architecture.** The SSLRec library features a modular architecture that allows for effortless customization and combination of modules. This enables users to create personalized recommendation models that fit their specific needs and requirements.
 
 
-+ 🌟**Diverse Recommendation Scenarios.** The SSLRec library is a versatile tool for researchers and practitioners who are interested in building effective recommendation models across diverse recommender system research lines.
++ 🌟 **Diverse Recommendation Scenarios.** The SSLRec library is a versatile tool for researchers and practitioners who are interested in building effective recommendation models across diverse recommender system research lines.
 
 
-+ 💡**Comprehensive State-of-the-Art Models.** Our SSLRec framework offers a wide range of SSL-enhanced recommendation models for various scenarios. Researchers can evaluate these models using advanced techniques and use them as a foundation for driving innovation in the field of recommender systems.
++ 💡 **Comprehensive State-of-the-Art Models.** Our SSLRec framework offers a wide range of SSL-enhanced recommendation models for various scenarios. Researchers can evaluate these models using advanced techniques and use them as a foundation for driving innovation in the field of recommender systems.
 
 
-+ 📊**Unified Data Feeder and Standard Evaluation Protocols.** The SSLRec framework features a unified data feeder and standard evaluation protocols that enable easy loading and preprocessing of data from various sources and formats, while ensuring objective and fair evaluation of recommendation models.
++ 📊 **Unified Data Feeder and Standard Evaluation Protocols.** The SSLRec framework features a unified data feeder and standard evaluation protocols that enable easy loading and preprocessing of data from various sources and formats, while ensuring objective and fair evaluation of recommendation models.
 
 
-+ 🛠️**Rich Utility Functions.** The SSLRec library provides a vast array of utility functions that simplify the development and evaluation of recommendation models. These functions incorporate common functionalities of recommender systems and self-supervised learning for graph operations, network architectures, and loss functions.
++ 🛠️ **Rich Utility Functions.** The SSLRec library provides a vast array of utility functions that simplify the development and evaluation of recommendation models. These functions incorporate common functionalities of recommender systems and self-supervised learning for graph operations, network architectures, and loss functions.
 
 
-+ 🤖**Easy-to-Use Interface.** We offer a user-friendly interface that streamlines the training and evaluation of recommendation models. This allows researchers and practitioners to experiment with various models and configurations with ease and efficiency.
++ 🤖 **Easy-to-Use Interface.** We offer a user-friendly interface that streamlines the training and evaluation of recommendation models. This allows researchers and practitioners to experiment with various models and configurations with ease and efficiency.
 
 ## SSLRec News
 🔥 `2023-06-28`: Early stop is now feasible in the training strategy. (Check [Here](./update_log/2023-06-28.md) for more details)
