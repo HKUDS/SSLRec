@@ -403,7 +403,7 @@ class MAERecTrainer(Trainer):
         model.train()
 
         loss_his = []
-        loss_log_dict = {'loss': 0, 'loss_main': 0, 'loss_reco': 0, 'loss_regu': 0}
+        loss_log_dict = {'loss': 0, 'loss_main': 0, 'loss_reco': 0, 'loss_regu': 0, 'loss_mask': 0}
         trn_loader = self.data_handler.train_dataloader
         trn_loader.dataset.sample_negs()
 
@@ -424,7 +424,7 @@ class MAERecTrainer(Trainer):
             if i % configs['model']['mask_steps'] == 0:
                 reward = self.calc_reward(loss_his, configs['model']['eps'])
                 loss_mask = -sample_scr.mean() * reward
-                ep_loss_mask += loss_mask
+                loss_log_dict['loss_mask'] += loss_mask / (len(trn_loader) // configs['model']['mask_steps'])
                 loss_his = loss_his[-1:]
                 loss += loss_mask
 
