@@ -23,6 +23,7 @@
 |DuoRec|WSDM'22|[Contrastive learning for representation degeneration problem in sequential recommendation](https://arxiv.org/pdf/2110.05730.pdf)|
 |ICLRec|WWW'22|[Intent contrastive learning for sequential recommendation](https://arxiv.org/pdf/2202.02519.pdf)|
 |DCRec|WWW'23|[Debiased Contrastive Learning for Sequential Recommendation](https://arxiv.org/pdf/2303.11780.pdf)|
+|MAERec|SIGIR'23|[Graph Masked Autoencoder for Sequential Recommendation](https://arxiv.org/pdf/2305.04619.pdf)|
 
 ### Social Recommendation
 | Model | Conference | Paper |
