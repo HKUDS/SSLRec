@@ -296,7 +296,7 @@ class GFormerTrainer(Trainer):
             self.logger.log_loss(epoch_idx, loss_log_dict, save_to_log=False)
 
 """
-Special Trainer for Sequential Recommendation methods (ICLRec, ...)
+Special Trainer for Sequential Recommendation methods (ICLRec, MAERec, ...)
 """
 class ICLRecTrainer(Trainer):
     def __init__(self, data_handler, logger):
@@ -345,6 +345,100 @@ class ICLRecTrainer(Trainer):
                     loss_log_dict[loss_name] += _loss_val
 
         # log loss
+        if configs['train']['log_loss']:
+            self.logger.log_loss(epoch_idx, loss_log_dict)
+        else:
+            self.logger.log_loss(epoch_idx, loss_log_dict, save_to_log=False)
+
+class MAERecTrainer(Trainer):
+    def __init__(self, data_handler, logger):
+        super(MAERecTrainer, self).__init__(data_handler, logger)
+        self.logger = logger
+
+    def create_optimizer(self, model):
+        optim_config = configs['optimizer']
+        if optim_config['name'] == 'adam':
+            self.optimizer = optim.Adam(
+                [{"params": model.encoder.parameters()},
+                {"params": model.decoder.parameters()},
+                {"params": model.emb_layer.parameters()},
+                {"params": model.transformer_layers.parameters()}],
+                lr=optim_config['lr'], weight_decay=optim_config['weight_decay']
+            )
+
+    def calc_reward(self, lastLosses, eps):
+        if len(lastLosses) < 3:
+            return 1.0
+        curDecrease = lastLosses[-2] - lastLosses[-1]
+        avgDecrease = 0
+        for i in range(len(lastLosses) - 2):
+            avgDecrease += lastLosses[i] - lastLosses[i + 1]
+        avgDecrease /= len(lastLosses) - 2
+        return 1 if curDecrease > avgDecrease else eps
+
+    def sample_pos_edges(self, masked_edges):
+        return masked_edges[torch.randperm(masked_edges.shape[0])[:configs['model']['con_batch']]]
+
+    def sample_neg_edges(self, pos, dok):
+        neg = []
+        for u, v in pos:
+            cu_neg = []
+            num_samp = configs['model']['num_reco_neg'] // 2
+            for i in range(num_samp):
+                while True:
+                    v_neg = np.random.randint(1, configs['data']['item_num'] + 1)
+                    if (u, v_neg) not in dok:
+                        break
+                cu_neg.append([u, v_neg])
+            for i in range(num_samp):
+                while True:
+                    u_neg = np.random.randint(1, configs['data']['item_num'] + 1)
+                    if (u_neg, v) not in dok:
+                        break
+                cu_neg.append([u_neg, v])
+            neg.append(cu_neg)
+        return torch.Tensor(neg).long()
+
+    def train_epoch(self, model, epoch_idx):
+        model.train()
+
+        loss_his = []
+        loss_log_dict = {'loss': 0, 'loss_main': 0, 'loss_reco': 0, 'loss_regu': 0, 'loss_mask': 0}
+        trn_loader = self.data_handler.train_dataloader
+        trn_loader.dataset.sample_negs()
+
+        for i, batch_data in tqdm(enumerate(trn_loader), desc='Training MAERec', total=len(trn_loader)):
+            if i % configs['model']['mask_steps'] == 0:
+                sample_scr, candidates = model.sampler(model.ii_adj_all_one, model.encoder.get_ego_embeds())
+                masked_adj, masked_edg = model.masker(model.ii_adj, candidates)
+
+            batch_data = list(map(lambda x: x.long().to(configs['device']), batch_data))
+
+            item_emb, item_emb_his = model.encoder(masked_adj)
+            pos = self.sample_pos_edges(masked_edg)
+            neg = self.sample_neg_edges(pos, model.ii_dok)
+
+            loss, loss_main, loss_reco, loss_regu = model.cal_loss(batch_data, item_emb, item_emb_his, pos, neg)
+            loss_his.append(loss_main)
+
+            if i % configs['model']['mask_steps'] == 0:
+                reward = self.calc_reward(loss_his, configs['model']['eps'])
+                loss_mask = -sample_scr.mean() * reward
+                loss_log_dict['loss_mask'] += loss_mask / (len(trn_loader) // configs['model']['mask_steps'])
+                loss_his = loss_his[-1:]
+                loss += loss_mask
+
+            loss_log_dict['loss'] += loss.item() / len(trn_loader)
+            loss_log_dict['loss_main'] += loss_main.item() / len(trn_loader)
+            loss_log_dict['loss_reco'] += loss_reco.item() / len(trn_loader)
+            loss_log_dict['loss_regu'] += loss_regu.item() / len(trn_loader)
+
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+
+        writer.add_scalar('Loss/train', loss_log_dict['loss'], epoch_idx)
+
         if configs['train']['log_loss']:
             self.logger.log_loss(epoch_idx, loss_log_dict)
         else:
