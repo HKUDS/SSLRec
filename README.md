@@ -7,7 +7,8 @@
 <p align="center">
   <a href="https://github.com/HKUDS/SSLRec/blob/main/docs/User%20Guide.md">User Guide</a> •
   <a href="https://github.com/HKUDS/SSLRec/blob/main/docs/Models.md">Models</a> •
-  <a href="https://github.com/HKUDS/SSLRec/blob/main/docs/Models.md">Datasets</a> 
+  <a href="https://github.com/HKUDS/SSLRec/blob/main/docs/Models.md">Datasets</a> •
+  <a href="https://arxiv.org/abs/2308.05697">Paper</a>
 </p>
 
 
