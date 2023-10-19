@@ -30,6 +30,11 @@ Our library includes various self-supervised learning recommendation algorithms,
 
 Our framework offers a unified training, validation, and testing process for each category, along with a standardized data preprocessing method using publicly available datasets. This makes it easy to reproduce various models and enables fair comparisons between different methods.
 
+## SSLRec News
+🎉🎉 `2023-06-28`: [The SSLRec paper](https://arxiv.org/abs/2308.05697) was accepted by [WSDM 2024](https://www.wsdm-conference.org/2024/)！
+
+`2023-06-28`: Early stop is now feasible in the training strategy. (Check [Here](./update_log/2023-06-28.md) for more details)
+
 ## Highlighted Features
 
 + 🧩 **Flexible Modular Architecture.** The SSLRec library features a modular architecture that allows for effortless customization and combination of modules. This enables users to create personalized recommendation models that fit their specific needs and requirements.
@@ -48,9 +53,6 @@ Our framework offers a unified training, validation, and testing process for eac
 
 
 + 🤖 **Easy-to-Use Interface.** We offer a user-friendly interface that streamlines the training and evaluation of recommendation models. This allows researchers and practitioners to experiment with various models and configurations with ease and efficiency.
-
-## SSLRec News
-🔥 `2023-06-28`: Early stop is now feasible in the training strategy. (Check [Here](./update_log/2023-06-28.md) for more details)
 
 ## Implemented Models
 We are committed to continuously adding new self-supervised models to the SSLRec framework to keep up with the latest developments in the field of recommender systems. Stay tuned for updates! 🔍
