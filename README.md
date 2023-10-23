@@ -31,7 +31,7 @@ Our framework includes various self-supervised learning recommendation algorithm
 Our framework offers a unified training, validation, and testing process for each category, along with a standardized data preprocessing method using publicly available datasets. This makes it easy to reproduce various models and enables fair comparisons between different methods.
 
 ## SSLRec News
-+ 🎉🎉  [The SSLRec paper](https://arxiv.org/abs/2308.05697) is accepted by [WSDM 2024](https://www.wsdm-conference.org/2024/)！
++ 🎉🎉  [The SSLRec paper](https://arxiv.org/abs/2308.05697) is accepted by [WSDM 2024](https://www.wsdm-conference.org/2024/) for an **ORAL** presentation！
 
 + 🔥 Early stop is now feasible in the training strategy. (Check [Here](./update_log/2023-06-28.md) for more details)
 
