@@ -116,7 +116,7 @@ We warmly welcome contributions of all kinds, from bug fixes to new features and
 If you want to use our codes and datasets in your research, please cite:
 ```
 @article{ren2023sslrec,
-  title={SSLRec: A Self-Supervised Learning Library for Recommendation},
+  title={SSLRec: A Self-Supervised Learning Framework for Recommendation},
   author={Ren, Xubin and Xia, Lianghao and Yang, Yuhao and Wei, Wei and Wang, Tianle and Cai, Xuheng and Huang, Chao},
   journal={arXiv preprint arXiv:2308.05697},
   year={2023}
