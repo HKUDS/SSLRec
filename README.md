@@ -85,6 +85,7 @@ SSLRec is implemented under the following development environment:
 + numpy==1.22.3
 + torch==1.11.0
 + scipy==1.7.3
++ dgl==1.1.1
 
 You can easily train LightGCN using our framework by running the following script:
 ```
