@@ -114,7 +114,7 @@ We warmly welcome contributions of all kinds, from bug fixes to new features and
  > Xubin Ren, Lianghao Xia, Yuhao Yang, Wei Wei, Tianle Wang, Xuheng Cai and Chao Huang*\
  >*WSDM 2024*
 
-If you want to use our codes and datasets in your research, please cite:
+If you find this work is helpful to your research, please consider citing our paper:
 ```
 @article{ren2023sslrec,
   title={SSLRec: A Self-Supervised Learning Framework for Recommendation},
