@@ -1,3 +1,7 @@
+'''
+This code is utilized to created the kg.txt file
+'''
+
 import pickle
 import numpy as np
 from scipy.sparse import csr_matrix
