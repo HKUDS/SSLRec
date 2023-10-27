@@ -1,5 +1,5 @@
 '''
-This code is utilized to created the kg.txt file
+This code is utilized to created the kg.txt file.
 '''
 
 import pickle
