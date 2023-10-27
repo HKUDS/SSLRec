@@ -2,7 +2,6 @@ import math
 import torch as t
 from torch import nn
 from torch.nn import init
-import dgl.function as fn
 import torch.nn.functional as F
 from config.configurator import configs
 
