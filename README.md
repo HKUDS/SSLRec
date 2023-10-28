@@ -104,7 +104,7 @@ For users who wish to gain a deeper understanding, we recommend reading our [Use
 
 and so on.
 
-## Improve SSLRec Together 🤝
+## Improve SSLRec Together
 If you come across any bugs or have suggestions for improvement, feel free to let us know by [filing an issue](https://github.com/HKUDS/SSLRec/issues). 
 
 🤗 We warmly welcome contributions of all kinds, from bug fixes to new features and extensions.
