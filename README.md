@@ -57,7 +57,7 @@ Our framework offers a unified training, validation, and testing process for eac
 ## Implemented Models
 We are committed to continuously adding new self-supervised models to the SSLRec framework to keep up with the latest developments in the field of recommender systems. Stay tuned for updates! 🔍
 
-Here, we list the implemented models in abbrevation. For more detailed information, please refer to [Models](./docs/Models.md).
+Here, we list the implemented models in abbreviation. For more detailed information, please refer to [Models](./docs/Models.md).
 
 **General Collaborative Filtering**
 
