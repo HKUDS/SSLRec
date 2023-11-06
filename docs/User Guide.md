@@ -55,7 +55,7 @@ You can read [Create My Own Trainer]() for more details.
 ### Configuration
 Each model has its own different configuration, we write it in a ```yml``` file (e.g., [lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml)).
 In a ```yml``` file, the following keys are required:
-+ ```optimizer```: It contains necessary information to create an optimizer, such as the name of that optimizer and learing rate.
++ ```optimizer```: It contains necessary information to create an optimizer, such as the name of that optimizer and learning rate.
 + ```train```: It contains the setting of training process, such as the number of epochs, the size of each batch and so on.
 + ```test```: It sets the necessary configuration for evaluation, such as metrics, etc.
 + ```data```: It determines which dataset to use.
@@ -77,7 +77,7 @@ We recommend that your model class inherit the [BaseModel](https://github.com/HK
 **Second**, please create a configuration file named ```{model_name}.py``` under ```config/modelconf/``` for your model. 
 You can refer to [Create My Own Configuration]() for more details.
 
-**Third**, create a trainer in the file ```trainer/trinaer.py``` for your model if you need additional operations when training your model (e.g., fix parameters).
+**Third**, create a trainer in the file ```trainer/trainer.py``` for your model if you need additional operations when training your model (e.g., fix parameters).
 You can refer to [Create My Own Trainer]() to see how to create and use it. 
 Otherwise, you can skip this step and directly use the default [Trainer](https://github.com/HKUDS/SSLRec/blob/main/trainer/trainer.py).
 
