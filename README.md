@@ -13,7 +13,7 @@
 </p>
 <p align="center">
   <a href="https://twitter.com/huang_chao4969" target="_blank">
-    <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/Data Intelligence Lab" />
+    <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/Data Intelligence Lab at HKU" />
   </a>
 </p>
 
