@@ -4,11 +4,20 @@
 
 #
 
+
 <p align="center">
-  <a href="https://github.com/HKUDS/SSLRec/blob/main/docs/User%20Guide.md">User Guide</a> •
-  <a href="https://github.com/HKUDS/SSLRec/blob/main/docs/Models.md">Models</a> •
-  <a href="https://github.com/HKUDS/SSLRec/blob/main/docs/Models.md">Datasets</a> •
-  <a href="https://arxiv.org/abs/2308.05697">Paper</a>
+  <a href="https://github.com/HKUDS/SSLRec/blob/main/docs/User%20Guide.md">🤗User Guide</a> •
+  <a href="https://github.com/HKUDS/SSLRec/blob/main/docs/Models.md">🧪Models</a> •
+  <a href="https://github.com/HKUDS/SSLRec/blob/main/docs/Models.md">📜Datasets</a> •
+  <a href="https://arxiv.org/abs/2308.05697">📑SSLRec Paper</a>
+</p>
+<p align="center">
+  <a href="https://github.com/HKUDS/SSLRec" target="_blank">
+    <img alt="GitHub Stars" src="https://img.shields.io/github/stars/HKUDS/SSLRec?style=social" />
+  </a>
+  <a href="https://twitter.com/huang_chao4969" target="_blank">
+    <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/Data Intelligence Lab" />
+  </a>
 </p>
 
 
