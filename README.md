@@ -12,9 +12,6 @@
   <a href="https://arxiv.org/abs/2308.05697">📑SSLRec Paper</a>
 </p>
 <p align="center">
-  <a href="https://github.com/HKUDS/SSLRec" target="_blank">
-    <img alt="GitHub Stars" src="https://img.shields.io/github/stars/HKUDS/SSLRec?style=social" />
-  </a>
   <a href="https://twitter.com/huang_chao4969" target="_blank">
     <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/Data Intelligence Lab" />
   </a>
