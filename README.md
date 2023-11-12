@@ -111,9 +111,15 @@ For users who wish to gain a deeper understanding, we recommend reading our [Use
 and so on.
 
 ## Improve SSLRec Together
-If you come across any bugs or have suggestions for improvement, feel free to let us know by [filing an issue](https://github.com/HKUDS/SSLRec/issues). 
+If you come across any bugs or have suggestions for improvement, feel free to let us know by [making a pull request](https://github.com/HKUDS/SSLRec/pulls) or [filing an issue](https://github.com/HKUDS/SSLRec/issues). 
 
 🤗 We warmly welcome contributions of all kinds, from bug fixes to new features and extensions.
+
+A big thank you to all our contributors!
+
+<a href="https://github.com/HKUDS/SSLRec/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=HKUDS/SSLRec" />
+</a>
 
 ## Citation
  >**SSLRec: A Self-Supervised Learning Framework for Recommendation**  
