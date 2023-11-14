@@ -72,11 +72,11 @@ class DataHandlerMultiBehavior:
             for i in range(0, len(self.beh_meta_path)):
                 self.beh_meta_path_data[i] = 1*(pickle.load(open(self.train_file + self.beh_meta_path[i] + '.pkl', 'rb')) != 0)
             time = datetime.datetime.now()
-            print("Start building:  ", time)
+            print("Start building: ", time)
             for i in range(0, len(self.behaviors_data)):
                 self.beh_meta_path_mats[i] = self._get_use(self.beh_meta_path_data[i])
             time = datetime.datetime.now()
-            print("End building:", time)
+            print("End building: ", time)
         elif configs['model']['name'] == 'smbrec':
             self.beh_degree_list = []
             for i in range(len(self.behaviors)):
@@ -84,12 +84,12 @@ class DataHandlerMultiBehavior:
 
     def _data2mat(self):
         time = datetime.datetime.now()
-        print("Start building:  ", time)
+        print("Start building: ", time)
         for i in range(0, len(self.behaviors_data)):
             self.behaviors_data[i] = 1*(self.behaviors_data[i] != 0)
             self.behavior_mats[i] = self._get_use(self.behaviors_data[i])
         time = datetime.datetime.now()
-        print("End building:", time)
+        print("End building: ", time)
 
     def _get_use(self, behaviors_data):
         behavior_mats = {}
@@ -136,8 +136,10 @@ class DataHandlerMultiBehavior:
             train_dataset = KMCLRData(self.behaviors, train_data, self.item_num, self.behaviors_data, True)
             self.train_dataloader = dataloader.DataLoader(train_dataset, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0, pin_memory=True)
             self.test_dataloader = dataloader.DataLoader(test_data, batch_size=configs['test']['batch_size'], shuffle=False, num_workers=0)
-            #kg habdler
-            self.raw_kg_dataset = UIDataset(path=self.predir)
+            # kg handler
+            with open(self.train_file + 'buy.pkl', 'rb') as f:
+                self.buy_mat = pickle.load(f)
+            self.raw_kg_dataset = UIDataset(train_mat=self.buy_mat, path=self.predir)
             self.kg_dataset = KGDataset(self.raw_kg_dataset.m_item)
             self.Kg_model = KGModel(self.raw_kg_dataset, self.kg_dataset).to(configs['device']).to(configs['device'])
             self.contrast_model = Contrast(self.Kg_model, configs['model']['kgc_temp'])

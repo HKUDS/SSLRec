@@ -17,7 +17,6 @@ import torch.utils.data as data
 from torch.utils.data import Dataset
 
 from config.configurator import configs
-from models.multi_behavior.utils import tools
 
 
 class AllRankTestData(data.Dataset):
@@ -341,71 +340,25 @@ class BasicDataset(Dataset):
 
 
 class UIDataset(BasicDataset):
-    def __init__(self, path):
+    def __init__(self, train_mat, path):
         self.split = configs['model']['A_split']
         self.folds = configs['model']['A_n_fold']
-        self.mode_dict = {'train': 0, "test": 1}
-        self.mode = self.mode_dict['train']
-        self.n_user = 0
-        self.m_item = 0
-        train_file = path + 'train.txt'
-        test_file = path + 'test.txt'
+        self.n_user = train_mat.shape[0]
+        self.m_item = train_mat.shape[1]
         self.path = path
-        trainUniqueUsers, trainItem, trainUser = [], [], []
-        testUniqueUsers, testItem, testUser = [], [], []
-        self.traindataSize = 0
-        self.testDataSize = 0
-        self.validDataSize = 0
-
-        with open(train_file) as f:
-            for l in f.readlines():
-                if len(l) > 0:
-                    l = l.strip('\n').split(' ')
-                    items = [int(i) for i in l[1:]]
-                    uid = int(l[0])
-                    trainUniqueUsers.append(uid)
-                    trainUser.extend([uid] * len(items))
-                    trainItem.extend(items)
-                    self.m_item = max(self.m_item, max(items))
-                    self.n_user = max(self.n_user, uid)
-                    self.traindataSize += len(items)
-        self.trainUniqueUsers = np.array(trainUniqueUsers)
+        
+        trainUser = train_mat.tocsr().tocoo().row
+        trainItem = train_mat.tocsr().tocoo().col
+        self.traindataSize = len(trainUser)
+        
+        self.trainUniqueUsers = np.array(list(set(trainUser)))
         self.trainUser = np.array(trainUser)
         self.trainItem = np.array(trainItem)
 
-        with open(test_file) as f:
-            for l in f.readlines():
-                if len(l) > 0:
-                    l = l.strip('\n').split(' ')
-                    if l[1]:
-                        items = [int(i) for i in l[1:]]
-                        uid = int(l[0])
-                        testUniqueUsers.append(uid)
-                        testUser.extend([uid] * len(items))
-                        testItem.extend(items)
-                        self.m_item = max(self.m_item, max(items))
-                        self.n_user = max(self.n_user, uid)
-                        self.testDataSize += len(items)
-        self.testUniqueUsers = np.array(testUniqueUsers)
-        self.testUser = np.array(testUser)
-        self.testItem = np.array(testItem)
-
-        self.m_item += 1
-        self.n_user += 1
         self.Graph = None
 
-        self.UserItemNet = csr_matrix(
-            (np.ones(len(self.trainUser)), (self.trainUser, self.trainItem)),
-            shape=(self.n_user, self.m_item), dtype=np.float32)
-
+        self.UserItemNet = csr_matrix((np.ones(len(self.trainUser)), (self.trainUser, self.trainItem)), shape=(self.n_user, self.m_item), dtype=np.float32)
         self._allPos = self.getUserPosItems(list(range(self.n_user)))
-        self.__testDict = self.__build_test()
-
-    @property
-    def item_groups(self):
-        with open(self.path + "/item_groups.pkl", 'rb') as f:
-            g = pickle.load(f)
-        return g
 
     @property
     def n_users(self):
@@ -420,10 +373,6 @@ class UIDataset(BasicDataset):
         return self.traindataSize
 
     @property
-    def testDict(self):
-        return self.__testDict
-
-    @property
     def allPos(self):
         return self._allPos
 
@@ -436,9 +385,7 @@ class UIDataset(BasicDataset):
                 end = self.n_users + self.m_items
             else:
                 end = (i_fold + 1) * fold_len
-            A_fold.append(
-                self._convert_sp_mat_to_sp_tensor(A[start:end]).coalesce().to(
-                    configs['device']))
+            A_fold.append(self._convert_sp_mat_to_sp_tensor(A[start:end]).coalesce().to(configs['device']))
         return A_fold
 
     def _convert_sp_mat_to_sp_tensor(self, X):
@@ -451,51 +398,39 @@ class UIDataset(BasicDataset):
 
     def getSparseGraph(self):
         if self.Graph is None:
-            try:
-                pre_adj_mat = sp.load_npz(self.path + '/graph.npz')
-                norm_adj = pre_adj_mat
-            except:
-                s = time()
-                adj_mat = sp.dok_matrix(
-                    (self.n_users + self.m_items, self.n_users + self.m_items),
-                    dtype=np.float32)
-                adj_mat = adj_mat.tolil()
-                R = self.UserItemNet.tolil()
-                adj_mat[:self.n_users, self.n_users:] = R
-                adj_mat[self.n_users:, :self.n_users] = R.T
-                adj_mat = adj_mat.todok()
 
-                rowsum = np.array(adj_mat.sum(axis=1))
-                d_inv = np.power(rowsum, -0.5).flatten()
-                d_inv[np.isinf(d_inv)] = 0.
-                d_mat = sp.diags(d_inv)
+            # adj_mat = sp.dok_matrix((self.n_users + self.m_items, self.n_users + self.m_items), dtype=np.float32)
+            # adj_mat = adj_mat.tolil()
+            # R = self.UserItemNet.tolil()
+            # adj_mat[:self.n_users, self.n_users:] = R
+            # adj_mat[self.n_users:, :self.n_users] = R.T
+            # adj_mat = adj_mat.todok()
+            
+            rows = self.UserItemNet.tocoo().row
+            cols = self.UserItemNet.tocoo().col
+            new_rows = np.concatenate([rows, cols + self.n_users], axis=0)
+            new_cols = np.concatenate([cols + self.n_users, rows], axis=0)
+            adj_mat = sp.coo_matrix((np.ones(len(new_rows)), (new_rows, new_cols)), shape=[self.n_users + self.m_items, self.n_users + self.m_items]).tocsr().tocoo().todok()
 
-                norm_adj = d_mat.dot(adj_mat)
-                norm_adj = norm_adj.dot(d_mat)
-                norm_adj = norm_adj.tocsr()
-                sp.save_npz(self.path + '/graph.npz', norm_adj)
+            rowsum = np.array(adj_mat.sum(axis=1))
+            d_inv = np.power(rowsum, -0.5).flatten()
+            d_inv[np.isinf(d_inv)] = 0.
+            d_mat = sp.diags(d_inv)
+
+            norm_adj = d_mat.dot(adj_mat)
+            norm_adj = norm_adj.dot(d_mat)
+            norm_adj = norm_adj.tocsr()
 
             if self.split == True:
                 self.Graph = self._split_A_hat(norm_adj)
             else:
                 self.Graph = self._convert_sp_mat_to_sp_tensor(norm_adj)
                 self.Graph = self.Graph.coalesce().to(configs['device'])
+                
         return self.Graph
 
-    def __build_test(self):
-        test_data = {}
-        for i, item in enumerate(self.testItem):
-            user = self.testUser[i]
-            if test_data.get(user):
-                test_data[user].append(item)
-            else:
-                test_data[user] = [item]
-        return test_data
-
     def getUserItemFeedback(self, users, items):
-        return np.array(self.UserItemNet[users,
-                                         items]).astype('uint8').reshape(
-            (-1,))
+        return np.array(self.UserItemNet[users, items]).astype('uint8').reshape((-1,))
 
     def getUserPosItems(self, users):
         posItems = []
@@ -518,7 +453,7 @@ class UIDataset(BasicDataset):
         return user, pos, neg
 
 
-# ----Sampler------------------------------------------------------------------------------------------------------------------------
+# ----Sampler----
 
 
 class MMCLRNeighborSampler(object):

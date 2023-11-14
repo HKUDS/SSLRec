@@ -474,8 +474,7 @@ class KGModel(nn.Module):
         self.co_user_score = nn.Linear(self.latent_dim, 1)
         self.f = nn.Sigmoid()
         self.Graph = self.dataset.getSparseGraph()
-        self.kg_dict, self.item2relations = self.kg_dataset.get_kg_dict(
-            self.num_items)
+        self.kg_dict, self.item2relations = self.kg_dataset.get_kg_dict(self.num_items)
 
 
     def _L2_loss_mean(self, x):
