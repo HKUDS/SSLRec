@@ -4,11 +4,11 @@ optimizer:
   weight_decay: 0
 
 train:
-  epoch: 340
+  epoch: 280
   batch_size: 8192
   save_model: true
   loss: pairwise # bpr
-  test_step: 1 # evaluate per {test_step} epochs
+  test_step: 5 # evaluate per {test_step} epochs
   #pretrain_path: ./checkpoint/xxxx.pth
   reproducible: true
   seed: 2023

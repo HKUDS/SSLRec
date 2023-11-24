@@ -16,13 +16,13 @@ import os
 class DataHandlerSocial:
 	def __init__(self):
 		if configs['data']['name'] == 'ciao':
-			predir = './datasets/social/social_ciao/'
+			predir = './datasets/social/ciao/'
 		elif configs['data']['name'] == 'epinions':
-			predir = './datasets/social/social_epinions/'
+			predir = './datasets/social/epinions/'
 		elif configs['data']['name'] == 'yelp':
-			predir = './datasets/social/social_yelp/'
+			predir = './datasets/social/yelp/'
 		elif configs['data']['name'] == 'lastfm':
-			predir = './datasets/social/social_lastfm/'
+			predir = './datasets/social/lastfm/'
 
 		self.trn_file = predir + 'trn_mat.pkl'
 		self.tst_file = predir + 'tst_mat.pkl'
@@ -137,6 +137,9 @@ class DataHandlerSocial:
 		return norm_adj
 
 	def _gen_metapath(self, trn_mat, trust_mat, category_mat, category_dict):
+		"""
+			adjust rate according to dataset.
+		"""
 		trn_mat = trn_mat.tocsr()
 		user_num, item_num = trn_mat.shape
 		
@@ -144,27 +147,28 @@ class DataHandlerSocial:
 		uu_mat = (uu_mat != 0)
 
 		uiu_mat = sp.dok_matrix((user_num, user_num))
-		for i in tqdm(range(user_num)):
+		for i in tqdm(range(user_num), desc='Creating uiu matrix'):
 			data = trn_mat[i].toarray()
 			_, iid = np.where(data != 0)
 			uid_list, _ = np.where(np.sum(trn_mat[:, iid]!=0, axis=1) != 0)
-			uid_list = uid_list.tolist()
-			tmp = [i] * len(uid_list)
-			uiu_mat[tmp, uid_list] = 1
+			uid_list2 = np.random.choice(uid_list, size=int(uid_list.size*0.3), replace=False)
+			uid_list2 = uid_list2.tolist()
+			tmp = [i] * len(uid_list2)
+			uiu_mat[tmp, uid_list2] = 1
 		uiu_mat = uiu_mat.tocsr()
 		uiu_mat = uiu_mat + uiu_mat.T + sp.eye(user_num).tocsr()
 		uiu_mat = (uiu_mat != 0)
 
 		uitiu_mat = sp.dok_matrix((user_num, user_num))
-		for i in tqdm(range(user_num)):
+		for i in tqdm(range(user_num), desc='Creating uitiu matrix'):
 			data = trn_mat[i].toarray()
 			_, iid = np.where(data != 0)
-			typeid_list = category_mat[iid].toarray().reshape(-1)
+			_, typeid_list = np.where(np.sum(category_mat[iid] != 0, axis=0) != 0)
 			typeid_set = set(typeid_list.tolist())
 			for typeid in typeid_set:
-				iid2 = category_dict[typeid]
-				uid_list, _ = np.where(np.sum(trn_mat[:, iid2]!=0, axis=1) != 0)
-				uid_list2 = np.random.choice(uid_list, size=int(uid_list.size*0.1), replace=False)
+				iid_list = category_dict[typeid]
+				uid_list, _ = np.where(np.sum(trn_mat[:, iid_list]!=0, axis=1) != 0)
+				uid_list2 = np.random.choice(uid_list, size=int(uid_list.size*0.0003), replace=False)
 				uid_list2 = uid_list2.tolist()
 				tmp = [i]*len(uid_list2)
 				uitiu_mat[tmp, uid_list2] = 1
@@ -173,12 +177,11 @@ class DataHandlerSocial:
 		uitiu_mat = (uitiu_mat != 0)
 
 		iti_mat = sp.dok_matrix((item_num, item_num))
-		# itemTypeList = categoryMat.toarray().reshape(-1)
-		for i in tqdm(range(item_num)):
-			item_type = category_mat[i,0] #type id
-			item_list = category_dict[item_type]
-			item_list = np.array(item_list)
-			item_list2 = np.random.choice(item_list, size=int(item_list.size*0.01), replace=False)
+		for i in tqdm(range(item_num), desc='Creating iti matrix'):
+			data = category_mat[i].toarray()
+			_, typeid_list = np.where(data != 0)
+			item_list, _ = np.where(np.sum(category_mat[:, typeid_list] != 0, axis=1) != 0)
+			item_list2 = np.random.choice(item_list, size=int(item_list.size*0.002), replace=False)
 			item_list2 = item_list2.tolist()
 			tmp = [i]*len(item_list2)
 			iti_mat[tmp, item_list2] = 1
@@ -188,11 +191,11 @@ class DataHandlerSocial:
 
 		iui_mat = sp.dok_matrix((item_num, item_num))
 		trn_mat_T = trn_mat.T
-		for i in tqdm(range(item_num)):
+		for i in tqdm(range(item_num), desc='Creating iui matrix'):
 			data = trn_mat_T[i].toarray()
 			_, uid = np.where(data != 0)
 			iid_list, _ = np.where(np.sum(trn_mat_T[:, uid] != 0, axis=1) != 0)
-			iid_list2 = np.random.choice(iid_list, size=int(iid_list.size*0.1), replace=False)
+			iid_list2 = np.random.choice(iid_list, size=int(iid_list.size*0.25), replace=False)
 			iid_list2 = iid_list2.tolist()
 			tmp = [i]*len(iid_list2)
 			iui_mat[tmp, iid_list2] = 1
@@ -231,7 +234,7 @@ class DataHandlerSocial:
 
 		ui_mat = ui_subgraph.copy()
 		if k_hop > 1:
-			for i in tqdm(range(ui_num)):
+			for i in tqdm(range(ui_num), desc='Creating ui subgraph'):
 				data = ui_mat[i].toarray()
 				_, id_list = np.where(data!=0)
 				tmp = k_hop - 1
@@ -246,14 +249,15 @@ class DataHandlerSocial:
 
 	def _create_category_dict(self, category_mat):
 		category_dict = {}
-		category_data = category_mat.toarray().reshape(-1)
-		for i in range(category_data.size):
+		category_data = category_mat.toarray()
+		for i in range(category_data.shape[0]):
 			iid = i
-			typeid = category_data[i]
-			if typeid in category_dict:
-				category_dict[typeid].append(iid)
-			else:
-				category_dict[typeid] = [iid]
+			item_type_list = np.where(category_data[i])[0]
+			for typeid in item_type_list:
+				if typeid in category_dict:
+					category_dict[typeid].append(iid)
+				else:
+					category_dict[typeid] = [iid]
 		return category_dict
 
 	def _create_multiitem_user_adj(self, trn_mat, trn_time):
@@ -282,21 +286,22 @@ class DataHandlerSocial:
 		uu_mat = (mat != 0) * 1
 
 		iti_mat = sp.dok_matrix((item_num, item_num))
-		category_mat = category_mat.toarray().reshape(-1)
-		for i in tqdm(range(category_mat.size)):
-			typeid = category_mat[i]
-			item_list = category_dict[typeid]
-			item_list = np.array(item_list)
-			if item_list.size < 100:
-				rate = 0.1
-			elif item_list.size < 1000:
-				rate = 0.01
-			else:
-				rate = 0.001
-			item_list2 = np.random.choice(item_list, size=int(item_list.size*rate/2), replace=False)
-			item_list2 = item_list2.tolist()
-			tmp = [i for _ in range(len(item_list2))]
-			iti_mat[tmp, item_list2] = 1
+		category_mat = category_mat.toarray()
+		for i in tqdm(range(category_mat.shape[0]), desc='Creating iti matrix'):
+			item_type_list = np.where(category_mat[i])[0]
+			for item_type in item_type_list:					
+				item_list = category_dict[item_type]
+				item_list = np.array(item_list)
+				if item_list.size < 100:
+					rate = 0.1
+				elif item_list.size < 1000:
+					rate = 0.01
+				else:
+					rate = 0.001
+				item_list2 = np.random.choice(item_list, size=int(item_list.size*rate/2), replace=False)
+				item_list2 = item_list2.tolist()
+				tmp = [i for _ in range(len(item_list2))]
+				iti_mat[tmp, item_list2] = 1
 		
 		iti_mat = iti_mat.tocsr()
 		iti_mat = iti_mat + iti_mat.T + sp.eye(item_num)
