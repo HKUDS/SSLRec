@@ -135,6 +135,7 @@ class LocalGraph(nn.Module):
 	
 	def makeNoise(self, scores):
 		noise = t.rand(scores.shape).cuda()
+		noise[noise == 0] = 1e-8
 		noise = -t.log(-t.log(noise))
 		return t.log(scores) + noise
 	
