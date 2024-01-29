@@ -14,7 +14,7 @@ train:
 
 test:
   metrics: [recall, ndcg]
-  k: [5, 10， 20]
+  k: [5, 10, 20]
   batch_size: 512
 
 data:
