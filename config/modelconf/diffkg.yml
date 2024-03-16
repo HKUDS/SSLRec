@@ -49,7 +49,7 @@ model:
 
 tune:
   enable: false
-  hyperparameters: [reg_weight, temperature, layer_num_kg]
+  hyperparameters: [reg_weight, temperature, cl_pattern, layer_num_kg]
   reg_weight: [1.0e-5, 1.0e-6, 1.0e-7]
   temperature: [0.1, 0.5, 1.0]
   cl_weight: [1.0e-1, 1.0]
