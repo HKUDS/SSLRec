@@ -1,0 +1,58 @@
+optimizer:
+  name: adam
+  lr: 1.0e-3
+  weight_decay: 0
+
+train:
+  epoch: 50
+  batch_size: 1024
+  save_model: false
+  loss: pairwise
+  test_step: 1
+  #pretrain_path: ./checkpoint/xxxx.pth
+  reproducible: true
+  seed: 421
+  trainer: DiffKGTrainer
+
+test:
+  metrics: [recall, ndcg]
+  k: [10, 20, 40]
+  batch_size: 1024
+
+data:
+  type: kg 
+  name: last-fm
+
+model:
+  name: diffkg
+  layer_num: 2
+  reg_weight: 1.0e-5
+  cl_weight: 1.0e-1
+  temperature: 0.1
+  embedding_size: 64
+  layer_num_kg: 2
+  mess_dropout_rate: 0.1
+  dims: '[1000]'
+  d_emb_size: 10
+  steps: 5
+  noise_scale: 0.1
+  noise_min: 0.0001
+  noise_max: 0.02
+  sampling_steps: 0
+  rebuild_k: 1
+  e_loss: 0.5
+  keepRate: 0.5
+  res_lambda: 0.5
+  triplet_num: 10
+  cl_pattern: 1
+  diff_model: 1
+
+tune:
+  enable: false
+  hyperparameters: [reg_weight, temperature, layer_num_kg]
+  reg_weight: [1.0e-5, 1.0e-6, 1.0e-7]
+  temperature: [0.1, 0.5, 1.0]
+  cl_weight: [1.0e-1, 1.0]
+  cl_pattern: [0, 1]
+  layer_num_kg: [1, 2]
+  

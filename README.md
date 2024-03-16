@@ -78,7 +78,7 @@ Here, we list the implemented models in abbreviation. For more detailed informat
 + [MHCN](https://arxiv.org/pdf/2101.06448.pdf) (WWW'21), [KCGN](https://par.nsf.gov/servlets/purl/10220297) (AAAI'21), [SMIN](https://arxiv.org/pdf/2110.03958.pdf) (CIKM'21), [DSL](https://arxiv.org/abs/2305.12685) (IJCAI'23)
 
 **Knowledge Graph-enhanced Recommendation**
-+ [KGIN](https://dl.acm.org/doi/pdf/10.1145/3442381.3450133) (WWW'21), [KGCL](https://arxiv.org/pdf/2205.00976.pdf) (SIGIR'22), [KGRec](https://arxiv.org/pdf/2307.02759.pdf) (KDD'23)
++ [KGIN](https://dl.acm.org/doi/pdf/10.1145/3442381.3450133) (WWW'21), [KGCL](https://arxiv.org/pdf/2205.00976.pdf) (SIGIR'22), [KGRec](https://arxiv.org/pdf/2307.02759.pdf) (KDD'23), [DiffKG](https://arxiv.org/pdf/2312.16890.pdf) (WSDM'24) 
 
 **Multi-behavior Recommendation**
 + [MBGMN](https://arxiv.org/pdf/2110.03969.pdf) (SIGIR'21), [HMG-CR](https://arxiv.org/pdf/2109.02859.pdf) (ICDM'21), [S-MBRec](http://www.shichuan.org/doc/134.pdf) (IJCAI'22), [CML](https://arxiv.org/pdf/2202.08523.pdf) (WSDM'2022), [KMCLR](https://arxiv.org/pdf/2301.05403.pdf) (WSDM'23)

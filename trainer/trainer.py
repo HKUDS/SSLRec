@@ -1201,3 +1201,111 @@ class AdaGCLTrainer(Trainer):
             self.logger.log_loss(epoch_idx, loss_log_dict)
         else:
             self.logger.log_loss(epoch_idx, loss_log_dict, save_to_log=False)
+
+class DiffKGTrainer(Trainer):
+    def __init__(self, data_handler, logger):
+        from models.kg.diffkg import GaussianDiffusion, Denoise
+        super(DiffKGTrainer, self).__init__(data_handler, logger)
+        self.diffusion = GaussianDiffusion(configs['model']['noise_scale'], configs['model']['noise_min'], configs['model']['noise_max'], configs['model']['steps']).cuda()
+        out_dims = eval(configs['model']['dims']) + [configs['data']['entity_num']]
+        in_dims = out_dims[::-1]
+        self.denoise = Denoise(in_dims, out_dims, configs['model']['d_emb_size'], norm=True).cuda()
+
+    def create_optimizer(self, model):
+        optim_config = configs['optimizer']
+        if optim_config['name'] == 'adam':
+            self.optimizer = optim.Adam(model.parameters(), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
+            self.optimizer_denoise = optim.Adam(self.denoise.parameters(), lr=optim_config['lr'], weight_decay=optim_config['weight_decay'])
+    
+    def train_epoch(self, model, epoch_idx):
+        train_dataloader = self.data_handler.train_dataloader
+        train_dataloader.dataset.sample_negs()
+        diffusionLoader = self.data_handler.diffusionLoader
+
+        loss_log_dict = {}
+        ep_loss = 0
+        steps = len(train_dataloader.dataset) // configs['train']['batch_size']
+        model.train()
+        for _, tem in tqdm(enumerate(diffusionLoader), desc='Training Diffusion', total=len(diffusionLoader)):
+            batch_data = list(map(lambda x: x.to(configs['device']), tem))
+
+            ui_matrix = self.data_handler.ui_matrix
+            iEmbeds = model.getEntityEmbeds().detach()
+            uEmbeds = model.getUserEmbeds().detach()
+
+            self.optimizer_denoise.zero_grad()
+            loss_diff, loss_dict_diff = self.diffusion.cal_loss_diff(self.denoise, batch_data, ui_matrix, uEmbeds, iEmbeds)
+            loss_diff.backward()
+            self.optimizer_denoise.step()
+
+        with torch.no_grad():
+            denoised_edges = []
+            h_list = []
+            t_list = []
+
+            for _, tem in enumerate(diffusionLoader):
+                batch_data = list(map(lambda x: x.to(configs['device']), tem))
+                batch_item, batch_index = batch_data
+                denoised_batch = self.diffusion.p_sample(self.denoise, batch_item, configs['model']['sampling_steps'])
+                top_item, indices_ = torch.topk(denoised_batch, k=configs['model']['rebuild_k'])
+                for i in range(batch_index.shape[0]):
+                    for j in range(indices_[i].shape[0]):
+                        h_list.append(batch_index[i])
+                        t_list.append(indices_[i][j])
+
+            edge_set = set()
+            for index in range(len(h_list)):
+                edge_set.add((int(h_list[index].cpu().numpy()), int(t_list[index].cpu().numpy())))
+            for index in range(len(h_list)):
+                if (int(t_list[index].cpu().numpy()), int(h_list[index].cpu().numpy())) not in edge_set:
+                    h_list.append(t_list[index])
+                    t_list.append(h_list[index])
+            
+            relation_dict = self.data_handler.relation_dict
+            for index in range(len(h_list)):
+                try:
+                    denoised_edges.append([h_list[index], t_list[index], relation_dict[int(h_list[index].cpu().numpy())][int(t_list[index].cpu().numpy())]])
+                except Exception:
+                    continue
+            graph_tensor = torch.tensor(denoised_edges)
+            index_ = graph_tensor[:, :-1]
+            type_ = graph_tensor[:, -1]
+            denoisedKG = (index_.t().long().cuda(), type_.long().cuda())
+            model.setDenoisedKG(denoisedKG)
+
+        with torch.no_grad():
+            index_, type_ = denoisedKG
+            mask = ((torch.rand(type_.shape[0]) + configs['model']['keepRate']).floor()).type(torch.bool)
+            denoisedKG = (index_[:, mask], type_[mask])
+            self.generatedKG = denoisedKG
+        
+        for _, tem in tqdm(enumerate(train_dataloader), desc='Training Recommender', total=len(train_dataloader)):
+            batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
+
+            self.optimizer.zero_grad()
+
+            batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
+            loss, loss_dict = model.cal_loss(batch_data, denoisedKG)
+            ep_loss += loss.item()
+            loss.backward()
+
+            self.optimizer.step()
+
+            loss_dict = {**loss_dict}
+            # record loss
+            for loss_name in loss_dict:
+                _loss_val = float(loss_dict[loss_name]) / len(train_dataloader)
+                if loss_name not in loss_log_dict:
+                    loss_log_dict[loss_name] = _loss_val
+                else:
+                    loss_log_dict[loss_name] += _loss_val
+        
+        writer.add_scalar('Loss/train', ep_loss / steps, epoch_idx)
+
+        # log loss
+        if configs['train']['log_loss']:
+            self.logger.log_loss(epoch_idx, loss_log_dict)
+        else:
+            self.logger.log_loss(epoch_idx, loss_log_dict, save_to_log=False)
+
+        
