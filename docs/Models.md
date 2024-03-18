@@ -33,7 +33,7 @@
 |SMIN|CIKM'21|[Social Recommendation with Self-Supervised Metagraph Informax Network](https://arxiv.org/pdf/2110.03958.pdf)|
 |DSL|IJCAI'23|[Denoised Self-Augmented Learning for Social Recommendation](https://arxiv.org/pdf/2305.12685.pdf)|
 
-### Knowledge-aware Recommendation
+### Knowledge Graph-enhanced Recommendation
 | Model | Conference | Paper |
 | ----- | ---------- | ----- |
 |KGIN|WWW'22|[Learning Intents behind Interactions with Knowledge Graph for Recommendation](https://dl.acm.org/doi/pdf/10.1145/3442381.3450133)|
