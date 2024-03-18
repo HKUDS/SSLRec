@@ -127,11 +127,12 @@ A big thank you to all our contributors!
  >*WSDM 2024*
 
 If you find this work is helpful to your research, please consider citing our paper:
-```
-@article{ren2023sslrec,
+```bibtex
+@inproceedings{ren2024sslrec,
   title={SSLRec: A Self-Supervised Learning Framework for Recommendation},
   author={Ren, Xubin and Xia, Lianghao and Yang, Yuhao and Wei, Wei and Wang, Tianle and Cai, Xuheng and Huang, Chao},
-  journal={arXiv preprint arXiv:2308.05697},
-  year={2023}
+  booktitle={Proceedings of the 17th ACM International Conference on Web Search and Data Mining},
+  pages={567--575},
+  year={2024}
 }
 ```
