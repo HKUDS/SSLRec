@@ -35,9 +35,9 @@ model:
 
 tune:
   enable: false
-  hyperparameters: [layer_num, cl_weight, temperature, eps] # reg_weight
+  hyperparameters: [layer_num, cl_weight, temperature, eps]
   layer_num: [2, 3]
   cl_weight: [1.0e-1, 1.0e-2, 1.0e-3]
   temperature: [0.1, 0.2, 0.5, 1.0]
   eps: [0.1, 0.2, 0.5, 0.9]
-  # reg_weight: [1.0e-5, 1.0e-6, 1.0e-7]
+  # reg_weight: [1.0e-5, 1.0e-6, 1.0e-7] (optional)
