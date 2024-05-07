@@ -37,6 +37,8 @@ Our framework includes various self-supervised learning recommendation algorithm
 Our framework offers a unified training, validation, and testing process for each category, along with a standardized data preprocessing method using publicly available datasets. This makes it easy to reproduce various models and enables fair comparisons between different methods.
 
 ## SSLRec News
++ 🤗 Here is a quick tutorial on how to create your own data for **General Collaborative Filtering**, pleace [check here](./docs/GuideDataCF.md).
+
 + 📣 We drafted a **Survey Paper** on self-supervised learning for recommendation. For details, please [check here](https://github.com/HKUDS/Awesome-SSLRec-Papers)!
 
 + 🎉🎉  [The SSLRec paper](https://arxiv.org/abs/2308.05697) is accepted by [WSDM 2024](https://www.wsdm-conference.org/2024/) for an **ORAL** presentation！
