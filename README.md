@@ -17,6 +17,7 @@
   </a>
 </p>
 
+<img src='SSLRec_cover.png' />
 
 **SSLRec** is a PyTorch-based open-source deep learning framework for recommender systems enhanced by self-supervised learning techniques. 
 It's user-friendly and contains commonly-used datasets, code scripts for data processing, training, testing, evaluation, and state-of-the-art research models. 
