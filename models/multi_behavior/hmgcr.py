@@ -47,8 +47,8 @@ class HMGCR(BaseModel):
             tmp_between_sim_list = []
             for j in range(num_batches):
                 tmp_j = indices[j * batch_size:(j + 1) * batch_size]
-                tmp_refl_sim = f(self.sim(z1[tmp_i], z1[tmp_j]))  
-                tmp_between_sim = f(self.sim(z1[tmp_i], z2[tmp_j]))  
+                tmp_refl_sim = f(self._sim(z1[tmp_i], z1[tmp_j]))  
+                tmp_between_sim = f(self._sim(z1[tmp_i], z2[tmp_j]))  
                 tmp_refl_sim_list.append(tmp_refl_sim)
                 tmp_between_sim_list.append(tmp_between_sim)
             refl_sim = torch.cat(tmp_refl_sim_list, dim=-1)
@@ -85,8 +85,8 @@ class HMGCR(BaseModel):
         bpr_loss = cal_bpr_loss(anc_embeds, pos_embeds, neg_embeds)
         # contractive loss
         cl_loss = 0
-        self.embed_list_user, self.embed_list_item = [], []
-        self.meta_embed_list_user, self.meta_embed_list_item = [], []
+        # self.embed_list_user, self.embed_list_item = [], []
+        # self.meta_embed_list_user, self.meta_embed_list_item = [], []
         for i in range(1, len(self.embed_list_user)):
             cl_loss += self._batched_contrastive_loss(self.embed_list_user[i], self.meta_embed_list_user[i-1], batch_size=1024)
             cl_loss += self._batched_contrastive_loss(self.embed_list_item[i], self.meta_embed_list_item[i-1], batch_size=1024)
