@@ -247,7 +247,7 @@ class DataHandlerKG:
 			kg_triplets = self._read_triplets_diff(self.kg_file)
 			self.kg_edges, self.kg_dict = self._build_graphs_diff(kg_triplets)
 			self.kg_matrix = self.buildKGMatrix(self.kg_edges)
-			self.diffusionData = DiffusionData(torch.FloatTensor(self.kg_matrix.A))
+			self.diffusionData = DiffusionData(self.kg_matrix.A)
 			self.diffusionLoader = data.DataLoader(self.diffusionData, batch_size=configs['train']['batch_size'], shuffle=True, num_workers=0)
 			self.relation_dict = self.RelationDictBuild()
 			val_data = AllRankTstData(val_mat, trn_mat)

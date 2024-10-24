@@ -6,7 +6,7 @@ class DiffusionData(data.Dataset):
 
     def __getitem__(self, index):
         item = self.data[index]
-        return item, index
+        return torch.FloatTensor(item), index
     
     def __len__(self):
         return len(self.data)
