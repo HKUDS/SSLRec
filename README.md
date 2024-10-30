@@ -102,7 +102,7 @@ You can easily train LightGCN using our framework by running the following scrip
 ```
 python main.py --model LightGCN
 ```
-This script will run the LightGCN model on the yelp datasets. 
+This script will run the LightGCN model on the gowalla datasets. 
 
 The training configuration for LightGCN is saved in [lightgcn.yml](https://github.com/HKUDS/SSLRec/blob/main/config/modelconf/lightgcn.yml). You can modify the values in this file to achieve different training effects. Furthermore, if you're interested in trying out other implemented models, you can find a list of them under [Models](./docs/Models.md), and easily replace LightGCN with your model of choice.
 
