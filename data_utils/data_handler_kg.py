@@ -78,8 +78,7 @@ class DataHandlerKG:
 		n_relations = max(triplets[:, 1]) + 1
 		
 		configs['data']['relation_num'] = n_relations
-		configs['data']['entity_num'] = max(max(triplets[:, 0]), max(triplets[:, 1])) + 1
-		
+		configs['data']['entity_num'] = max(max(triplets[:, 0]), max(triplets[:, 2])) + 1		
 		return triplets 
 	
 	def _collect_ui_dict(self, train_data, test_data):
