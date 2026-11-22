@@ -24,7 +24,7 @@ class Metric(object):
         pred_data = r[:, :k]
         scores = 1. / np.arange(1, k + 1)
         pred_data = pred_data * scores
-        pred_data = pred_data.sum(1)
+        pred_data = pred_data.max(axis=1, initial=0.)
         return np.sum(pred_data)
 
     def ndcg(self, test_data, r, k):
